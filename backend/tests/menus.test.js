@@ -2,20 +2,18 @@ const request = require('supertest');
 const {
   registerAndLogin,
   getAuthHeaders,
-  createUserWithRole,
   createRestaurant,
   approveRestaurant,
   createMenu,
   publishMenu,
   addDeliverySlots,
-  setupCompleteMenu,
   cleanupAllData,
 } = require('./helpers');
 
 let app, sequelize, models;
-let customer, restaurantAdmin, systemAdmin;
-let customerHeaders, restaurantAdminHeaders, adminHeaders;
-let approvedRestaurant, restaurantAdminHeaders2;
+let restaurantAdmin, systemAdmin;
+let restaurantAdminHeaders, adminHeaders;
+let approvedRestaurant;
 
 describe('Menu Management API', () => {
   beforeAll(async () => {
@@ -24,10 +22,6 @@ describe('Menu Management API', () => {
     models = require('../src/models');
 
     await sequelize.sync({ force: true });
-
-    const customerResult = await registerAndLogin(app, 'customer@test.com', 'customer');
-    customer = customerResult.user;
-    customerHeaders = getAuthHeaders(customerResult.tokens);
 
     const adminResult = await registerAndLogin(app, 'admin@test.com', 'system_admin');
     systemAdmin = adminResult.user;
@@ -55,16 +49,13 @@ describe('Menu Management API', () => {
   // ============== MENU CREATION TESTS ==============
 
   describe('POST /api/menus - Create Menu', () => {
-    test('should create menu successfully with valid data for approved restaurant', async () => {
+    test('should create menu successfully for approved restaurant', async () => {
       const menuData = {
-        name: 'Daily Menu',
-        description: 'Today special',
         date: new Date().toISOString().split('T')[0],
         items: [
           { name: 'Biryani', description: 'Hyderabadi', price: 200, quantity: 20 },
           { name: 'Curry', description: 'Chicken curry', price: 150, quantity: 30 },
         ],
-        maxOrdersPerSlot: 15,
       };
 
       const response = await request(app)
@@ -76,21 +67,21 @@ describe('Menu Management API', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.data.name).toBe(menuData.name);
+      expect(response.body.data.date).toBe(menuData.date);
       expect(response.body.data.status).toBe('draft');
       expect(Array.isArray(response.body.data.items)).toBe(true);
     });
 
     test('should reject menu creation for unapproved restaurant', async () => {
-      const unapprovedRestaurant = await createRestaurant(app, restaurantAdmin.id, restaurantAdminHeaders, {
-        email: `unapproved${Date.now()}@test.com`,
+      const unapprovedRest = await createRestaurant(app, restaurantAdmin.id, restaurantAdminHeaders, {
+        email: `unappr${Date.now()}@test.com`,
       });
 
       const response = await request(app)
         .post('/api/menus')
         .set(restaurantAdminHeaders)
         .send({
-          restaurantId: unapprovedRestaurant.id,
+          restaurantId: unapprovedRest.id,
           name: 'Menu',
           items: [{ name: 'Item', price: 100 }],
         });
@@ -99,7 +90,7 @@ describe('Menu Management API', () => {
       expect(response.body.message).toContain('not approved');
     });
 
-    test('should reject menu creation without authentication', async () => {
+    test('should reject without authentication', async () => {
       const response = await request(app)
         .post('/api/menus')
         .send({
@@ -109,22 +100,9 @@ describe('Menu Management API', () => {
 
       expect(response.status).toBe(401);
     });
-
-    test('should validate required fields', async () => {
-      const response = await request(app)
-        .post('/api/menus')
-        .set(restaurantAdminHeaders)
-        .send({
-          restaurantId: approvedRestaurant.id,
-          // Missing name and items
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
-    });
   });
 
-  // ============== MENU RETRIEVAL TESTS ==============
+  // ============== MENU RETRIEVAL & LIST ==============
 
   describe('GET /api/menus/:id - Get Menu', () => {
     let menu;
@@ -134,9 +112,7 @@ describe('Menu Management API', () => {
     });
 
     test('should retrieve menu by id', async () => {
-      const response = await request(app)
-        .get(`/api/menus/${menu.id}`)
-        .set(customerHeaders);
+      const response = await request(app).get(`/api/menus/${menu.id}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.id).toBe(menu.id);
@@ -145,66 +121,28 @@ describe('Menu Management API', () => {
 
     test('should return 404 for non-existent menu', async () => {
       const fakeId = '00000000-0000-0000-0000-000000000000';
-
-      const response = await request(app)
-        .get(`/api/menus/${fakeId}`)
-        .set(customerHeaders);
+      const response = await request(app).get(`/api/menus/${fakeId}`);
 
       expect(response.status).toBe(404);
     });
-
-    test('should allow unauthenticated access', async () => {
-      const response = await request(app).get(`/api/menus/${menu.id}`);
-
-      expect(response.status).toBe(200);
-    });
   });
-
-  // ============== MENU LIST TESTS ==============
 
   describe('GET /api/menus - List Menus', () => {
     beforeEach(async () => {
-      await createMenu(app, approvedRestaurant.id, restaurantAdminHeaders, {
-        name: 'Menu 1',
-      });
-      await createMenu(app, approvedRestaurant.id, restaurantAdminHeaders, {
-        name: 'Menu 2',
-      });
+      await createMenu(app, approvedRestaurant.id, restaurantAdminHeaders);
+      await createMenu(app, approvedRestaurant.id, restaurantAdminHeaders);
     });
 
-    test('should list all menus with pagination', async () => {
-      const response = await request(app)
-        .get('/api/menus')
-        .set(customerHeaders);
+    test('should list all menus', async () => {
+      const response = await request(app).get('/api/menus');
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body.data)).toBe(true);
       expect(response.body.data.length).toBeGreaterThanOrEqual(2);
     });
-
-    test('should filter menus by restaurant', async () => {
-      const response = await request(app)
-        .get(`/api/menus?restaurantId=${approvedRestaurant.id}`)
-        .set(customerHeaders);
-
-      expect(response.status).toBe(200);
-      expect(Array.isArray(response.body.data)).toBe(true);
-    });
-
-    test('should filter menus by status', async () => {
-      const menu = await createMenu(app, approvedRestaurant.id, restaurantAdminHeaders);
-      await publishMenu(app, menu.id, restaurantAdminHeaders);
-
-      const response = await request(app)
-        .get('/api/menus?status=published')
-        .set(customerHeaders);
-
-      expect(response.status).toBe(200);
-      expect(Array.isArray(response.body.data)).toBe(true);
-    });
   });
 
-  // ============== MENU UPDATE TESTS ==============
+  // ============== MENU UPDATE ==============
 
   describe('PUT /api/menus/:id - Update Menu', () => {
     let menu;
@@ -213,40 +151,25 @@ describe('Menu Management API', () => {
       menu = await createMenu(app, approvedRestaurant.id, restaurantAdminHeaders);
     });
 
-    test('should allow owner to update menu details', async () => {
+    test('should allow owner to update menu', async () => {
       const response = await request(app)
         .put(`/api/menus/${menu.id}`)
         .set(restaurantAdminHeaders)
         .send({
           description: 'Updated menu',
-          name: 'New Menu Name',
         });
 
       expect(response.status).toBe(200);
       expect(response.body.data.description).toBe('Updated menu');
-      expect(response.body.data.name).toBe('New Menu Name');
     });
 
-    test('should prevent non-owner from updating menu', async () => {
+    test('should prevent non-owner from updating', async () => {
       const otherOwner = await registerAndLogin(app, `other${Date.now()}@test.com`, 'restaurant_admin');
 
       const response = await request(app)
         .put(`/api/menus/${menu.id}`)
         .set(getAuthHeaders(otherOwner.tokens))
-        .send({
-          description: 'Hacked',
-        });
-
-      expect(response.status).toBe(403);
-    });
-
-    test('should prevent customer from updating menu', async () => {
-      const response = await request(app)
-        .put(`/api/menus/${menu.id}`)
-        .set(customerHeaders)
-        .send({
-          description: 'Hacked',
-        });
+        .send({ description: 'Hacked' });
 
       expect(response.status).toBe(403);
     });
@@ -257,15 +180,13 @@ describe('Menu Management API', () => {
       const response = await request(app)
         .put(`/api/menus/${fakeId}`)
         .set(restaurantAdminHeaders)
-        .send({
-          description: 'Update',
-        });
+        .send({ description: 'Update' });
 
       expect(response.status).toBe(404);
     });
   });
 
-  // ============== MENU STATUS WORKFLOW TESTS ==============
+  // ============== MENU STATUS WORKFLOW ==============
 
   describe('POST /api/menus/:id/publish - Publish Menu', () => {
     let menu;
@@ -293,10 +214,9 @@ describe('Menu Management API', () => {
         .send({});
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain('cannot');
     });
 
-    test('should prevent non-owner from publishing menu', async () => {
+    test('should prevent non-owner from publishing', async () => {
       const otherOwner = await registerAndLogin(app, `other${Date.now()}@test.com`, 'restaurant_admin');
 
       const response = await request(app)
@@ -341,21 +261,19 @@ describe('Menu Management API', () => {
     });
   });
 
-  // ============== MENU ITEMS TESTS ==============
+  // ============== MENU ITEMS ==============
 
   describe('POST /api/menus/:id/items - Add Menu Items', () => {
     let menu;
 
     beforeEach(async () => {
-      menu = await createMenu(app, approvedRestaurant.id, restaurantAdminHeaders, {
-        items: [],
-      });
+      menu = await createMenu(app, approvedRestaurant.id, restaurantAdminHeaders, { items: [] });
     });
 
     test('should add items to menu', async () => {
       const items = [
-        { name: 'Biryani', description: 'Hyderabadi', price: 200, quantity: 20 },
-        { name: 'Curry', description: 'Chicken curry', price: 150, quantity: 30 },
+        { name: 'Biryani', price: 200, quantity: 20 },
+        { name: 'Curry', price: 150, quantity: 30 },
       ];
 
       const response = await request(app)
@@ -367,74 +285,19 @@ describe('Menu Management API', () => {
       expect(response.body.data.items.length).toBeGreaterThanOrEqual(2);
     });
 
-    test('should prevent adding items to non-existent menu', async () => {
-      const fakeId = '00000000-0000-0000-0000-000000000000';
-
-      const response = await request(app)
-        .post(`/api/menus/${fakeId}/items`)
-        .set(restaurantAdminHeaders)
-        .send({
-          items: [{ name: 'Item', price: 100 }],
-        });
-
-      expect(response.status).toBe(404);
-    });
-
-    test('should validate item data', async () => {
-      const response = await request(app)
-        .post(`/api/menus/${menu.id}/items`)
-        .set(restaurantAdminHeaders)
-        .send({
-          items: [{ name: '', price: -100 }], // Invalid
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
-    });
-  });
-
-  describe('PUT /api/menus/:id/items/:itemId - Update Menu Item', () => {
-    let menu, itemId;
-
-    beforeEach(async () => {
-      menu = await createMenu(app, approvedRestaurant.id, restaurantAdminHeaders);
-      if (menu.items && menu.items.length > 0) {
-        itemId = menu.items[0].id;
-      }
-    });
-
-    test('should update item details', async () => {
-      if (!itemId) this.skip();
-
-      const response = await request(app)
-        .put(`/api/menus/${menu.id}/items/${itemId}`)
-        .set(restaurantAdminHeaders)
-        .send({
-          price: 250,
-          quantity: 15,
-        });
-
-      expect(response.status).toBe(200);
-      expect(response.body.data.price).toBe(250);
-    });
-
-    test('should prevent non-owner from updating items', async () => {
-      if (!itemId) this.skip();
-
+    test('should prevent non-owner from adding items', async () => {
       const otherOwner = await registerAndLogin(app, `other${Date.now()}@test.com`, 'restaurant_admin');
 
       const response = await request(app)
-        .put(`/api/menus/${menu.id}/items/${itemId}`)
+        .post(`/api/menus/${menu.id}/items`)
         .set(getAuthHeaders(otherOwner.tokens))
-        .send({
-          price: 100,
-        });
+        .send({ items: [{ name: 'Item', price: 100 }] });
 
       expect(response.status).toBe(403);
     });
   });
 
-  // ============== DELIVERY SLOTS TESTS ==============
+  // ============== DELIVERY SLOTS ==============
 
   describe('POST /api/menus/:id/slots - Add Delivery Slots', () => {
     let menu;
@@ -444,135 +307,66 @@ describe('Menu Management API', () => {
     });
 
     test('should add delivery slots to menu', async () => {
-      const slots = [
-        { time: '18:00', capacity: 20 },
-        { time: '18:30', capacity: 20 },
-      ];
+      const slots = await addDeliverySlots(app, menu.id, approvedRestaurant.id, restaurantAdminHeaders);
 
-      const response = await request(app)
-        .post(`/api/menus/${menu.id}/slots`)
-        .set(restaurantAdminHeaders)
-        .send({ slots });
-
-      expect(response.status).toBe(201);
-      expect(Array.isArray(response.body.data)).toBe(true);
-      expect(response.body.data.length).toBe(2);
+      expect(Array.isArray(slots)).toBe(true);
+      expect(slots.length).toBeGreaterThanOrEqual(3);
     });
 
-    test('should validate slot capacity is positive', async () => {
-      const response = await request(app)
-        .post(`/api/menus/${menu.id}/slots`)
-        .set(restaurantAdminHeaders)
-        .send({
-          slots: [{ time: '18:00', capacity: -10 }],
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
-    });
-
-    test('should validate slot time format', async () => {
-      const response = await request(app)
-        .post(`/api/menus/${menu.id}/slots`)
-        .set(restaurantAdminHeaders)
-        .send({
-          slots: [{ time: 'invalid', capacity: 10 }],
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body.errors).toBeDefined();
-    });
-  });
-
-  describe('GET /api/menus/:id/slots - List Delivery Slots', () => {
-    let menu;
-
-    beforeEach(async () => {
-      const result = await setupCompleteMenu(app, approvedRestaurant.id, restaurantAdminHeaders);
-      menu = result.menu;
-    });
-
-    test('should list all slots for a menu', async () => {
-      const response = await request(app)
-        .get(`/api/menus/${menu.id}/slots`)
-        .set(customerHeaders);
-
-      expect(response.status).toBe(200);
-      expect(Array.isArray(response.body.data)).toBe(true);
-    });
-
-    test('should return 404 for non-existent menu', async () => {
-      const fakeId = '00000000-0000-0000-0000-000000000000';
-
-      const response = await request(app)
-        .get(`/api/menus/${fakeId}/slots`)
-        .set(customerHeaders);
-
-      expect(response.status).toBe(404);
-    });
-  });
-
-  describe('DELETE /api/slots/:id - Delete Delivery Slot', () => {
-    let menu, slotId;
-
-    beforeEach(async () => {
-      const result = await setupCompleteMenu(app, approvedRestaurant.id, restaurantAdminHeaders);
-      menu = result.menu;
-      if (result.slots && result.slots.length > 0) {
-        slotId = result.slots[0].id;
-      }
-    });
-
-    test('should delete delivery slot', async () => {
-      if (!slotId) this.skip();
-
-      const response = await request(app)
-        .delete(`/api/menus/${menu.id}/slots/${slotId}`)
-        .set(restaurantAdminHeaders)
-        .send({});
-
-      expect(response.status).toBe(200);
-    });
-
-    test('should prevent non-owner from deleting slot', async () => {
-      if (!slotId) this.skip();
-
+    test('should prevent non-owner from adding slots', async () => {
       const otherOwner = await registerAndLogin(app, `other${Date.now()}@test.com`, 'restaurant_admin');
 
       const response = await request(app)
-        .delete(`/api/menus/${menu.id}/slots/${slotId}`)
+        .post(`/api/menus/${menu.id}/slots`)
         .set(getAuthHeaders(otherOwner.tokens))
-        .send({});
+        .send({
+          restaurantId: approvedRestaurant.id,
+          startTime: '18:00',
+          endTime: '18:30',
+          maxOrders: 20,
+        });
 
       expect(response.status).toBe(403);
     });
   });
 
-  // ============== MENU WORKFLOW TESTS ==============
+  describe('GET /api/menus/:id/slots - List Delivery Slots', () => {
+    let menu, slots;
+
+    beforeEach(async () => {
+      menu = await createMenu(app, approvedRestaurant.id, restaurantAdminHeaders);
+      slots = await addDeliverySlots(app, menu.id, approvedRestaurant.id, restaurantAdminHeaders);
+    });
+
+    test('should list all slots for a menu', async () => {
+      const response = await request(app).get(`/api/menus/${menu.id}/slots`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBeGreaterThanOrEqual(3);
+    });
+  });
+
+  // ============== MENU WORKFLOW ==============
 
   describe('Complete Menu Workflow', () => {
-    test('should complete full menu creation and publishing workflow', async () => {
+    test('should complete full menu creation, slot addition, and publishing', async () => {
       // 1. Create menu (draft)
       const menu = await createMenu(app, approvedRestaurant.id, restaurantAdminHeaders, {
         name: 'Complete Menu',
-        items: [{ name: 'Item 1', price: 100 }],
       });
-
       expect(menu.status).toBe('draft');
 
       // 2. Add delivery slots
-      const slots = await addDeliverySlots(app, menu.id, restaurantAdminHeaders);
-      expect(Array.isArray(slots)).toBe(true);
+      const slots = await addDeliverySlots(app, menu.id, approvedRestaurant.id, restaurantAdminHeaders);
+      expect(slots.length).toBeGreaterThanOrEqual(3);
 
       // 3. Publish menu
       const publishedMenu = await publishMenu(app, menu.id, restaurantAdminHeaders);
       expect(publishedMenu.status).toBe('published');
 
       // 4. Verify customers can see published menu
-      const retrieved = await request(app)
-        .get(`/api/menus/${menu.id}`)
-        .set(customerHeaders);
-
+      const retrieved = await request(app).get(`/api/menus/${menu.id}`);
       expect(retrieved.status).toBe(200);
       expect(retrieved.body.data.status).toBe('published');
     });

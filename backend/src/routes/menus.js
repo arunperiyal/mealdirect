@@ -361,10 +361,10 @@ router.post(
   authorize(['restaurant_admin']),
   [
     param('id').isUUID(),
-    body('restaurantId').isUUID(),
-    body('startTime').isTime({ hourFormat: 'HH:mm' }),
-    body('endTime').isTime({ hourFormat: 'HH:mm' }),
-    body('maxOrders').isInt({ min: 1 }),
+    body('restaurantId').notEmpty().isUUID(),
+    body('startTime').notEmpty().trim().isTime({ hourFormat: 'HH:mm' }),
+    body('endTime').notEmpty().trim().isTime({ hourFormat: 'HH:mm' }),
+    body('maxOrders').notEmpty().isInt({ min: 1 }),
   ],
   async (req, res) => {
     try {

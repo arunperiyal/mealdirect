@@ -226,13 +226,17 @@ async function createMenu(app, restaurantId, headers, data = {}) {
     name: data.name || `Menu ${new Date().toLocaleDateString()}`,
     description: data.description || 'Daily menu',
     date: data.date || new Date().toISOString().split('T')[0],
-    items: data.items || [
+    items: (data.items !== undefined && data.items.length > 0) ? data.items : [
       { name: 'Item 1', description: 'Test item', price: 100, quantity: 50 },
       { name: 'Item 2', description: 'Test item', price: 150, quantity: 30 },
     ],
     maxOrdersPerSlot: data.maxOrdersPerSlot || 20,
-    ...data,
   };
+
+  // Add remaining data fields but don't override items
+  const finalData = { ...data, ...menuData };
+  delete finalData.items;
+  Object.assign(menuData, finalData);
 
   const response = await request(app)
     .post(`/api/menus`)
@@ -312,30 +316,40 @@ async function archiveMenu(app, menuId, headers) {
  * Add delivery slots to a menu
  * @param {Express.app} app - Express app instance
  * @param {string} menuId - Menu ID
+ * @param {string} restaurantId - Restaurant ID
  * @param {object} headers - Owner auth headers
- * @param {array} slots - Slot data [{time: '18:00', capacity: 10}, ...]
+ * @param {array} slots - Slot data [{startTime: '18:00', endTime: '18:30', maxOrders: 20}, ...]
  * @returns {Promise<array>} Created slots
  */
-async function addDeliverySlots(app, menuId, headers, slots = []) {
+async function addDeliverySlots(app, menuId, restaurantId, headers, slots = []) {
   if (slots.length === 0) {
     slots = [
-      { time: '18:00', capacity: 20 },
-      { time: '18:30', capacity: 20 },
-      { time: '19:00', capacity: 15 },
+      { startTime: '18:00', endTime: '18:30', maxOrders: 20 },
+      { startTime: '18:30', endTime: '19:00', maxOrders: 20 },
+      { startTime: '19:00', endTime: '19:30', maxOrders: 15 },
     ];
   }
 
-  const response = await request(app)
-    .post(`/api/menus/${menuId}/slots`)
-    .set(headers)
-    .send({ slots });
+  // Create slots one at a time (API creates single slots)
+  const createdSlots = [];
+  for (const slot of slots) {
+    const response = await request(app)
+      .post(`/api/menus/${menuId}/slots`)
+      .set(headers)
+      .send({
+        restaurantId,
+        ...slot,
+      });
 
-  if (response.status !== 201) {
-    console.error('Slot response status:', response.status, 'body:', response.body);
-    throw new Error(`Failed to add delivery slots (${response.status}): ${response.body?.message || 'Unknown error'}`);
+    if (response.status !== 201) {
+      console.error('Slot creation error:', response.status, JSON.stringify(response.body));
+      throw new Error(`Failed to add delivery slot (${response.status}): ${response.body?.message || JSON.stringify(response.body)}`);
+    }
+
+    createdSlots.push(response.body.data);
   }
 
-  return response.body.data;
+  return createdSlots;
 }
 
 /**
@@ -351,7 +365,7 @@ async function setupCompleteMenu(app, restaurantId, headers, menuData = {}) {
   const menu = await createMenu(app, restaurantId, headers, menuData);
 
   // Add delivery slots
-  const slots = await addDeliverySlots(app, menu.id, headers);
+  const slots = await addDeliverySlots(app, menu.id, restaurantId, headers);
 
   // Publish menu
   const publishedMenu = await publishMenu(app, menu.id, headers);

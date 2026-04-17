@@ -12,28 +12,29 @@ describe('API Health Check', () => {
   });
 });
 
-describe('Auth Routes - Placeholder', () => {
-  it('should indicate register endpoint is not implemented', async () => {
+describe('Auth Endpoints - Basic Validation', () => {
+  it('should reject register with invalid email', async () => {
     const response = await request(app)
       .post('/api/auth/register')
       .send({
-        email: 'test@example.com',
-        password: 'password123'
+        email: 'invalid-email',
+        password: 'ValidPass123!'
       });
 
-    expect(response.statusCode).toBe(501);
+    expect(response.statusCode).toBe(400);
     expect(response.body.success).toBe(false);
+    expect(response.body.code).toBe('VALIDATION_ERROR');
   });
 
-  it('should indicate login endpoint is not implemented', async () => {
+  it('should reject login with missing fields', async () => {
     const response = await request(app)
       .post('/api/auth/login')
       .send({
-        email: 'test@example.com',
-        password: 'password123'
+        email: 'test@example.com'
+        // Missing password
       });
 
-    expect(response.statusCode).toBe(501);
+    expect(response.statusCode).toBe(400);
     expect(response.body.success).toBe(false);
   });
 });
@@ -47,3 +48,4 @@ describe('404 Handling', () => {
     expect(response.body.success).toBe(false);
   });
 });
+

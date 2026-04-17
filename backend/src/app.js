@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const config = require('./config');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
+const { verifyToken, authorize } = require('./middleware/auth');
 
 // Create Express app
 const app = express();
@@ -32,8 +33,35 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// API Routes (will be populated in Phase 1B)
+// API Routes
 app.use('/api/auth', require('./routes/auth'));
+
+// Test endpoints (only in development and test)
+if (config.env === 'development' || config.env === 'test') {
+  app.get('/api/test/protected', verifyToken, (req, res) => {
+    res.status(200).json({
+      success: true,
+      message: 'This is a protected endpoint',
+      user: req.user,
+    });
+  });
+
+  app.get('/api/test/admin', verifyToken, authorize(['system_admin']), (req, res) => {
+    res.status(200).json({
+      success: true,
+      message: 'This is an admin-only endpoint',
+      user: req.user,
+    });
+  });
+
+  app.get('/api/test/restaurant', verifyToken, authorize(['restaurant_admin']), (req, res) => {
+    res.status(200).json({
+      success: true,
+      message: 'This is a restaurant-admin-only endpoint',
+      user: req.user,
+    });
+  });
+}
 
 // 404 handler
 app.use(notFound);

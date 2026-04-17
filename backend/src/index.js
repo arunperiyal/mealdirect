@@ -2,6 +2,9 @@ const app = require('./app');
 const config = require('./config');
 const sequelize = require('./config/database');
 
+// Import models to register them with Sequelize
+const models = require('./models');
+
 const PORT = config.port;
 
 /**

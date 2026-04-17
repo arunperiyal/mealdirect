@@ -218,39 +218,42 @@ async function setupCompleteRestaurant(app, adminHeaders, ownerData, restaurantD
  * @param {Express.app} app - Express app instance
  * @param {string} restaurantId - Restaurant ID
  * @param {object} headers - Owner auth headers
- * @param {object} data - Menu data
- * @returns {Promise<object>} Menu object
+ * @param {object} data - Menu data with optional items array
+ * @returns {Promise<object>} Menu object with items
  */
 async function createMenu(app, restaurantId, headers, data = {}) {
-  const menuData = {
-    name: data.name || `Menu ${new Date().toLocaleDateString()}`,
-    description: data.description || 'Daily menu',
-    date: data.date || new Date().toISOString().split('T')[0],
-    items: (data.items !== undefined && data.items.length > 0) ? data.items : [
-      { name: 'Item 1', description: 'Test item', price: 100, quantity: 50 },
-      { name: 'Item 2', description: 'Test item', price: 150, quantity: 30 },
-    ],
-    maxOrdersPerSlot: data.maxOrdersPerSlot || 20,
-  };
+  const date = data.date || new Date().toISOString().split('T')[0];
+  const items = (data.items && data.items.length > 0) ? data.items : [
+    { name: 'Item 1', description: 'Test item', price: 100, quantity: 50 },
+    { name: 'Item 2', description: 'Test item', price: 150, quantity: 30 },
+  ];
 
-  // Add remaining data fields but don't override items
-  const finalData = { ...data, ...menuData };
-  delete finalData.items;
-  Object.assign(menuData, finalData);
-
-  const response = await request(app)
+  // Create menu
+  const createResponse = await request(app)
     .post(`/api/menus`)
     .set(headers)
     .send({
       restaurantId,
-      ...menuData,
+      date,
     });
 
-  if (response.status !== 201) {
-    throw new Error(`Failed to create menu: ${response.body.message}`);
+  if (createResponse.status !== 201) {
+    throw new Error(`Failed to create menu: ${createResponse.body.message}`);
   }
 
-  return response.body.data;
+  const menu = createResponse.body.data;
+
+  // Add items to menu
+  const itemsResponse = await request(app)
+    .post(`/api/menus/${menu.id}/items`)
+    .set(headers)
+    .send({ items });
+
+  if (itemsResponse.status !== 200) {
+    throw new Error(`Failed to add menu items: ${itemsResponse.body.message}`);
+  }
+
+  return itemsResponse.body.data;
 }
 
 /**

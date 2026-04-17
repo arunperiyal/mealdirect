@@ -362,8 +362,12 @@ router.post(
   [
     param('id').isUUID(),
     body('restaurantId').notEmpty().isUUID(),
-    body('startTime').notEmpty().trim().isTime({ hourFormat: 'HH:mm' }),
-    body('endTime').notEmpty().trim().isTime({ hourFormat: 'HH:mm' }),
+    body('startTime')
+      .notEmpty().withMessage('Start time is required')
+      .matches(/^\d{2}:\d{2}$/).withMessage('Start time must be in HH:mm format'),
+    body('endTime')
+      .notEmpty().withMessage('End time is required')
+      .matches(/^\d{2}:\d{2}$/).withMessage('End time must be in HH:mm format'),
     body('maxOrders').notEmpty().isInt({ min: 1 }),
   ],
   async (req, res) => {

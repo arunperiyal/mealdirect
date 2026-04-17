@@ -17,7 +17,7 @@ module.exports = {
     database: process.env.DB_NAME || 'mess_app',
     dialect: process.env.DB_DIALECT || 'postgres',
     storage: process.env.DB_STORAGE, // For SQLite (:memory: or file path)
-    logging: process.env.NODE_ENV === 'production' ? false : console.log,
+    logging: (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test') ? false : console.log,
     define: {
       timestamps: true,
       underscored: true,

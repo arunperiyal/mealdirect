@@ -41,6 +41,7 @@ router.post(
         password: req.body.password,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
+        role: req.body.role || 'customer',
       });
 
       res.status(201).json({

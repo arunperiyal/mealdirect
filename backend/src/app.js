@@ -35,6 +35,9 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/restaurants', require('./routes/restaurants'));
+app.use('/api/menus', require('./routes/menus'));
+app.use('/api/orders', require('./routes/orders'));
 
 // Test endpoints (only in development and test)
 if (config.env === 'development' || config.env === 'test') {

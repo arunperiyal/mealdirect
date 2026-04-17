@@ -9,8 +9,7 @@ services:
       POSTGRES_USER: mess_user
       POSTGRES_PASSWORD: ${DB_PASSWORD:-secure_password}
       POSTGRES_DB: mess_app
-    ports:
-      - "5432:5432"
+    # Don't expose port to host - only accessible within network
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./migrations:/docker-entrypoint-initdb.d
@@ -25,8 +24,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: mess_redis
-    ports:
-      - "6379:6379"
+    # Don't expose port to host - only accessible within network
     volumes:
       - redis_data:/data
     healthcheck:
@@ -43,6 +41,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       DB_HOST: postgres
+      DB_PORT: 5432
       DB_USER: mess_user
       DB_PASSWORD: ${DB_PASSWORD:-secure_password}
       DB_NAME: mess_app
@@ -90,3 +89,4 @@ volumes:
 networks:
   default:
     name: mess_network
+

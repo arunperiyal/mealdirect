@@ -393,19 +393,13 @@ describe('Payment API (Razorpay)', () => {
     test('restaurant cannot confirm an unpaid online order', async () => {
       const order = await placeOrder();
 
-      await expect(
-        orderController().confirmOrder(order.id, order.restaurantId, restaurantAdmin.id)
-      ).rejects.toMatchObject({ code: 'PAYMENT_PENDING', statusCode: 409 });
+      await expect(orderController().confirmOrder(order.id, restaurantAdmin.id)).rejects.toMatchObject({ code: 'PAYMENT_PENDING', statusCode: 409 });
     });
 
     test('COD orders can still be confirmed without payment', async () => {
       const order = await placeOrder('cod');
 
-      const confirmed = await orderController().confirmOrder(
-        order.id,
-        order.restaurantId,
-        restaurantAdmin.id
-      );
+      const confirmed = await orderController().confirmOrder(order.id, restaurantAdmin.id);
       expect(confirmed.status).toBe('confirmed');
     });
   });

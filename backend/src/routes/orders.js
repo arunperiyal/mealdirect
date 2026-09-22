@@ -52,6 +52,55 @@ router.post(
 );
 
 /**
+ * GET /api/orders/restaurant-orders
+ * List incoming orders for the restaurants the admin owns.
+ * Declared before GET /:id, which would otherwise capture this path.
+ */
+router.get(
+  '/restaurant-orders',
+  verifyToken,
+  authorize(['restaurant_admin']),
+  [
+    query('status').optional(),
+    query('restaurantId').optional().isUUID(),
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('offset').optional().isInt({ min: 0 }),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          code: 'VALIDATION_ERROR',
+          errors: errors.array(),
+        });
+      }
+
+      const result = await orderController.listRestaurantOrders(req.user.id, {
+        status: req.query.status,
+        restaurantId: req.query.restaurantId,
+        limit: req.query.limit || 20,
+        offset: req.query.offset || 0,
+      });
+
+      res.json({
+        success: true,
+        data: result.rows,
+        meta: { total: result.count },
+      });
+    } catch (error) {
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
+        success: false,
+        code: error.code || 'INTERNAL_ERROR',
+        message: error.message,
+      });
+    }
+  }
+);
+
+/**
  * GET /api/orders/:id
  * Get order by ID
  */
@@ -112,53 +161,6 @@ router.get(
       }
 
       const result = await orderController.listCustomerOrders(req.user.id, {
-        status: req.query.status,
-        limit: req.query.limit || 20,
-        offset: req.query.offset || 0,
-      });
-
-      res.json({
-        success: true,
-        data: result.rows,
-        meta: { total: result.count },
-      });
-    } catch (error) {
-      const statusCode = error.statusCode || 500;
-      res.status(statusCode).json({
-        success: false,
-        code: error.code || 'INTERNAL_ERROR',
-        message: error.message,
-      });
-    }
-  }
-);
-
-/**
- * GET /api/restaurant-orders
- * List restaurant's incoming orders
- */
-router.get(
-  '/restaurant-orders',
-  verifyToken,
-  authorize(['restaurant_admin']),
-  [
-    query('status').optional(),
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('offset').optional().isInt({ min: 0 }),
-  ],
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          code: 'VALIDATION_ERROR',
-          errors: errors.array(),
-        });
-      }
-
-      // For now, use user.id as restaurantId (in production, look up restaurant by owner)
-      const result = await orderController.listRestaurantOrders(req.user.id, {
         status: req.query.status,
         limit: req.query.limit || 20,
         offset: req.query.offset || 0,
@@ -248,7 +250,7 @@ router.post(
         });
       }
 
-      const order = await orderController.confirmOrder(req.params.id, req.user.id, req.user.id);
+      const order = await orderController.confirmOrder(req.params.id, req.user.id);
 
       res.json({
         success: true,
@@ -286,7 +288,7 @@ router.post(
         });
       }
 
-      const order = await orderController.markPreparing(req.params.id, req.user.id, req.user.id);
+      const order = await orderController.markPreparing(req.params.id, req.user.id);
 
       res.json({
         success: true,
@@ -324,7 +326,7 @@ router.post(
         });
       }
 
-      const order = await orderController.markReady(req.params.id, req.user.id, req.user.id);
+      const order = await orderController.markReady(req.params.id, req.user.id);
 
       res.json({
         success: true,
@@ -362,7 +364,7 @@ router.post(
         });
       }
 
-      const order = await orderController.markDelivered(req.params.id, req.user.id, req.user.id);
+      const order = await orderController.markDelivered(req.params.id, req.user.id);
 
       res.json({
         success: true,

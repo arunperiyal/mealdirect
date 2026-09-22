@@ -1,7 +1,24 @@
-const { Order, Menu, DeliverySlot, Restaurant, User } = require('../models');
+const { Op } = require('sequelize');
+const { Order, Menu, DeliverySlot, Restaurant } = require('../models');
 
 const throwError = (code, message, statusCode = 400) => {
   throw { code, message, statusCode };
+};
+
+// Helper: does this user own the restaurant the order belongs to?
+const ownsOrderRestaurant = async (order, userId) => {
+  const restaurant = await Restaurant.findByPk(order.restaurantId, { attributes: ['ownerId'] });
+  return Boolean(restaurant) && restaurant.ownerId === userId;
+};
+
+// Helper: load an order that the restaurant admin must own
+const findOwnedOrder = async (orderId, userId) => {
+  const order = await Order.findByPk(orderId);
+  if (!order) throwError('NOT_FOUND', 'Order not found', 404);
+  if (!(await ownsOrderRestaurant(order, userId))) {
+    throwError('FORBIDDEN', 'You do not own this order', 403);
+  }
+  return order;
 };
 
 // Helper: validate order access
@@ -11,8 +28,7 @@ const validateOrderAccess = async (orderId, userId, role) => {
 
   if (role === 'system_admin') return order;
   if (role === 'restaurant_admin') {
-    // Restaurant admin can see if they own the restaurant
-    if (order.restaurantId !== userId) {
+    if (!(await ownsOrderRestaurant(order, userId))) {
       throwError('FORBIDDEN', 'You do not have access to this order', 403);
     }
   } else if (role === 'customer') {
@@ -23,14 +39,14 @@ const validateOrderAccess = async (orderId, userId, role) => {
   return order;
 };
 
-// Helper: add status to history
+// Helper: add status to history.
+// Assign a new array: Sequelize doesn't detect in-place changes to JSON columns,
+// so a push() would be silently dropped on save.
 const addStatusHistory = (order, newStatus, userId) => {
-  order.statusHistory = order.statusHistory || [];
-  order.statusHistory.push({
-    status: newStatus,
-    timestamp: new Date(),
-    changedBy: userId,
-  });
+  order.statusHistory = [
+    ...(order.statusHistory || []),
+    { status: newStatus, timestamp: new Date(), changedBy: userId },
+  ];
 };
 
 // 1. Create order
@@ -196,11 +212,19 @@ const listCustomerOrders = async (customerId, filters = {}) => {
   }
 };
 
-// 4. List restaurant orders
-const listRestaurantOrders = async (restaurantId, filters = {}) => {
+// 4. List orders for the restaurants a restaurant admin owns
+const listRestaurantOrders = async (ownerId, filters = {}) => {
   try {
-    const { status, limit = 20, offset = 0 } = filters;
-    const where = { restaurantId };
+    const { status, restaurantId, limit = 20, offset = 0 } = filters;
+
+    const owned = await Restaurant.findAll({ where: { ownerId }, attributes: ['id'] });
+    const ownedIds = owned.map((r) => r.id);
+
+    if (restaurantId && !ownedIds.includes(restaurantId)) {
+      throwError('FORBIDDEN', 'You do not own this restaurant', 403);
+    }
+
+    const where = { restaurantId: restaurantId || { [Op.in]: ownedIds } };
 
     if (status) where.status = status;
 
@@ -213,6 +237,7 @@ const listRestaurantOrders = async (restaurantId, filters = {}) => {
 
     return { count, rows };
   } catch (error) {
+    if (error.code) throw error;
     throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
   }
 };
@@ -241,13 +266,9 @@ const listAdminOrders = async (filters = {}) => {
 };
 
 // 6. Confirm order
-const confirmOrder = async (orderId, restaurantId, userId) => {
+const confirmOrder = async (orderId, userId) => {
   try {
-    const order = await Order.findByPk(orderId);
-    if (!order) throwError('NOT_FOUND', 'Order not found', 404);
-    if (order.restaurantId !== restaurantId) {
-      throwError('FORBIDDEN', 'You do not own this order', 403);
-    }
+    const order = await findOwnedOrder(orderId, userId);
 
     if (order.status !== 'pending') {
       throwError(
@@ -273,13 +294,9 @@ const confirmOrder = async (orderId, restaurantId, userId) => {
 };
 
 // 7. Mark preparing
-const markPreparing = async (orderId, restaurantId, userId) => {
+const markPreparing = async (orderId, userId) => {
   try {
-    const order = await Order.findByPk(orderId);
-    if (!order) throwError('NOT_FOUND', 'Order not found', 404);
-    if (order.restaurantId !== restaurantId) {
-      throwError('FORBIDDEN', 'You do not own this order', 403);
-    }
+    const order = await findOwnedOrder(orderId, userId);
 
     if (order.status !== 'confirmed') {
       throwError(
@@ -301,13 +318,9 @@ const markPreparing = async (orderId, restaurantId, userId) => {
 };
 
 // 8. Mark ready
-const markReady = async (orderId, restaurantId, userId) => {
+const markReady = async (orderId, userId) => {
   try {
-    const order = await Order.findByPk(orderId);
-    if (!order) throwError('NOT_FOUND', 'Order not found', 404);
-    if (order.restaurantId !== restaurantId) {
-      throwError('FORBIDDEN', 'You do not own this order', 403);
-    }
+    const order = await findOwnedOrder(orderId, userId);
 
     if (order.status !== 'preparing') {
       throwError('INVALID_STATUS', `Cannot mark ready from status: ${order.status}`, 400);
@@ -326,13 +339,9 @@ const markReady = async (orderId, restaurantId, userId) => {
 };
 
 // 9. Mark delivered
-const markDelivered = async (orderId, restaurantId, userId) => {
+const markDelivered = async (orderId, userId) => {
   try {
-    const order = await Order.findByPk(orderId);
-    if (!order) throwError('NOT_FOUND', 'Order not found', 404);
-    if (order.restaurantId !== restaurantId) {
-      throwError('FORBIDDEN', 'You do not own this order', 403);
-    }
+    const order = await findOwnedOrder(orderId, userId);
 
     if (order.status !== 'out_for_delivery') {
       throwError(
@@ -394,8 +403,7 @@ const cancelOrder = async (orderId, userId, role, reason = '') => {
         throwError('INVALID_STATUS', `Cannot cancel order with status: ${order.status}`, 400);
       }
     } else if (role === 'restaurant_admin') {
-      // Restaurant can cancel if admin cancelled
-      if (order.restaurantId !== userId) {
+      if (!(await ownsOrderRestaurant(order, userId))) {
         throwError('FORBIDDEN', 'You do not own this order', 403);
       }
     } else if (role !== 'system_admin') {

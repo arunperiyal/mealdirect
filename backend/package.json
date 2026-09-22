@@ -12,7 +12,8 @@
     "lint": "eslint src/",
     "migrate": "node migrations/run.js",
     "seed": "node seeds/run.js",
-    "create-admin": "node scripts/create-admin.js"
+    "create-admin": "node scripts/create-admin.js",
+    "reset-password": "node scripts/reset-password.js"
   },
   "keywords": [
     "delivery",

@@ -9,6 +9,9 @@ const sequelize = new Sequelize(
     host: config.database.host,
     port: config.database.port,
     dialect: config.database.dialect,
+    // SQLite file (or ':memory:'). Without this, SQLite falls back to using
+    // the host setting as a file name.
+    storage: config.database.storage,
     logging: config.database.logging,
     define: config.database.define,
     pool: {

@@ -211,6 +211,12 @@ All endpoints return standardized JSON responses:
   read -s ADMIN_PASSWORD && export ADMIN_PASSWORD   # at least 12 characters
   npm run create-admin -- --email admin@example.com --first-name Asha --last-name Rao
   ```
+- There's no self-service password reset yet. To set a new password for any account:
+
+  ```bash
+  read -s NEW_PASSWORD && export NEW_PASSWORD   # at least 8 characters (12 for admins)
+  npm run reset-password -- --email someone@example.com
+  ```
 
 ## Development Workflow
 

@@ -79,6 +79,24 @@ describe('Restaurant admin API', () => {
   const advance = (orderId, action, headers = ownerHeaders) =>
     request(app).post(`/api/orders/${orderId}/${action}`).set(headers);
 
+  describe('GET /api/restaurants/my-restaurants', () => {
+    test("returns only the owner's restaurants, including private fields", async () => {
+      const own = await request(app).get('/api/restaurants/my-restaurants').set(ownerHeaders);
+      expect(own.status).toBe(200);
+      expect(own.body.data.map((r) => r.id)).toEqual([restaurant.id]);
+      expect(own.body.data[0]).toHaveProperty('bankAccountNumber');
+
+      const other = await request(app).get('/api/restaurants/my-restaurants').set(otherOwnerHeaders);
+      expect(other.status).toBe(200);
+      expect(other.body.data).toEqual([]);
+    });
+
+    test('a restaurant id that is not a UUID is a 404, not a database error', async () => {
+      const response = await request(app).get('/api/restaurants/not-a-uuid');
+      expect(response.status).toBe(404);
+    });
+  });
+
   describe('delivery slots', () => {
     test('owner can create a slot without repeating the restaurant id', async () => {
       const response = await addSlot(ownerHeaders);

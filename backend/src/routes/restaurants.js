@@ -1,5 +1,6 @@
 const express = require('express');
 const { body, query, validationResult } = require('express-validator');
+const { isUUID } = require('validator');
 const router = express.Router();
 const restaurantController = require('../controllers/restaurantController');
 const { verifyToken, authorize } = require('../middleware/auth');
@@ -53,11 +54,62 @@ router.post(
 );
 
 /**
+ * GET /api/my-restaurants
+ * Get restaurants owned by current user (restaurant_admin)
+ * Declared before GET /:id, which would otherwise capture this path.
+ */
+router.get(
+  '/my-restaurants',
+  verifyToken,
+  authorize(['restaurant_admin']),
+  [
+    query('limit').optional().isInt({ min: 1, max: 100 }),
+    query('offset').optional().isInt({ min: 0 }),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          code: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          errors: errors.array(),
+        });
+      }
+
+      const result = await restaurantController.getRestaurantsByOwner(
+        req.user.id,
+        req.query.limit || 20,
+        req.query.offset || 0
+      );
+
+      res.json({
+        success: true,
+        data: result.rows,
+        meta: { total: result.count },
+      });
+    } catch (error) {
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
+        success: false,
+        code: error.code || 'INTERNAL_ERROR',
+        message: error.message || 'An error occurred',
+      });
+    }
+  }
+);
+
+/**
  * GET /api/restaurants/:id
  * Get restaurant by ID (public)
  */
 router.get('/:id', async (req, res) => {
   try {
+    // Postgres rejects non-UUID ids with a query error; treat them as not found
+    if (!isUUID(req.params.id)) {
+      return res.status(404).json({ success: false, code: 'NOT_FOUND', message: 'Restaurant not found' });
+    }
     const restaurant = await restaurantController.getRestaurant(req.params.id);
 
     res.json({
@@ -113,52 +165,6 @@ router.get(
         success: true,
         data: result.rows,
         meta: { total: result.count, limit: filters.limit, offset: filters.offset },
-      });
-    } catch (error) {
-      const statusCode = error.statusCode || 500;
-      res.status(statusCode).json({
-        success: false,
-        code: error.code || 'INTERNAL_ERROR',
-        message: error.message || 'An error occurred',
-      });
-    }
-  }
-);
-
-/**
- * GET /api/my-restaurants
- * Get restaurants owned by current user (restaurant_admin)
- */
-router.get(
-  '/my-restaurants',
-  verifyToken,
-  authorize(['restaurant_admin']),
-  [
-    query('limit').optional().isInt({ min: 1, max: 100 }),
-    query('offset').optional().isInt({ min: 0 }),
-  ],
-  async (req, res) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          code: 'VALIDATION_ERROR',
-          message: 'Validation failed',
-          errors: errors.array(),
-        });
-      }
-
-      const result = await restaurantController.getRestaurantsByOwner(
-        req.user.id,
-        req.query.limit || 20,
-        req.query.offset || 0
-      );
-
-      res.json({
-        success: true,
-        data: result.rows,
-        meta: { total: result.count },
       });
     } catch (error) {
       const statusCode = error.statusCode || 500;

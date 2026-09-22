@@ -45,11 +45,13 @@ module.exports = {
     frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000'
   },
 
-  // Payment (optional for Phase 1)
+  // Payment
   payment: {
-    stripe: {
-      secretKey: process.env.STRIPE_SECRET || '',
-      publicKey: process.env.STRIPE_PUBLIC || ''
+    razorpay: {
+      keyId: process.env.RAZORPAY_KEY_ID || '',
+      keySecret: process.env.RAZORPAY_KEY_SECRET || '',
+      webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
+      currency: 'INR'
     }
   },
 

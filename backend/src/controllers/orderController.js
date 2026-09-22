@@ -256,6 +256,9 @@ const confirmOrder = async (orderId, restaurantId, userId) => {
         400
       );
     }
+    if (order.paymentMethod !== 'cod' && order.paymentStatus !== 'completed') {
+      throwError('PAYMENT_PENDING', 'Order has not been paid yet', 409);
+    }
 
     order.status = 'confirmed';
     order.confirmedAt = new Date();

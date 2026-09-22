@@ -78,11 +78,11 @@ const Order = sequelize.define(
     paymentMethod: {
       type: sequelize.options.dialect === 'sqlite'
         ? DataTypes.STRING
-        : DataTypes.ENUM('credit_card', 'cod'),
+        : DataTypes.ENUM('credit_card', 'online', 'cod'),
       defaultValue: 'cod',
       validate: {
         isIn: {
-          args: [['credit_card', 'cod']],
+          args: [['credit_card', 'online', 'cod']],
           msg: 'Invalid payment method',
         },
       },

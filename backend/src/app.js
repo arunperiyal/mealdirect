@@ -15,7 +15,13 @@ app.use(helmet());
 app.use(cors(config.cors));
 
 // Body parsing
-app.use(express.json({ limit: '20mb' }));
+// Keep the raw body for the Razorpay webhook, whose signature covers the exact bytes sent
+app.use(express.json({
+  limit: '20mb',
+  verify: (req, res, buf) => {
+    if (req.originalUrl.startsWith('/api/payments/webhook')) req.rawBody = buf;
+  },
+}));
 app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
 // Request logging middleware (simplified)
@@ -38,6 +44,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/restaurants', require('./routes/restaurants'));
 app.use('/api/menus', require('./routes/menus'));
 app.use('/api/orders', require('./routes/orders'));
+app.use('/api/payments', require('./routes/payments'));
 
 // Test endpoints (only in development and test)
 if (config.env === 'development' || config.env === 'test') {

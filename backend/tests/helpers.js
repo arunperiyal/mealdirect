@@ -508,6 +508,7 @@ async function listOrders(app, headers, filters = {}) {
  */
 async function cleanupAllData(models) {
   // Delete in reverse dependency order
+  await models.Payment?.destroy({ where: {}, force: true });
   await models.Order?.destroy({ where: {}, force: true });
   await models.DeliverySlot?.destroy({ where: {}, force: true });
   await models.Menu?.destroy({ where: {}, force: true });

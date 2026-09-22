@@ -19,7 +19,7 @@ router.post(
     body('deliveryType').isIn(['delivery', 'pickup']),
     body('deliverySlotId').optional().isUUID(),
     body('deliveryAddress').optional().trim(),
-    body('paymentMethod').isIn(['credit_card', 'cod']),
+    body('paymentMethod').isIn(['credit_card', 'online', 'cod']),
     body('customerNotes').optional().trim(),
   ],
   async (req, res) => {

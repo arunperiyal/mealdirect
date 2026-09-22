@@ -340,6 +340,33 @@ const markReady = async (orderId, userId) => {
   }
 };
 
+// 8b. Mark out for delivery (delivery orders only)
+const markOutForDelivery = async (orderId, userId) => {
+  try {
+    const order = await findOwnedOrder(orderId, userId);
+
+    if (order.deliveryType !== 'delivery') {
+      throwError('INVALID_DELIVERY_TYPE', 'Pickup orders are not sent out for delivery', 400);
+    }
+    if (order.status !== 'ready') {
+      throwError(
+        'INVALID_STATUS',
+        `Cannot mark out for delivery from status: ${order.status}`,
+        400
+      );
+    }
+
+    order.status = 'out_for_delivery';
+    addStatusHistory(order, 'out_for_delivery', userId);
+
+    await order.save();
+    return order;
+  } catch (error) {
+    if (error.code) throw error;
+    throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
+  }
+};
+
 // 9. Mark delivered
 const markDelivered = async (orderId, userId) => {
   try {
@@ -474,6 +501,7 @@ module.exports = {
   confirmOrder,
   markPreparing,
   markReady,
+  markOutForDelivery,
   markDelivered,
   markPickedUp,
   cancelOrder,

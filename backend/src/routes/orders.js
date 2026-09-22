@@ -345,6 +345,44 @@ router.post(
 );
 
 /**
+ * POST /api/orders/:id/mark-out-for-delivery
+ * Mark a ready delivery order as out for delivery (restaurant only)
+ */
+router.post(
+  '/:id/mark-out-for-delivery',
+  verifyToken,
+  authorize(['restaurant_admin']),
+  [param('id').isUUID()],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          code: 'VALIDATION_ERROR',
+          errors: errors.array(),
+        });
+      }
+
+      const order = await orderController.markOutForDelivery(req.params.id, req.user.id);
+
+      res.json({
+        success: true,
+        message: 'Order marked as out for delivery',
+        data: order,
+      });
+    } catch (error) {
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
+        success: false,
+        code: error.code || 'INTERNAL_ERROR',
+        message: error.message,
+      });
+    }
+  }
+);
+
+/**
  * POST /api/orders/:id/mark-delivered
  * Mark order as delivered (restaurant/delivery person)
  */

@@ -1,15 +1,35 @@
-const { DeliverySlot, Menu } = require('../models');
+const { DeliverySlot, Menu, Restaurant } = require('../models');
 
 const throwError = (code, message, statusCode = 400) => {
   throw { code, message, statusCode };
 };
 
-// 1. Create delivery slot for menu
-const createDeliverySlot = async (menuId, restaurantId, data) => {
+// Helper: the menu must belong to a restaurant this user owns
+const verifyMenuOwnership = async (menuId, userId) => {
+  const menu = await Menu.findByPk(menuId);
+  if (!menu) throwError('NOT_FOUND', 'Menu not found', 404);
+  const restaurant = await Restaurant.findByPk(menu.restaurantId, { attributes: ['ownerId'] });
+  if (!restaurant || restaurant.ownerId !== userId) {
+    throwError('FORBIDDEN', 'You do not own this menu', 403);
+  }
+  return menu;
+};
+
+// Helper: load a slot whose menu this user owns
+const findOwnedSlot = async (slotId, userId) => {
+  const slot = await DeliverySlot.findByPk(slotId);
+  if (!slot) throwError('NOT_FOUND', 'Delivery slot not found', 404);
+  await verifyMenuOwnership(slot.menuId, userId);
+  return slot;
+};
+
+// 1. Create delivery slot for menu. restaurantId is optional and, if sent,
+// must match the menu's restaurant.
+const createDeliverySlot = async (menuId, userId, data) => {
   try {
-    const menu = await Menu.findByPk(menuId);
-    if (!menu) throwError('NOT_FOUND', 'Menu not found', 404);
-    if (menu.restaurantId !== restaurantId) {
+    const menu = await verifyMenuOwnership(menuId, userId);
+    const restaurantId = menu.restaurantId;
+    if (data.restaurantId && data.restaurantId !== restaurantId) {
       throwError('FORBIDDEN', 'Menu does not belong to this restaurant', 403);
     }
 
@@ -53,16 +73,25 @@ const getDeliverySlots = async (menuId) => {
 };
 
 // 3. Update delivery slot
-const updateDeliverySlot = async (slotId, data) => {
+const updateDeliverySlot = async (slotId, userId, data) => {
   try {
-    const slot = await DeliverySlot.findByPk(slotId);
-    if (!slot) throwError('NOT_FOUND', 'Delivery slot not found', 404);
+    const slot = await findOwnedSlot(slotId, userId);
 
     const { startTime, endTime, maxOrders } = data;
 
     if (startTime) slot.startTime = startTime;
     if (endTime) slot.endTime = endTime;
-    if (maxOrders) slot.maxOrders = parseInt(maxOrders);
+    if (maxOrders) {
+      const newMax = parseInt(maxOrders);
+      if (newMax < slot.currentOrders) {
+        throwError(
+          'VALIDATION_ERROR',
+          `Cannot reduce capacity below current orders (${slot.currentOrders})`,
+          400
+        );
+      }
+      slot.maxOrders = newMax;
+    }
 
     await slot.save();
     return slot;
@@ -73,10 +102,9 @@ const updateDeliverySlot = async (slotId, data) => {
 };
 
 // 4. Delete delivery slot
-const deleteDeliverySlot = async (slotId) => {
+const deleteDeliverySlot = async (slotId, userId) => {
   try {
-    const slot = await DeliverySlot.findByPk(slotId);
-    if (!slot) throwError('NOT_FOUND', 'Delivery slot not found', 404);
+    const slot = await findOwnedSlot(slotId, userId);
 
     if (slot.currentOrders > 0) {
       throwError('CONFLICT', 'Cannot delete slot with active orders', 409);
@@ -116,42 +144,6 @@ const updateSlotCapacity = async (slotId, maxOrders) => {
     return slot;
   } catch (error) {
     if (error.code) throw error;
-    throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
-  }
-};
-
-// 6. Get available slots for customer
-const getAvailableSlots = async (restaurantId, date) => {
-  try {
-    const { Op } = require('sequelize');
-
-    const slots = await DeliverySlot.findAll({
-      include: [
-        {
-          model: Menu,
-          as: 'menu',
-          where: {
-            restaurantId,
-            date,
-            status: 'published',
-          },
-          attributes: ['id', 'date'],
-        },
-      ],
-      where: {
-        [Op.and]: [
-          {
-            currentOrders: {
-              [Op.lt]: sequelize.literal('`DeliverySlot`.`maxOrders`'),
-            },
-          },
-        ],
-      },
-      order: [['startTime', 'ASC']],
-    });
-
-    return slots;
-  } catch (error) {
     throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
   }
 };
@@ -200,7 +192,6 @@ module.exports = {
   updateDeliverySlot,
   deleteDeliverySlot,
   updateSlotCapacity,
-  getAvailableSlots,
   reserveSlot,
   releaseSlot,
 };

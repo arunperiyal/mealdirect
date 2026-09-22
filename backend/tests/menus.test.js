@@ -82,8 +82,7 @@ describe('Menu Management API', () => {
         .set(restaurantAdminHeaders)
         .send({
           restaurantId: unapprovedRest.id,
-          name: 'Menu',
-          items: [{ name: 'Item', price: 100 }],
+          date: new Date().toISOString().split('T')[0],
         });
 
       expect(response.status).toBe(403);
@@ -156,11 +155,11 @@ describe('Menu Management API', () => {
         .put(`/api/menus/${menu.id}`)
         .set(restaurantAdminHeaders)
         .send({
-          description: 'Updated menu',
+          orderingEndTime: '21:30',
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.description).toBe('Updated menu');
+      expect(response.body.data.orderingEndTime).toMatch(/^21:30/);
     });
 
     test('should prevent non-owner from updating', async () => {
@@ -281,7 +280,7 @@ describe('Menu Management API', () => {
         .set(restaurantAdminHeaders)
         .send({ items });
 
-      expect(response.status).toBe(201);
+      expect(response.status).toBe(200);
       expect(response.body.data.items.length).toBeGreaterThanOrEqual(2);
     });
 

@@ -65,6 +65,7 @@ describe('Role-Based Access Control (RBAC)', () => {
         .set(restaurantHeaders)
         .send({
           name: 'Test Restaurant',
+          email: 'rbac-kitchen@test.com',
           description: 'Test',
           address: 'Test address',
           city: 'Test city',
@@ -108,7 +109,7 @@ describe('Role-Based Access Control (RBAC)', () => {
 
       // Customer cannot approve
       const custRes = await request(app)
-        .put(`/api/restaurants/${rest.id}/approve`)
+        .put(`/api/restaurants/admin/${rest.id}/approve`)
         .set(customerHeaders)
         .send({ isApproved: true });
 
@@ -116,7 +117,7 @@ describe('Role-Based Access Control (RBAC)', () => {
 
       // Admin can approve
       const adminRes = await request(app)
-        .put(`/api/restaurants/${rest.id}/approve`)
+        .put(`/api/restaurants/admin/${rest.id}/approve`)
         .set(adminHeaders)
         .send({ isApproved: true });
 

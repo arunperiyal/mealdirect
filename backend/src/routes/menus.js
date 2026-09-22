@@ -16,8 +16,8 @@ router.post(
   [
     body('restaurantId').isUUID().withMessage('Valid restaurant ID required'),
     body('date').isISO8601().toDate(),
-    body('orderingStartTime').optional().isTime({ hourFormat: 'HH:mm' }),
-    body('orderingEndTime').optional().isTime({ hourFormat: 'HH:mm' }),
+    body('orderingStartTime').optional().isTime({ hourFormat: 'hour24' }),
+    body('orderingEndTime').optional().isTime({ hourFormat: 'hour24' }),
   ],
   async (req, res) => {
     try {
@@ -146,8 +146,8 @@ router.put(
   [
     param('id').isUUID(),
     body('date').optional().isISO8601(),
-    body('orderingStartTime').optional().isTime({ hourFormat: 'HH:mm' }),
-    body('orderingEndTime').optional().isTime({ hourFormat: 'HH:mm' }),
+    body('orderingStartTime').optional().isTime({ hourFormat: 'hour24' }),
+    body('orderingEndTime').optional().isTime({ hourFormat: 'hour24' }),
   ],
   async (req, res) => {
     try {
@@ -361,7 +361,7 @@ router.post(
   authorize(['restaurant_admin']),
   [
     param('id').isUUID(),
-    body('restaurantId').notEmpty().isUUID(),
+    body('restaurantId').optional().isUUID(),
     body('startTime')
       .notEmpty().withMessage('Start time is required')
       .matches(/^\d{2}:\d{2}$/).withMessage('Start time must be in HH:mm format'),
@@ -383,7 +383,7 @@ router.post(
 
       const slot = await deliverySlotController.createDeliverySlot(
         req.params.id,
-        req.body.restaurantId,
+        req.user.id,
         req.body
       );
 
@@ -448,8 +448,8 @@ router.put(
   authorize(['restaurant_admin']),
   [
     param('id').isUUID(),
-    body('startTime').optional().isTime({ hourFormat: 'HH:mm' }),
-    body('endTime').optional().isTime({ hourFormat: 'HH:mm' }),
+    body('startTime').optional().isTime({ hourFormat: 'hour24' }),
+    body('endTime').optional().isTime({ hourFormat: 'hour24' }),
     body('maxOrders').optional().isInt({ min: 1 }),
   ],
   async (req, res) => {
@@ -465,6 +465,7 @@ router.put(
 
       const slot = await deliverySlotController.updateDeliverySlot(
         req.params.id,
+        req.user.id,
         req.body
       );
 
@@ -504,7 +505,7 @@ router.delete(
         });
       }
 
-      const result = await deliverySlotController.deleteDeliverySlot(req.params.id);
+      const result = await deliverySlotController.deleteDeliverySlot(req.params.id, req.user.id);
 
       res.json({
         success: true,

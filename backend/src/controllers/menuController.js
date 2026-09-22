@@ -27,7 +27,10 @@ const verifyMenuOwnership = async (menuId, userId) => {
 // 1. Create menu (draft)
 const createMenu = async (restaurantId, userId, data) => {
   try {
-    await verifyRestaurantOwnership(restaurantId, userId);
+    const restaurant = await verifyRestaurantOwnership(restaurantId, userId);
+    if (!restaurant.isApproved) {
+      throwError('RESTAURANT_NOT_APPROVED', 'Restaurant is not approved yet', 403);
+    }
 
     const { date, orderingStartTime, orderingEndTime } = data;
 
@@ -165,13 +168,11 @@ const getMenusByRestaurant = async (restaurantId, startDate, endDate, limit = 50
   try {
     const { Op } = require('sequelize');
 
+    const where = { date: { [Op.between]: [startDate, endDate] } };
+    if (restaurantId) where.restaurantId = restaurantId;
+
     const { count, rows } = await Menu.findAndCountAll({
-      where: {
-        restaurantId,
-        date: {
-          [Op.between]: [startDate, endDate],
-        },
-      },
+      where,
       limit: Math.min(limit, 100),
       offset,
       include: [

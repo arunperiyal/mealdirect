@@ -163,6 +163,16 @@ describe('Restaurant Management API', () => {
 
     beforeEach(async () => {
       restaurant = await createRestaurant(app, restaurantAdmin.id, restaurantAdminHeaders);
+      // Only approved restaurants are public
+      restaurant = await approveRestaurant(app, restaurant.id, adminHeaders);
+    });
+
+    test('should hide restaurants that are not approved', async () => {
+      const unapproved = await createRestaurant(app, restaurantAdmin.id, restaurantAdminHeaders, {
+        email: `hidden${Date.now()}@test.com`,
+      });
+      const response = await request(app).get(`/api/restaurants/${unapproved.id}`);
+      expect(response.status).toBe(404);
     });
 
     test('should retrieve restaurant successfully', async () => {
@@ -199,16 +209,19 @@ describe('Restaurant Management API', () => {
   describe('GET /api/restaurants - List Restaurants', () => {
     test('should list all restaurants', async () => {
       // Create 2 restaurants
-      await createRestaurant(app, restaurantAdmin.id, restaurantAdminHeaders, {
+      const first = await createRestaurant(app, restaurantAdmin.id, restaurantAdminHeaders, {
         name: 'Restaurant 1',
         email: `rest1${Date.now()}@test.com`,
       });
 
       const result = await registerAndLogin(app, `rest2owner${Date.now()}@test.com`, 'restaurant_admin');
-      await createRestaurant(app, result.user.id, getAuthHeaders(result.tokens), {
+      const second = await createRestaurant(app, result.user.id, getAuthHeaders(result.tokens), {
         name: 'Restaurant 2',
         email: `rest2${Date.now()}@test.com`,
       });
+      // The public list only shows approved restaurants
+      await approveRestaurant(app, first.id, adminHeaders);
+      await approveRestaurant(app, second.id, adminHeaders);
 
       const response = await request(app).get('/api/restaurants').set(customerHeaders);
 

@@ -45,6 +45,7 @@ app.use('/api/restaurants', require('./routes/restaurants'));
 app.use('/api/menus', require('./routes/menus'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/payments', require('./routes/payments'));
+app.use('/api/admin', require('./routes/admin'));
 
 // Test endpoints (only in development and test)
 if (config.env === 'development' || config.env === 'test') {

@@ -268,6 +268,8 @@ const listAdminOrders = async (filters = {}) => {
       limit: Math.min(limit, 100),
       offset,
       order: [['createdAt', 'DESC']],
+      include: [...ORDER_DETAILS, { model: Restaurant, as: 'restaurant', attributes: ['id', 'name'] }],
+      distinct: true,
     });
 
     return { count, rows };

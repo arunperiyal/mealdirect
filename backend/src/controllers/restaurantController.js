@@ -1,4 +1,5 @@
-const { Restaurant, User } = require('../models');
+const { Op, fn, col, where } = require('sequelize');
+const { Restaurant } = require('../models');
 
 // Helper: throw standardized errors
 const throwError = (code, message, statusCode = 400) => {
@@ -48,13 +49,10 @@ const createRestaurant = async (userId, data) => {
 // 2. Get restaurant by ID (public view - no sensitive data)
 const getRestaurant = async (restaurantId) => {
   try {
-    const restaurant = await Restaurant.findByPk(restaurantId, {
-      attributes: {
-        exclude: ['bankAccountNumber', 'bankIFSC', 'upiId', 'verificationNotes'],
-      },
-      include: [
-        { model: User, as: 'owner', attributes: ['id', 'email', 'firstName', 'lastName'] },
-      ],
+    // Public: restaurants under review or rejected aren't visible
+    const restaurant = await Restaurant.findOne({
+      where: { id: restaurantId, isApproved: true },
+      attributes: { exclude: PRIVATE_FIELDS },
     });
 
     if (!restaurant) throwError('NOT_FOUND', 'Restaurant not found', 404);
@@ -90,27 +88,42 @@ const updateRestaurant = async (restaurantId, userId, data) => {
 };
 
 // 4. List restaurants with filters
+// Fields only the owner and system admins may see
+const PRIVATE_FIELDS = [
+  'bankAccountName',
+  'bankAccountNumber',
+  'bankIFSC',
+  'upiId',
+  'verificationNotes',
+  'approvedBy',
+  'ownerId',
+];
+
+// Case-insensitive match on name or description that works on Postgres and SQLite
+const searchWhere = (search) => {
+  const term = `%${String(search).toLowerCase()}%`;
+  return {
+    [Op.or]: ['name', 'description'].map((field) =>
+      where(fn('lower', col(field)), { [Op.like]: term })
+    ),
+  };
+};
+
+// 4. List restaurants (public: approved only)
 const listRestaurants = async (filters = {}) => {
   try {
-    const { city, isApproved, search, limit = 20, offset = 0 } = filters;
-    const where = {};
+    const { city, search, limit = 20, offset = 0 } = filters;
+    const conditions = { isApproved: true };
 
-    if (city) where.city = city;
-    if (isApproved !== undefined) where.isApproved = isApproved;
-    if (search) {
-      const { Op } = require('sequelize');
-      where[Op.or] = [
-        { name: { [Op.iLike]: `%${search}%` } },
-        { description: { [Op.iLike]: `%${search}%` } },
-      ];
-    }
+    if (city) conditions.city = city;
+    if (search) Object.assign(conditions, searchWhere(search));
 
     const { count, rows } = await Restaurant.findAndCountAll({
-      where,
+      where: conditions,
       limit: Math.min(limit, 100),
       offset,
       attributes: {
-        exclude: ['bankAccountNumber', 'bankIFSC', 'upiId'],
+        exclude: PRIVATE_FIELDS,
       },
       order: [['createdAt', 'DESC']],
     });
@@ -246,6 +259,7 @@ const updateBankDetails = async (restaurantId, userId, details) => {
 };
 
 module.exports = {
+  searchWhere,
   createRestaurant,
   getRestaurant,
   updateRestaurant,

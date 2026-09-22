@@ -161,6 +161,47 @@ describe('Restaurant admin API', () => {
     });
   });
 
+  describe('menu items', () => {
+    test('marking an item sold out is saved', async () => {
+      const itemId = menu.items[0].id;
+
+      const response = await request(app)
+        .put(`/api/menus/${menu.id}/items/${itemId}`)
+        .set(ownerHeaders)
+        .send({ available: false, price: 175 });
+      expect(response.status).toBe(200);
+
+      const saved = await models.Menu.findByPk(menu.id);
+      const item = saved.items.find((i) => i.id === itemId);
+      expect(item.available).toBe(false);
+      expect(item.price).toBe(175);
+
+      // Put it back for the other tests
+      await request(app)
+        .put(`/api/menus/${menu.id}/items/${itemId}`)
+        .set(ownerHeaders)
+        .send({ available: true });
+    });
+
+    test('owner can remove an item; another restaurant admin cannot', async () => {
+      const added = await request(app)
+        .post(`/api/menus/${menu.id}/items`)
+        .set(ownerHeaders)
+        .send({ items: [{ name: 'Temporary special', price: 90 }] });
+      const itemId = added.body.data.items.find((i) => i.name === 'Temporary special').id;
+
+      const other = await request(app)
+        .delete(`/api/menus/${menu.id}/items/${itemId}`)
+        .set(otherOwnerHeaders);
+      expect(other.status).toBe(403);
+
+      const own = await request(app).delete(`/api/menus/${menu.id}/items/${itemId}`).set(ownerHeaders);
+      expect(own.status).toBe(200);
+      expect(own.body.data.items.map((i) => i.id)).not.toContain(itemId);
+      expect((await models.Menu.findByPk(menu.id)).items.map((i) => i.id)).not.toContain(itemId);
+    });
+  });
+
   describe('GET /api/menus', () => {
     test('works without a restaurant filter', async () => {
       const response = await request(app).get('/api/menus');

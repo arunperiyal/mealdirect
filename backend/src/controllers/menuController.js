@@ -229,14 +229,16 @@ const updateMenuItem = async (menuId, userId, itemId, data) => {
       throwError('NOT_FOUND', 'Menu item not found', 404);
     }
 
-    const item = menu.items[itemIndex];
+    const item = { ...menu.items[itemIndex] };
     if (data.name) item.name = data.name;
     if (data.description) item.description = data.description;
     if (data.price) item.price = parseFloat(data.price);
     if (data.imageUrl) item.imageUrl = data.imageUrl;
     if (data.available !== undefined) item.available = data.available;
 
-    menu.items[itemIndex] = item;
+    // Assign a new array: Sequelize doesn't detect in-place changes to JSON
+    // columns, so editing the existing array was silently never saved
+    menu.items = menu.items.map((existing, i) => (i === itemIndex ? item : existing));
     await menu.save();
 
     return menu;

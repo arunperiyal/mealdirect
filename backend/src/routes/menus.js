@@ -349,6 +349,44 @@ router.put(
   }
 );
 
+/**
+ * DELETE /api/menus/:id/items/:itemId
+ * Remove an item from a menu (owner only)
+ */
+router.delete(
+  '/:id/items/:itemId',
+  verifyToken,
+  authorize(['restaurant_admin']),
+  [param('id').isUUID(), param('itemId').notEmpty()],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          code: 'VALIDATION_ERROR',
+          errors: errors.array(),
+        });
+      }
+
+      const menu = await menuController.removeMenuItem(req.params.id, req.user.id, req.params.itemId);
+
+      res.json({
+        success: true,
+        message: 'Menu item removed successfully',
+        data: menu,
+      });
+    } catch (error) {
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
+        success: false,
+        code: error.code || 'INTERNAL_ERROR',
+        message: error.message,
+      });
+    }
+  }
+);
+
 // ===== Delivery Slots =====
 
 /**

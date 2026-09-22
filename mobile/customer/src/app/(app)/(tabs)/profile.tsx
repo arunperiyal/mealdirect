@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import {
+  Button,
+  Card,
+  colors,
+  font,
+  spacing,
+} from '@mealdirect/shared';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { logout } from '@/store/authSlice';
-import { colors, font, spacing } from '@/theme';
 
 export default function ProfileScreen() {
   const dispatch = useAppDispatch();

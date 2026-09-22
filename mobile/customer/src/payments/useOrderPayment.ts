@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
-import type { PaymentOrder, RazorpaySuccess } from '@/api/types';
-import { errorMessage } from '@/lib/errors';
+import { errorMessage, type PaymentOrder, type RazorpaySuccess } from '@mealdirect/shared';
 import { useCreatePaymentOrderMutation, useVerifyPaymentMutation } from '@/store/serverApi';
 
 export type PaymentPhase = 'idle' | 'starting' | 'checkout' | 'verifying' | 'paid';

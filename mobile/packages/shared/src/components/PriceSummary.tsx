@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { formatINR } from '@/lib/money';
-import { colors, spacing } from '@/theme';
+import { formatINR } from '../lib/money';
+import { colors, spacing } from '../theme';
 
 interface Props {
   subtotal: number | string;

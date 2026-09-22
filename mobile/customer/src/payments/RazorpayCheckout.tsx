@@ -3,8 +3,7 @@ import { Linking, Modal, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
-import type { PaymentOrder, RazorpaySuccess } from '@/api/types';
-import { BRAND_COLOR } from '@/config';
+import { colors, type PaymentOrder, type RazorpaySuccess } from '@mealdirect/shared';
 import { buildCheckoutHtml, parseCheckoutMessage } from './checkoutHtml';
 
 interface Props {
@@ -40,7 +39,7 @@ export function RazorpayCheckout({
   const html = useMemo(
     () =>
       paymentOrder
-        ? buildCheckoutHtml({ paymentOrder, description, prefill, themeColor: BRAND_COLOR })
+        ? buildCheckoutHtml({ paymentOrder, description, prefill, themeColor: colors.brand })
         : '',
     [paymentOrder, description, prefill]
   );

@@ -1,15 +1,20 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Link } from 'expo-router';
-import { AuthScreen } from '@/components/AuthScreen';
-import { Button } from '@/components/Button';
-import { Banner } from '@/components/States';
-import { TextField } from '@/components/TextField';
-import { errorMessage } from '@/lib/errors';
-import { validateEmail, validatePassword, validateRequired } from '@/lib/validation';
+import {
+  AuthScreen,
+  Banner,
+  Button,
+  colors,
+  errorMessage,
+  spacing,
+  TextField,
+  validateEmail,
+  validatePassword,
+  validateRequired,
+} from '@mealdirect/shared';
 import { useAppDispatch } from '@/store';
 import { register } from '@/store/authSlice';
-import { colors, spacing } from '@/theme';
 
 type Field = 'firstName' | 'lastName' | 'email' | 'password';
 

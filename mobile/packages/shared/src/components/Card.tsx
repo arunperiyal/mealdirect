@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { colors, font, radius, spacing } from '@/theme';
+import { colors, font, radius, spacing } from '../theme';
 
 export function Card({ title, children, style }: { title?: string; children: ReactNode; style?: ViewStyle }) {
   return (

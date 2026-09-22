@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { colors } from '@/theme';
+import { colors } from '@mealdirect/shared';
 
 export default function TabsLayout() {
   return (

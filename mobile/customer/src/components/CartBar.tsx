@@ -1,10 +1,14 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { formatINR } from '@/lib/money';
+import {
+  colors,
+  formatINR,
+  radius,
+  spacing,
+} from '@mealdirect/shared';
 import { useAppSelector } from '@/store';
 import { selectCartCount, selectCartSubtotal } from '@/store/cartSlice';
-import { colors, radius, spacing } from '@/theme';
 
 // Floating "View cart" bar; renders nothing when the cart is empty
 export function CartBar({ bottomInset = true }: { bottomInset?: boolean }) {

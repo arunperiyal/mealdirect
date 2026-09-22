@@ -1,0 +1,13 @@
+{
+  "name": "mealdirect-mobile",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "customer",
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "npm test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  }
+}

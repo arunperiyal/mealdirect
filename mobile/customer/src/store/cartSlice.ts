@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { MenuItem } from '@/api/types';
+import type { MenuItem } from '@mealdirect/shared';
 
 export interface CartLine {
   menuItemId: string;

@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { colors, spacing } from '@/theme';
+import { colors, spacing } from '../theme';
 
 interface Props {
   label: string;

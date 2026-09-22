@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
-import type { Order } from '@/api/types';
-import { formatDateTime } from '@/lib/dates';
-import { STATUS_LABELS, statusSteps } from '@/lib/orderStatus';
-import { colors, spacing } from '@/theme';
+import type { Order } from '../api/types';
+import { formatDateTime } from '../lib/dates';
+import { STATUS_LABELS, statusSteps } from '../lib/orderStatus';
+import { colors, spacing } from '../theme';
 
 export function StatusTimeline({ order }: { order: Order }) {
   if (order.status === 'cancelled') {

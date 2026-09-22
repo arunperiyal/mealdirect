@@ -1,15 +1,25 @@
 import { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { colors, font, spacing } from '@/theme';
+import { colors, font, spacing } from '../theme';
 
-export function AuthScreen({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
+export function AuthScreen({
+  title,
+  subtitle,
+  brand = 'MealDirect',
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  brand?: string;
+  children: ReactNode;
+}) {
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={styles.brand}>MealDirect</Text>
+            <Text style={styles.brand}>{brand}</Text>
             <Text style={font.title}>{title}</Text>
             <Text style={font.caption}>{subtitle}</Text>
           </View>

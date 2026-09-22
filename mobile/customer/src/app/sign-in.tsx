@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { Link } from 'expo-router';
-import { AuthScreen } from '@/components/AuthScreen';
-import { Button } from '@/components/Button';
-import { Banner } from '@/components/States';
-import { TextField } from '@/components/TextField';
-import { errorMessage } from '@/lib/errors';
-import { validateEmail } from '@/lib/validation';
+import {
+  AuthScreen,
+  Banner,
+  Button,
+  colors,
+  errorMessage,
+  spacing,
+  TextField,
+  validateEmail,
+} from '@mealdirect/shared';
 import { useAppDispatch } from '@/store';
 import { login } from '@/store/authSlice';
-import { colors, spacing } from '@/theme';
 
 export default function SignInScreen() {
   const dispatch = useAppDispatch();

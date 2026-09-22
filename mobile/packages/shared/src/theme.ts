@@ -1,7 +1,5 @@
-import { BRAND_COLOR } from './config';
-
 export const colors = {
-  brand: BRAND_COLOR,
+  brand: '#E23744',
   brandSoft: '#FDECEE',
   text: '#1C1C1C',
   textMuted: '#696969',

@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
-import { colors, radius, spacing } from '@/theme';
+import { colors, radius, spacing } from '../theme';
 
 interface Props {
   title: string;

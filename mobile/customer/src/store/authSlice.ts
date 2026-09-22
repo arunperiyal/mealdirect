@@ -1,7 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { authApi, ApiError, toApiError } from '@/api';
-import * as session from '@/api/tokens';
-import type { AuthResult, User } from '@/api/types';
+import { ApiError, session, toApiError, type AuthResult, type User } from '@mealdirect/shared';
+import { authApi } from '@/api';
 import { clearCart } from './cartSlice';
 import { serverApi } from './serverApi';
 

@@ -2,16 +2,27 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import type { DeliverySlot, DeliveryType, PaymentMethod } from '@/api/types';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
-import { Chip } from '@/components/Chip';
-import { PriceSummary } from '@/components/PriceSummary';
-import { Banner, EmptyState, ErrorState, LoadingState } from '@/components/States';
-import { TextField } from '@/components/TextField';
-import { formatTime } from '@/lib/dates';
-import { errorMessage } from '@/lib/errors';
-import { estimateTotals, formatINR } from '@/lib/money';
+import {
+  Banner,
+  Button,
+  Card,
+  Chip,
+  colors,
+  EmptyState,
+  errorMessage,
+  ErrorState,
+  estimateTotals,
+  font,
+  formatINR,
+  formatTime,
+  LoadingState,
+  PriceSummary,
+  spacing,
+  TextField,
+  type DeliverySlot,
+  type DeliveryType,
+  type PaymentMethod,
+} from '@mealdirect/shared';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { clearCart, selectCartSubtotal } from '@/store/cartSlice';
 import {
@@ -19,7 +30,6 @@ import {
   useGetMenuSlotsQuery,
   useGetRestaurantQuery,
 } from '@/store/serverApi';
-import { colors, font, spacing } from '@/theme';
 
 const slotLabel = (slot: DeliverySlot) => `${formatTime(slot.startTime)} – ${formatTime(slot.endTime)}`;
 const isFull = (slot: DeliverySlot) => slot.currentOrders >= slot.maxOrders;

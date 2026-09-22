@@ -1,14 +1,18 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import {
+  Button,
+  Card,
+  colors,
+  EmptyState,
+  font,
+  formatINR,
+  spacing,
+} from '@mealdirect/shared';
 import { QuantityStepper } from '@/components/QuantityStepper';
-import { EmptyState } from '@/components/States';
-import { formatINR } from '@/lib/money';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { addItem, decrementItem, MAX_ITEM_QUANTITY, selectCartSubtotal } from '@/store/cartSlice';
-import { colors, font, spacing } from '@/theme';
 
 export default function CartScreen() {
   const dispatch = useAppDispatch();

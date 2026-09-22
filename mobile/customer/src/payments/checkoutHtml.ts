@@ -1,4 +1,4 @@
-import type { PaymentOrder } from '@/api/types';
+import type { PaymentOrder } from '@mealdirect/shared';
 
 export interface CheckoutOptions {
   paymentOrder: PaymentOrder;

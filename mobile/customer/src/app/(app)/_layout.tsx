@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { colors } from '@/theme';
+import { colors } from '@mealdirect/shared';
 
 export default function AppLayout() {
   return (

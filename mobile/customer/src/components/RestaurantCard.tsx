@@ -1,7 +1,12 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import type { Restaurant } from '@/api/types';
-import { formatINR } from '@/lib/money';
-import { colors, font, radius, spacing } from '@/theme';
+import {
+  colors,
+  font,
+  formatINR,
+  radius,
+  spacing,
+  type Restaurant,
+} from '@mealdirect/shared';
 
 export function RestaurantCard({ restaurant, onPress }: { restaurant: Restaurant; onPress: () => void }) {
   const rating = Number(restaurant.avgRating ?? 0);

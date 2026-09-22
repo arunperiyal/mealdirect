@@ -3,11 +3,17 @@ import { FlatList, RefreshControl, StyleSheet, TextInput, View } from 'react-nat
 import { router } from 'expo-router';
 import { CartBar } from '@/components/CartBar';
 import { RestaurantCard } from '@/components/RestaurantCard';
-import { EmptyState, ErrorState, LoadingState } from '@/components/States';
-import { errorMessage } from '@/lib/errors';
-import { useDebounced } from '@/lib/useDebounced';
+import {
+  colors,
+  EmptyState,
+  errorMessage,
+  ErrorState,
+  LoadingState,
+  radius,
+  spacing,
+  useDebounced,
+} from '@mealdirect/shared';
 import { useGetRestaurantsQuery } from '@/store/serverApi';
-import { colors, radius, spacing } from '@/theme';
 
 export default function RestaurantsScreen() {
   const [search, setSearch] = useState('');

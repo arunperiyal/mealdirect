@@ -1,15 +1,18 @@
 import { makeStore } from '@/store';
 import { login } from '../authSlice';
 
-jest.mock('@/api/tokens', () => ({
-  saveTokens: jest.fn(async () => {}),
-  saveUser: jest.fn(async () => {}),
-  clearSession: jest.fn(async () => {}),
-  clearTokens: jest.fn(async () => {}),
-  getAccessToken: jest.fn(async () => null),
-  getRefreshToken: jest.fn(async () => null),
-  setAccessToken: jest.fn(async () => {}),
-  getUser: jest.fn(async () => null),
+jest.mock('@mealdirect/shared', () => ({
+  ...jest.requireActual('@mealdirect/shared'),
+  session: {
+    saveTokens: jest.fn(async () => {}),
+    saveUser: jest.fn(async () => {}),
+    clearSession: jest.fn(async () => {}),
+    clearTokens: jest.fn(async () => {}),
+    getAccessToken: jest.fn(async () => null),
+    getRefreshToken: jest.fn(async () => null),
+    setAccessToken: jest.fn(async () => {}),
+    getUser: jest.fn(async () => null),
+  },
 }));
 
 jest.mock('@/api', () => {
@@ -18,7 +21,7 @@ jest.mock('@/api', () => {
 });
 
 const { authApi } = jest.requireMock('@/api') as { authApi: { login: jest.Mock } };
-const tokens = jest.requireMock('@/api/tokens') as Record<string, jest.Mock>;
+const tokens = jest.requireMock('@mealdirect/shared').session as Record<string, jest.Mock>;
 
 const result = (role: string) => ({
   user: { id: 'u1', email: 'a@b.co', firstName: 'A', lastName: 'B', phone: null, role },

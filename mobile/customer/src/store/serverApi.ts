@@ -1,49 +1,19 @@
-import { createApi, BaseQueryFn } from '@reduxjs/toolkit/query/react';
-import type { AxiosRequestConfig } from 'axios';
-import { api, toApiError } from '@/api';
-import type {
-  CreateOrderInput,
-  DeliverySlot,
-  Menu,
-  Order,
-  PaymentOrder,
-  RazorpaySuccess,
-  Restaurant,
-} from '@/api/types';
-
-interface Request {
-  url: string;
-  method?: AxiosRequestConfig['method'];
-  data?: unknown;
-  params?: Record<string, unknown>;
-}
-
-export interface QueryError {
-  code: string;
-  message: string;
-  status: number;
-}
-
-// Runs requests through the shared axios client (auth header + token refresh)
-// and unwraps the backend's { success, data } envelope
-const axiosBaseQuery: BaseQueryFn<Request, unknown, QueryError> = async ({
-  url,
-  method = 'GET',
-  data,
-  params,
-}) => {
-  try {
-    const res = await api.request({ url, method, data, params });
-    return { data: res.data.data };
-  } catch (error) {
-    const { code, message, status } = toApiError(error);
-    return { error: { code, message, status } };
-  }
-};
+import { createApi } from '@reduxjs/toolkit/query/react';
+import {
+  createAxiosBaseQuery,
+  type CreateOrderInput,
+  type DeliverySlot,
+  type Menu,
+  type Order,
+  type PaymentOrder,
+  type RazorpaySuccess,
+  type Restaurant,
+} from '@mealdirect/shared';
+import { api } from '@/api';
 
 export const serverApi = createApi({
   reducerPath: 'serverApi',
-  baseQuery: axiosBaseQuery,
+  baseQuery: createAxiosBaseQuery(api),
   tagTypes: ['Order'],
   endpoints: (build) => ({
     getRestaurants: build.query<Restaurant[], { search?: string }>({

@@ -1,4 +1,4 @@
-import type { DeliveryType, Order, OrderStatus } from '@/api/types';
+import type { DeliveryType, Order, OrderStatus } from '../api/types';
 
 export const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: 'Order placed',

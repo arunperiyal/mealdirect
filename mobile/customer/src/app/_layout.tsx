@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Provider } from 'react-redux';
-import { LoadingState } from '@/components/States';
+import { LoadingState } from '@mealdirect/shared';
 import { store, useAppDispatch, useAppSelector } from '@/store';
 import { bootstrapSession, refreshProfile } from '@/store/authSlice';
 

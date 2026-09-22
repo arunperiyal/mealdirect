@@ -22,14 +22,13 @@ const describeLive = LIVE_API_URL ? describe : describe.skip;
 
 jest.mock('@/config', () => ({
   API_URL: process.env.LIVE_API_URL ?? 'http://localhost:3000',
-  BRAND_COLOR: '#E23744',
   ORDER_POLL_MS: 5000,
 }));
 
 // In-memory stand-in for SecureStore
-jest.mock('@/api/tokens', () => {
+jest.mock('@mealdirect/shared', () => {
   const mem: Record<string, string | null> = {};
-  return {
+  const session = {
     getAccessToken: async () => mem.access ?? null,
     getRefreshToken: async () => mem.refresh ?? null,
     setAccessToken: async (t: string) => {
@@ -50,13 +49,13 @@ jest.mock('@/api/tokens', () => {
       mem.refresh = null;
     },
   };
+  return { ...jest.requireActual('@mealdirect/shared'), session };
 });
 
 // Imported after the mocks above are registered
 /* eslint-disable import/first */
 import { api } from '@/api';
-import { estimateTotals } from '@/lib/money';
-import { addDays, localDateString } from '@/lib/dates';
+import { addDays, estimateTotals, localDateString } from '@mealdirect/shared';
 import { makeStore } from '@/store';
 import { register } from '@/store/authSlice';
 import { serverApi } from '@/store/serverApi';

@@ -1,0 +1,26 @@
+{
+  "name": "@mealdirect/shared",
+  "version": "1.0.0",
+  "private": true,
+  "description": "API client, session storage, helpers, theme and UI components shared by the MealDirect apps",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "test": "jest",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@reduxjs/toolkit": "*",
+    "axios": "*",
+    "expo-secure-store": "*",
+    "react": "*",
+    "react-native": "*",
+    "react-native-safe-area-context": "*"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|immer|react-redux|@reduxjs/.*)"
+    ]
+  }
+}

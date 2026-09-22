@@ -1,4 +1,4 @@
-import type { DeliveryType } from '@/api/types';
+import type { DeliveryType } from '../api/types';
 
 // Must match backend/src/controllers/orderController.js createOrder
 export const TAX_RATE = 0.05;

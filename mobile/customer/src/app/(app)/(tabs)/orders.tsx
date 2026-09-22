@@ -1,14 +1,23 @@
 import { useEffect } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router, useIsFocused } from 'expo-router';
-import type { Order } from '@/api/types';
-import { EmptyState, ErrorState, LoadingState } from '@/components/States';
-import { formatDateTime } from '@/lib/dates';
-import { errorMessage } from '@/lib/errors';
-import { formatINR } from '@/lib/money';
-import { isActive, needsPayment, STATUS_LABELS } from '@/lib/orderStatus';
+import {
+  colors,
+  EmptyState,
+  errorMessage,
+  ErrorState,
+  font,
+  formatDateTime,
+  formatINR,
+  isActive,
+  LoadingState,
+  needsPayment,
+  radius,
+  spacing,
+  STATUS_LABELS,
+  type Order,
+} from '@mealdirect/shared';
 import { useGetMyOrdersQuery, useGetRestaurantQuery } from '@/store/serverApi';
-import { colors, font, radius, spacing } from '@/theme';
 
 export default function OrdersScreen() {
   const focused = useIsFocused();

@@ -202,7 +202,38 @@ describe('Restaurant admin API', () => {
     });
   });
 
+  describe('order details for the restaurant', () => {
+    test('orders include customer name/phone and the delivery slot, but no private fields', async () => {
+      const slot = (await addSlot(ownerHeaders)).body.data;
+      const order = await placeOrder('delivery', { deliverySlotId: slot.id });
+
+      const list = await request(app).get('/api/orders/restaurant-orders').set(ownerHeaders);
+      const listed = list.body.data.find((o) => o.id === order.id);
+      expect(listed.customer).toEqual({ id: expect.any(String), firstName: 'Customer', lastName: 'User', phone: null });
+      expect(listed.deliverySlot).toMatchObject({ id: slot.id, startTime: expect.stringMatching(/^12:00/) });
+
+      const detail = await request(app).get(`/api/orders/${order.id}`).set(ownerHeaders);
+      expect(detail.body.data.customer.firstName).toBe('Customer');
+      expect(detail.body.data.customer.email).toBeUndefined();
+      expect(detail.body.data.customer.passwordHash).toBeUndefined();
+    });
+  });
+
   describe('GET /api/menus', () => {
+    test('accepts a from/to date range', async () => {
+      const future = await request(app)
+        .post('/api/menus')
+        .set(ownerHeaders)
+        .send({ restaurantId: restaurant.id, date: '2031-03-10' });
+      expect(future.status).toBe(201);
+
+      const response = await request(app)
+        .get(`/api/menus?restaurantId=${restaurant.id}&from=2031-03-01&to=2031-03-31`)
+        .set(ownerHeaders);
+      expect(response.status).toBe(200);
+      expect(response.body.data.map((m) => m.id)).toEqual([future.body.data.id]);
+    });
+
     test('works without a restaurant filter', async () => {
       const response = await request(app).get('/api/menus');
       expect(response.status).toBe(200);

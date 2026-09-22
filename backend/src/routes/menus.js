@@ -96,6 +96,8 @@ router.get(
   [
     query('restaurantId').optional().isUUID(),
     query('date').optional().isISO8601(),
+    query('from').optional().isISO8601(),
+    query('to').optional().isISO8601(),
     query('status').optional().isIn(['draft', 'published', 'closed', 'archived']),
     query('limit').optional().isInt({ min: 1, max: 100 }),
     query('offset').optional().isInt({ min: 0 }),
@@ -113,8 +115,8 @@ router.get(
 
       const result = await menuController.getMenusByRestaurant(
         req.query.restaurantId,
-        req.query.date || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        req.query.date || new Date().toISOString().split('T')[0],
+        req.query.date || req.query.from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        req.query.date || req.query.to || new Date().toISOString().split('T')[0],
         req.query.limit || 20,
         req.query.offset || 0
       );

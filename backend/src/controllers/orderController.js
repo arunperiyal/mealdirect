@@ -1,9 +1,16 @@
 const { Op } = require('sequelize');
-const { Order, Menu, DeliverySlot, Restaurant } = require('../models');
+const { Order, Menu, DeliverySlot, Restaurant, User } = require('../models');
 
 const throwError = (code, message, statusCode = 400) => {
   throw { code, message, statusCode };
 };
+
+// Who ordered and when it's due. Only what the restaurant needs to fulfil the
+// order: no email or account fields.
+const ORDER_DETAILS = [
+  { model: User, as: 'customer', attributes: ['id', 'firstName', 'lastName', 'phone'] },
+  { model: DeliverySlot, as: 'deliverySlot', attributes: ['id', 'startTime', 'endTime'] },
+];
 
 // Helper: does this user own the restaurant the order belongs to?
 const ownsOrderRestaurant = async (order, userId) => {
@@ -23,7 +30,7 @@ const findOwnedOrder = async (orderId, userId) => {
 
 // Helper: validate order access
 const validateOrderAccess = async (orderId, userId, role) => {
-  const order = await Order.findByPk(orderId);
+  const order = await Order.findByPk(orderId, { include: ORDER_DETAILS });
   if (!order) throwError('NOT_FOUND', 'Order not found', 404);
 
   if (role === 'system_admin') return order;
@@ -235,6 +242,8 @@ const listRestaurantOrders = async (ownerId, filters = {}) => {
       limit: Math.min(limit, 100),
       offset,
       order: [['createdAt', 'DESC']],
+      include: ORDER_DETAILS,
+      distinct: true,
     });
 
     return { count, rows };

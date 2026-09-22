@@ -15,14 +15,14 @@ import {
   formatTime,
   isActive,
   LoadingState,
+  type Order,
   PriceSummary,
+  SheetForm,
   spacing,
+  StatusPill,
   StatusTimeline,
   TextField,
-  type Order,
 } from '@mealdirect/shared';
-import { SheetForm } from '@/components/SheetForm';
-import { StatusPill } from '@/components/StatusPill';
 import { ORDER_POLL_MS } from '@/config';
 import { canRestaurantCancel, customerName, nextStep, paymentLabel, shortId } from '@/lib/orderActions';
 import { useAppSelector } from '@/store';

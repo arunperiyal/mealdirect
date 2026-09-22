@@ -1,0 +1,59 @@
+import { Tabs } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { colors } from '@mealdirect/shared';
+import { useGetRestaurantsQuery } from '@/store/serverApi';
+
+export default function TabsLayout() {
+  // Pending count for the tab badge
+  const { data } = useGetRestaurantsQuery({ status: 'pending' });
+  const pending = data?.counts.pending ?? 0;
+
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: colors.brand,
+        tabBarInactiveTintColor: colors.textMuted,
+        headerTitleStyle: { color: colors.text },
+        sceneStyle: { backgroundColor: colors.background },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Overview',
+          tabBarIcon: ({ color, size }) => (
+            <SymbolView name={{ ios: 'chart.bar', android: 'bar_chart' }} tintColor={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="restaurants"
+        options={{
+          title: 'Restaurants',
+          tabBarBadge: pending > 0 ? pending : undefined,
+          tabBarIcon: ({ color, size }) => (
+            <SymbolView name={{ ios: 'storefront', android: 'storefront' }} tintColor={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="orders"
+        options={{
+          title: 'Orders',
+          tabBarIcon: ({ color, size }) => (
+            <SymbolView name={{ ios: 'list.bullet.rectangle', android: 'receipt_long' }} tintColor={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="account"
+        options={{
+          title: 'Account',
+          tabBarIcon: ({ color, size }) => (
+            <SymbolView name={{ ios: 'person.crop.circle', android: 'account_circle' }} tintColor={color} size={size} />
+          ),
+        }}
+      />
+    </Tabs>
+  );
+}

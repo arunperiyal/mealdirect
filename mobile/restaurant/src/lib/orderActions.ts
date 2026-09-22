@@ -1,4 +1,4 @@
-import { needsPayment, type Order } from '@mealdirect/shared';
+import { ACTIVE_STATUSES, COMPLETED_STATUSES, customerName, needsPayment, paymentLabel, shortId, type Order } from '@mealdirect/shared';
 import type { OrderAction } from '@/store/serverApi';
 
 export type NextStep =
@@ -28,9 +28,6 @@ export const nextStep = (order: Order): NextStep => {
   }
 };
 
-export const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'] as const;
-export const COMPLETED_STATUSES = ['delivered', 'picked_up'] as const;
-
 // Once food is on its way it can't be taken back
 export const canRestaurantCancel = (order: Pick<Order, 'status'>) =>
   ['pending', 'confirmed', 'preparing', 'ready'].includes(order.status);
@@ -38,15 +35,5 @@ export const canRestaurantCancel = (order: Pick<Order, 'status'>) =>
 export const needsAttention = (order: Order) =>
   order.status === 'pending' && !needsPayment(order);
 
-export const paymentLabel = (order: Order) => {
-  if (order.paymentMethod === 'cod') {
-    return order.deliveryType === 'pickup' ? 'Pay at pickup' : 'Cash on delivery';
-  }
-  if (order.paymentStatus === 'completed') return 'Paid online';
-  return order.paymentStatus === 'failed' ? 'Online payment failed' : 'Awaiting online payment';
-};
-
-export const customerName = (order: Order) =>
-  [order.customer?.firstName, order.customer?.lastName].filter(Boolean).join(' ') || 'Customer';
-
-export const shortId = (id: string) => `#${id.slice(0, 8).toUpperCase()}`;
+// Shared with the admin app; re-exported so existing imports keep working
+export { ACTIVE_STATUSES, COMPLETED_STATUSES, customerName, paymentLabel, shortId };

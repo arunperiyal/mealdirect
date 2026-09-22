@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, STATUS_LABELS, type OrderStatus } from '@mealdirect/shared';
+import type { OrderStatus } from '../api/types';
+import { STATUS_LABELS } from '../lib/orderStatus';
+import { colors } from '../theme';
 
 const tones: Record<OrderStatus, { bg: string; fg: string }> = {
   pending: { bg: colors.warningSoft, fg: colors.warning },

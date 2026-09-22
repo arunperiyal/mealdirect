@@ -120,6 +120,8 @@ export interface Order {
   // Included on restaurant and single-order reads
   customer?: { id: string; firstName: string | null; lastName: string | null; phone: string | null };
   deliverySlot?: { id: string; startTime: string; endTime: string } | null;
+  // Included on the system admin order list
+  restaurant?: { id: string; name: string };
 }
 
 export interface CreateOrderInput {
@@ -152,4 +154,32 @@ export interface AuthResult {
   user: User;
   accessToken: string;
   refreshToken: string;
+}
+
+// System admin views (GET /api/admin/*)
+export interface AdminRestaurant extends OwnedRestaurant {
+  approvedAt: string | null;
+  createdAt: string;
+  owner: { id: string; firstName: string | null; lastName: string | null; email: string; phone: string | null };
+}
+
+export interface SalesSummary {
+  orders: number;
+  cancelled: number;
+  revenue: number; // orders that weren't cancelled
+  averageOrderValue: number;
+}
+
+export interface AdminRestaurantDetail {
+  restaurant: AdminRestaurant;
+  stats: SalesSummary & { last30Days: SalesSummary; lastOrderAt: string | null };
+}
+
+export interface Analytics {
+  range: { from: string; to: string; days: number };
+  totals: SalesSummary & { customers: number; repeatCustomers: number };
+  byDay: { date: string; orders: number; revenue: number }[];
+  topRestaurants: { id: string; name: string; orders: number; revenue: number }[];
+  restaurants: Record<VerificationStatus, number>;
+  users: { customers: number; partners: number; admins: number };
 }

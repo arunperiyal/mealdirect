@@ -37,3 +37,19 @@ export const needsPayment = (order: Pick<Order, 'paymentMethod' | 'paymentStatus
 
 export const canMarkPickedUp = (order: Pick<Order, 'deliveryType' | 'status'>) =>
   order.deliveryType === 'pickup' && order.status === 'ready';
+
+export const ACTIVE_STATUSES = ['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'] as const;
+export const COMPLETED_STATUSES = ['delivered', 'picked_up'] as const;
+
+export const paymentLabel = (order: Order) => {
+  if (order.paymentMethod === 'cod') {
+    return order.deliveryType === 'pickup' ? 'Pay at pickup' : 'Cash on delivery';
+  }
+  if (order.paymentStatus === 'completed') return 'Paid online';
+  return order.paymentStatus === 'failed' ? 'Online payment failed' : 'Awaiting online payment';
+};
+
+export const customerName = (order: Order) =>
+  [order.customer?.firstName, order.customer?.lastName].filter(Boolean).join(' ') || 'Customer';
+
+export const shortId = (id: string) => `#${id.slice(0, 8).toUpperCase()}`;

@@ -12,9 +12,9 @@ import {
   LoadingState,
   localDateString,
   spacing,
+  StatTile,
 } from '@mealdirect/shared';
 import { OrderRow } from '@/components/OrderRow';
-import { StatTile } from '@/components/StatTile';
 import { ORDER_POLL_MS } from '@/config';
 import { needsAttention } from '@/lib/orderActions';
 import { summarizeToday } from '@/lib/today';

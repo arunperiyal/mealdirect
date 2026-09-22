@@ -1,8 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { colors, font, formatINR, formatTime, radius, spacing, type Order } from '@mealdirect/shared';
+import { colors, font, formatINR, formatTime, radius, spacing, StatusPill, type Order } from '@mealdirect/shared';
 import { customerName, needsAttention, paymentLabel, shortId } from '@/lib/orderActions';
-import { StatusPill } from './StatusPill';
 
 export function OrderRow({ order }: { order: Order }) {
   const placed = new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });

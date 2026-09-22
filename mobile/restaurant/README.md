@@ -11,16 +11,8 @@ cp .env.example .env        # set EXPO_PUBLIC_API_URL, same values as the custom
 npx expo start
 ```
 
-Sign up in the app, add your restaurant, then approve it. There's no admin app yet (Phase 2D), so approve it
-with the API as a system admin:
-
-```bash
-# in backend/, once:  ADMIN_PASSWORD=... npm run create-admin -- --email admin@example.com
-curl -X PUT http://localhost:3000/api/restaurants/admin/<restaurantId>/approve \
-  -H "Authorization: Bearer <admin access token from POST /api/auth/login>"
-```
-
-The app checks for approval every 30 seconds and opens once it's through.
+Sign up in the app and add your restaurant, then approve it in the MealDirect Admin app (`mobile/admin`).
+The partner app checks for approval every 30 seconds and opens once it's through.
 
 ## What it does
 

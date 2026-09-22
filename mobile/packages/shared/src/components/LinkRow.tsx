@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, font, spacing } from '@mealdirect/shared';
+import { colors, font, spacing } from '../theme';
 
 export function LinkRow({ title, detail, onPress }: { title: string; detail?: string; onPress: () => void }) {
   return (

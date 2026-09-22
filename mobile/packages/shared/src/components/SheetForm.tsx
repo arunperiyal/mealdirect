@@ -1,7 +1,9 @@
 import { ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Banner, Button, colors, font, radius, spacing } from '@mealdirect/shared';
+import { colors, font, radius, spacing } from '../theme';
+import { Button } from './Button';
+import { Banner } from './States';
 
 interface Props {
   visible: boolean;

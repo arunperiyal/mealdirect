@@ -1,8 +1,16 @@
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Button, Card, Chip, colors, font, formatINR, spacing } from '@mealdirect/shared';
-import { LinkRow } from '@/components/LinkRow';
+import {
+  Button,
+  Card,
+  Chip,
+  colors,
+  font,
+  formatINR,
+  LinkRow,
+  spacing,
+} from '@mealdirect/shared';
 import { useRestaurant } from '@/lib/useRestaurant';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { logout } from '@/store/authSlice';

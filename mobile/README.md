@@ -6,6 +6,7 @@ An npm workspace with the Expo (SDK 57) apps and the code they share.
 | --- | --- |
 | `customer/` | Customer app: browse, order, pay, track |
 | `restaurant/` | MealDirect Partner app for restaurant owners: orders, menus, settings |
+| `admin/` | MealDirect Admin app for staff: restaurant review, orders, analytics |
 | `packages/shared/` | `@mealdirect/shared`: API client and token refresh, SecureStore session, shared types, money/date/status helpers, theme, common components |
 
 ## Setup

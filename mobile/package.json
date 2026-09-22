@@ -5,6 +5,7 @@
   "workspaces": [
     "customer",
     "restaurant",
+    "admin",
     "packages/*"
   ],
   "scripts": {

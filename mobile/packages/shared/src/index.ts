@@ -1,7 +1,7 @@
 // API
 export { ApiError, createApiClient, toApiError, type TokenStore } from './api/client';
 export { createAuthApi, type AuthApi, type RegisterInput } from './api/auth';
-export { createAxiosBaseQuery, type QueryError, type Request } from './api/baseQuery';
+export { createAxiosBaseQuery, type QueryError, type Request, type ResponseMeta } from './api/baseQuery';
 export * as session from './api/tokens';
 export * from './api/types';
 
@@ -21,5 +21,9 @@ export { Card } from './components/Card';
 export { Chip } from './components/Chip';
 export { PriceSummary } from './components/PriceSummary';
 export { Banner, EmptyState, ErrorState, LoadingState } from './components/States';
+export { LinkRow } from './components/LinkRow';
+export { SheetForm } from './components/SheetForm';
+export { StatTile } from './components/StatTile';
+export { StatusPill } from './components/StatusPill';
 export { StatusTimeline } from './components/StatusTimeline';
 export { TextField } from './components/TextField';

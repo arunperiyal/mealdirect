@@ -183,6 +183,14 @@ describe('Restaurant admin API', () => {
         .send({ available: true });
     });
 
+    test('rejects items without a name or a valid price', async () => {
+      for (const items of [[{ name: 'No price' }], [{ price: 50 }], [{ name: 'Bad', price: -5 }]]) {
+        const response = await request(app).post(`/api/menus/${menu.id}/items`).set(ownerHeaders).send({ items });
+        expect(response.status).toBe(400);
+      }
+      expect((await models.Menu.findByPk(menu.id)).items.every((i) => Number.isFinite(i.price))).toBe(true);
+    });
+
     test('owner can remove an item; another restaurant admin cannot', async () => {
       const added = await request(app)
         .post(`/api/menus/${menu.id}/items`)

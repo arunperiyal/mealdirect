@@ -267,6 +267,10 @@ router.post(
   [
     param('id').isUUID(),
     body('items').isArray({ min: 1 }),
+    body('items.*.name').isString().trim().notEmpty().withMessage('Each item needs a name'),
+    body('items.*.price').isFloat({ min: 0 }).withMessage('Each item needs a price of 0 or more'),
+    body('items.*.description').optional().isString().trim(),
+    body('items.*.available').optional().isBoolean(),
   ],
   async (req, res) => {
     try {

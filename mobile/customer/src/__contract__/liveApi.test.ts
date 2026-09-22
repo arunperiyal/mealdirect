@@ -1,7 +1,12 @@
 /**
- * Contract test against a running backend. Skipped unless LIVE_API_URL is set:
+ * Contract test against a running backend. Skipped unless LIVE_API_URL is set.
  *
- *   LIVE_API_URL=http://localhost:3000 npx jest src/__contract__
+ * Restaurant approval needs a system admin, which can't self-register. Create
+ * one on the backend and pass its credentials:
+ *
+ *   ADMIN_PASSWORD=... npm run create-admin -- --email admin@example.com   (in backend/)
+ *   LIVE_API_ADMIN_EMAIL=admin@example.com LIVE_API_ADMIN_PASSWORD=... \
+ *     LIVE_API_URL=http://localhost:3000 npx jest src/__contract__
  *
  * Set LIVE_API_SQLITE=1 when the backend runs on SQLite: restaurant search uses
  * Postgres-only ILIKE there and is skipped.
@@ -69,6 +74,16 @@ const http = nodeAxios.create({ baseURL: `${LIVE_API_URL}/api` });
 const unique = Date.now().toString(36);
 const today = localDateString(new Date());
 
+const loginAdmin = async () => {
+  const email = process.env.LIVE_API_ADMIN_EMAIL;
+  const password = process.env.LIVE_API_ADMIN_PASSWORD;
+  if (!email || !password) {
+    throw new Error('Set LIVE_API_ADMIN_EMAIL and LIVE_API_ADMIN_PASSWORD (see the comment at the top)');
+  }
+  const res = await http.post('/auth/login', { email, password });
+  return { headers: { Authorization: `Bearer ${res.data.data.accessToken}` } };
+};
+
 const registerAs = async (role: string) => {
   const res = await http.post('/auth/register', {
     email: `${role}.${unique}@contract.test`,
@@ -91,7 +106,7 @@ describeLive('customer app ↔ live backend', () => {
 
   beforeAll(async () => {
     const owner = await registerAs('restaurant_admin');
-    const admin = await registerAs('system_admin');
+    const admin = await loginAdmin();
 
     const restaurant = await http.post(
       '/restaurants',

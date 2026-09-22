@@ -17,7 +17,7 @@ const Order = sequelize.define(
       type: sequelize.options.dialect === 'sqlite' ? DataTypes.STRING : DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'RESTRICT',
@@ -211,12 +211,12 @@ const Order = sequelize.define(
     paranoid: true,
     tableName: 'Orders',
     indexes: sequelize.options.dialect === 'sqlite' ? [] : [
-      { fields: ['customerId'] },
-      { fields: ['restaurantId'] },
-      { fields: ['menuId'] },
+      { fields: ['customer_id'] },
+      { fields: ['restaurant_id'] },
+      { fields: ['menu_id'] },
       { fields: ['status'] },
-      { fields: ['customerId', 'status'] },
-      { fields: ['restaurantId', 'status'] },
+      { fields: ['customer_id', 'status'] },
+      { fields: ['restaurant_id', 'status'] },
     ],
   }
 );

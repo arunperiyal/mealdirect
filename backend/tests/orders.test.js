@@ -102,6 +102,40 @@ describe('Order Management API', () => {
     });
   });
 
+  describe('Order totals', () => {
+    test('adds the delivery fee when the database returns DECIMAL as a string (Postgres)', async () => {
+      // SQLite returns numbers; make it behave like Postgres for this request
+      const originalFindByPk = models.Restaurant.findByPk.bind(models.Restaurant);
+      const spy = jest.spyOn(models.Restaurant, 'findByPk').mockImplementation(async (...args) => {
+        const found = await originalFindByPk(...args);
+        if (found && found.id === approvedRestaurant.id) found.setDataValue('defaultDeliveryFee', '30.00');
+        return found;
+      });
+
+      try {
+        const menuItem = menu.items[0];
+        const response = await request(app)
+          .post('/api/orders')
+          .set(customerHeaders)
+          .send({
+            restaurantId: approvedRestaurant.id,
+            menuId: menu.id,
+            items: [{ menuItemId: menuItem.id, quantity: 2 }],
+            deliveryAddress: '123 Customer Ave',
+            deliveryType: 'delivery',
+            paymentMethod: 'cod',
+          });
+
+        expect(response.status).toBe(201);
+        const subtotal = menuItem.price * 2;
+        expect(Number(response.body.data.deliveryFee)).toBe(30);
+        expect(Number(response.body.data.total)).toBeCloseTo(subtotal * 1.05 + 30);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+  });
+
   describe('GET /api/orders/:id - Get Order', () => {
     test('should retrieve order by customer', async () => {
       const menuItem = menu.items[0];

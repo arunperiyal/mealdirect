@@ -82,10 +82,10 @@ const Menu = sequelize.define(
     paranoid: true,
     tableName: 'Menus',
     indexes: sequelize.options.dialect === 'sqlite' ? [] : [
-      { fields: ['restaurantId'] },
+      { fields: ['restaurant_id'] },
       { fields: ['date'] },
       { fields: ['status'] },
-      { fields: ['restaurantId', 'date'] },
+      { fields: ['restaurant_id', 'date'] },
     ],
   }
 );

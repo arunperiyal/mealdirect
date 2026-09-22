@@ -71,8 +71,8 @@ const DeliverySlot = sequelize.define(
     paranoid: true,
     tableName: 'DeliverySlots',
     indexes: sequelize.options.dialect === 'sqlite' ? [] : [
-      { fields: ['menuId'] },
-      { fields: ['restaurantId'] },
+      { fields: ['menu_id'] },
+      { fields: ['restaurant_id'] },
     ],
   }
 );

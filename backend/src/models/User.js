@@ -95,7 +95,7 @@ const User = sequelize.define(
       indexes: [
         { fields: ['email'] },
         { fields: ['role'] },
-        { fields: ['isActive'] },
+        { fields: ['is_active'] },
       ],
     }),
   }

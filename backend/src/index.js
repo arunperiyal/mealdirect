@@ -19,8 +19,12 @@ const startServer = async () => {
     // Sync database models (creates tables if not exist)
     // In production, use migrations instead
     if (config.env === 'development') {
-      await sequelize.sync({ alter: true });
-      console.info('✓ Database models synchronized');
+      // alter: true re-adds unique constraints on every run with Postgres
+      // (Sequelize v6), so each restart piles up duplicates. Opt in when a
+      // model change needs to reach an existing dev database.
+      const alter = process.env.DB_SYNC_ALTER === 'true';
+      await sequelize.sync({ alter });
+      console.info(`✓ Database models synchronized${alter ? ' (alter)' : ''}`);
     }
 
     // Start Express server

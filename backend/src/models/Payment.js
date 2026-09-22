@@ -28,7 +28,7 @@ const Payment = sequelize.define(
       type: sequelize.options.dialect === 'sqlite' ? DataTypes.STRING : DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'RESTRICT',
@@ -84,8 +84,8 @@ const Payment = sequelize.define(
     timestamps: true,
     tableName: 'Payments',
     indexes: sequelize.options.dialect === 'sqlite' ? [] : [
-      { fields: ['orderId'] },
-      { fields: ['customerId'] },
+      { fields: ['order_id'] },
+      { fields: ['customer_id'] },
     ],
   }
 );

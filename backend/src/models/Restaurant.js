@@ -44,7 +44,7 @@ const Restaurant = sequelize.define(
       type: sequelize.options.dialect === 'sqlite' ? DataTypes.STRING : DataTypes.UUID,
       allowNull: false,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'RESTRICT',
@@ -103,7 +103,7 @@ const Restaurant = sequelize.define(
       type: sequelize.options.dialect === 'sqlite' ? DataTypes.STRING : DataTypes.UUID,
       allowNull: true,
       references: {
-        model: 'Users',
+        model: 'users',
         key: 'id',
       },
       onDelete: 'SET NULL',
@@ -177,10 +177,10 @@ const Restaurant = sequelize.define(
     paranoid: true,
     tableName: 'Restaurants',
     indexes: sequelize.options.dialect === 'sqlite' ? [] : [
-      { fields: ['ownerId'] },
+      { fields: ['owner_id'] },
       { fields: ['city'] },
-      { fields: ['isApproved'] },
-      { fields: ['verificationStatus'] },
+      { fields: ['is_approved'] },
+      { fields: ['verification_status'] },
     ],
   }
 );

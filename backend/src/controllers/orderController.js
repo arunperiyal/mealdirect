@@ -125,7 +125,9 @@ const createOrder = async (customerId, data) => {
         }
       }
 
-      deliveryFee = restaurant.defaultDeliveryFee || 0;
+      // Postgres returns DECIMAL columns as strings; without Number() the
+      // total below would concatenate ("300" + "30.00") instead of adding
+      deliveryFee = Number(restaurant.defaultDeliveryFee) || 0;
     } else if (deliveryType === 'pickup') {
       if (!restaurant.pickupEnabled) {
         throwError('PICKUP_DISABLED', 'Restaurant does not offer pickup', 409);

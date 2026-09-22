@@ -9,8 +9,24 @@ const throwError = (code, message, statusCode = 400) => {
 // order: no email or account fields.
 const ORDER_DETAILS = [
   { model: User, as: 'customer', attributes: ['id', 'firstName', 'lastName', 'phone'] },
+  { model: User, as: 'rider', attributes: ['id', 'firstName', 'lastName', 'phone'] },
   { model: DeliverySlot, as: 'deliverySlot', attributes: ['id', 'startTime', 'endTime'] },
 ];
+
+// Once a rider claims an order, the delivery steps are theirs
+const assertNoRider = (order) => {
+  if (order.riderId) {
+    throwError('RIDER_ASSIGNED', 'A delivery partner is handling this order', 409);
+  }
+};
+
+// Mark delivered; cash on delivery counts as collected at the door
+const completeDelivery = (order, userId) => {
+  order.status = 'delivered';
+  order.deliveredAt = new Date();
+  if (order.paymentMethod === 'cod') order.paymentStatus = 'completed';
+  addStatusHistory(order, 'delivered', userId);
+};
 
 // Helper: does this user own the restaurant the order belongs to?
 const ownsOrderRestaurant = async (order, userId) => {
@@ -359,6 +375,7 @@ const markOutForDelivery = async (orderId, userId) => {
     if (order.deliveryType !== 'delivery') {
       throwError('INVALID_DELIVERY_TYPE', 'Pickup orders are not sent out for delivery', 400);
     }
+    assertNoRider(order);
     if (order.status !== 'ready') {
       throwError(
         'INVALID_STATUS',
@@ -382,6 +399,7 @@ const markOutForDelivery = async (orderId, userId) => {
 const markDelivered = async (orderId, userId) => {
   try {
     const order = await findOwnedOrder(orderId, userId);
+    assertNoRider(order);
 
     if (order.status !== 'out_for_delivery') {
       throwError(
@@ -391,9 +409,7 @@ const markDelivered = async (orderId, userId) => {
       );
     }
 
-    order.status = 'delivered';
-    order.deliveredAt = new Date();
-    addStatusHistory(order, 'delivered', userId);
+    completeDelivery(order, userId);
 
     await order.save();
     return order;
@@ -504,6 +520,9 @@ const updateOrder = async (orderId, userId, data) => {
 };
 
 module.exports = {
+  ORDER_DETAILS,
+  addStatusHistory,
+  completeDelivery,
   createOrder,
   getOrder,
   listCustomerOrders,

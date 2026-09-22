@@ -43,13 +43,26 @@ const User = sequelize.define(
     role: {
       type: sequelize.options.dialect === 'sqlite' 
         ? DataTypes.STRING 
-        : DataTypes.ENUM('customer', 'restaurant_admin', 'system_admin'),
+        : DataTypes.ENUM('customer', 'restaurant_admin', 'system_admin', 'delivery_partner'),
       defaultValue: 'customer',
       allowNull: false,
       validate: {
         isIn: {
-          args: [['customer', 'restaurant_admin', 'system_admin']],
-          msg: 'Role must be one of: customer, restaurant_admin, system_admin'
+          args: [['customer', 'restaurant_admin', 'system_admin', 'delivery_partner']],
+          msg: 'Role must be one of: customer, restaurant_admin, system_admin, delivery_partner'
+        }
+      }
+    },
+    // Delivery partners only: an admin approves a rider before they can take orders
+    riderStatus: {
+      type: sequelize.options.dialect === 'sqlite'
+        ? DataTypes.STRING
+        : DataTypes.ENUM('pending', 'approved', 'suspended'),
+      allowNull: true,
+      validate: {
+        isIn: {
+          args: [['pending', 'approved', 'suspended']],
+          msg: 'Rider status must be one of: pending, approved, suspended'
         }
       }
     },
@@ -142,6 +155,7 @@ User.prototype.toJSON = function () {
     lastName: this.lastName,
     phone: this.phone,
     role: this.role,
+    ...(this.role === 'delivery_partner' && { riderStatus: this.riderStatus }),
     isActive: this.isActive,
     isVerified: this.isVerified,
     createdAt: this.createdAt,

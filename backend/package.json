@@ -13,7 +13,8 @@
     "migrate": "node migrations/run.js",
     "seed": "node seeds/run.js",
     "create-admin": "node scripts/create-admin.js",
-    "reset-password": "node scripts/reset-password.js"
+    "reset-password": "node scripts/reset-password.js",
+    "upgrade-db": "node scripts/upgrade-db.js"
   },
   "keywords": [
     "delivery",

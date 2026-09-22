@@ -211,6 +211,13 @@ All endpoints return standardized JSON responses:
   read -s ADMIN_PASSWORD && export ADMIN_PASSWORD   # at least 12 characters
   npm run create-admin -- --email admin@example.com --first-name Asha --last-name Rao
   ```
+- After pulling changes that touch the models, bring an existing Postgres database up to date (safe to re-run):
+
+  ```bash
+  npm run upgrade-db
+  ```
+
+  Development startup only creates missing tables; it doesn't change existing ones.
 - There's no self-service password reset yet. To set a new password for any account:
 
   ```bash

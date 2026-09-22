@@ -73,4 +73,33 @@ router.get(
   })
 );
 
+/**
+ * GET /api/admin/riders?status=pending|approved|suspended
+ * Delivery partners with per-status counts and completed deliveries
+ */
+router.get(
+  '/riders',
+  [query('status').optional().isIn(['pending', 'approved', 'suspended'])],
+  handle(async (req, res) => {
+    const result = await adminController.listRiders(req.query);
+    res.json({ success: true, data: result.riders, meta: { counts: result.counts } });
+  })
+);
+
+/**
+ * PUT /api/admin/riders/:id/approve | suspend
+ */
+for (const [action, status] of [
+  ['approve', 'approved'],
+  ['suspend', 'suspended'],
+]) {
+  router.put(
+    `/riders/:id/${action}`,
+    [param('id').isUUID()],
+    handle(async (req, res) => {
+      res.json({ success: true, data: await adminController.setRiderStatus(req.params.id, status) });
+    })
+  );
+}
+
 module.exports = router;

@@ -67,6 +67,20 @@ const Order = sequelize.define(
       },
       onDelete: 'SET NULL',
     },
+    // The delivery partner who claimed this order, if any
+    riderId: {
+      type: sequelize.options.dialect === 'sqlite' ? DataTypes.STRING : DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: 'users',
+        key: 'id',
+      },
+      onDelete: 'SET NULL',
+    },
+    claimedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
     deliveryAddress: {
       type: DataTypes.TEXT,
       allowNull: true,
@@ -217,6 +231,7 @@ const Order = sequelize.define(
       { fields: ['status'] },
       { fields: ['customer_id', 'status'] },
       { fields: ['restaurant_id', 'status'] },
+      { fields: ['rider_id', 'status'] },
     ],
   }
 );

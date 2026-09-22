@@ -2,8 +2,9 @@ const User = require('../models/User');
 const validator = require('validator');
 
 // Roles anyone can sign up for. Restaurant admins still need a system admin to
-// approve their restaurant before it is visible to customers.
-const SELF_SIGNUP_ROLES = ['customer', 'restaurant_admin'];
+// approve their restaurant, and delivery partners to approve them, before they
+// can do anything customers see.
+const SELF_SIGNUP_ROLES = ['customer', 'restaurant_admin', 'delivery_partner'];
 
 /**
  * Register a new user
@@ -11,7 +12,7 @@ const SELF_SIGNUP_ROLES = ['customer', 'restaurant_admin'];
  * @returns {Object} { user, accessToken, refreshToken }
  */
 async function registerUser(userData) {
-  const { email, password, firstName, lastName, role = 'customer' } = userData;
+  const { email, password, firstName, lastName, phone, role = 'customer' } = userData;
 
   // Validation
   if (!email || !password) {
@@ -67,13 +68,24 @@ async function registerUser(userData) {
     };
   }
 
+  // Customers and restaurants call riders, so riders must give a number
+  if (role === 'delivery_partner' && !phone) {
+    throw {
+      code: 'PHONE_REQUIRED',
+      message: 'Delivery partners need a phone number',
+      statusCode: 400,
+    };
+  }
+
   // Create user
   const user = await User.create({
     email,
     passwordHash: password, // Will be hashed by beforeCreate hook
     firstName,
     lastName,
+    phone: phone || null,
     role,
+    ...(role === 'delivery_partner' && { riderStatus: 'pending' }),
   });
 
   // Generate tokens

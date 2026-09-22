@@ -163,4 +163,51 @@ const getAnalytics = async ({ days, tzOffset = 0, now = new Date() }) => {
   }
 };
 
-module.exports = { listRestaurants, getRestaurant, getAnalytics };
+// 4. Delivery partners by status, with how many deliveries each has completed
+const RIDER_FIELDS = ['id', 'email', 'firstName', 'lastName', 'phone', 'riderStatus', 'createdAt'];
+
+const listRiders = async ({ status }) => {
+  try {
+    const where = { role: 'delivery_partner' };
+    if (status) where.riderStatus = status;
+
+    const riders = await User.findAll({ where, attributes: RIDER_FIELDS, order: [['createdAt', 'ASC']], raw: true });
+    const delivered = await Order.findAll({
+      where: { riderId: riders.map((r) => r.id), status: 'delivered' },
+      attributes: ['riderId'],
+      raw: true,
+    });
+    const counts = { pending: 0, approved: 0, suspended: 0 };
+    const statusRows = await User.findAll({
+      where: { role: 'delivery_partner' },
+      attributes: ['riderStatus', [User.sequelize.fn('COUNT', User.sequelize.col('id')), 'count']],
+      group: ['riderStatus'],
+      raw: true,
+    });
+    for (const row of statusRows) if (row.riderStatus in counts) counts[row.riderStatus] = Number(row.count);
+
+    return {
+      riders: riders.map((r) => ({ ...r, deliveries: delivered.filter((o) => o.riderId === r.id).length })),
+      counts,
+    };
+  } catch (error) {
+    throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
+  }
+};
+
+// 5. Approve or suspend a delivery partner
+const setRiderStatus = async (riderId, riderStatus) => {
+  try {
+    const rider = await User.findOne({ where: { id: riderId, role: 'delivery_partner' } });
+    if (!rider) throwError('NOT_FOUND', 'Delivery partner not found', 404);
+    rider.riderStatus = riderStatus;
+    await rider.save();
+    const { id, email, firstName, lastName, phone } = rider;
+    return { id, email, firstName, lastName, phone, riderStatus };
+  } catch (error) {
+    if (error.code) throw error;
+    throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
+  }
+};
+
+module.exports = { listRestaurants, getRestaurant, getAnalytics, listRiders, setRiderStatus };

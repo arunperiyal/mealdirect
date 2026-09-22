@@ -19,6 +19,7 @@ router.post(
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     body('firstName').optional().trim().notEmpty(),
     body('lastName').optional().trim().notEmpty(),
+    body('phone').optional().trim().isMobilePhone().withMessage('Enter a valid phone number'),
   ],
   async (req, res) => {
     try {
@@ -41,6 +42,7 @@ router.post(
         password: req.body.password,
         firstName: req.body.firstName,
         lastName: req.body.lastName,
+        phone: req.body.phone,
         role: req.body.role || 'customer',
       });
 

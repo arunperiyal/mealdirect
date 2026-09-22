@@ -29,6 +29,21 @@ export interface Restaurant {
   bannerUrl: string | null;
 }
 
+export type VerificationStatus = 'pending' | 'verified' | 'rejected';
+
+// What a restaurant's owner sees (GET /restaurants/my-restaurants)
+export interface OwnedRestaurant extends Restaurant {
+  ownerId: string;
+  email: string;
+  zipCode: string | null;
+  verificationStatus: VerificationStatus;
+  verificationNotes: string | null;
+  bankAccountName: string | null;
+  bankAccountNumber: string | null;
+  bankIFSC: string | null;
+  upiId: string | null;
+}
+
 export interface MenuItem {
   id: string;
   name: string;
@@ -102,6 +117,9 @@ export interface Order {
   customerNotes: string | null;
   cancellationReason: string | null;
   createdAt: string;
+  // Included on restaurant and single-order reads
+  customer?: { id: string; firstName: string | null; lastName: string | null; phone: string | null };
+  deliverySlot?: { id: string; startTime: string; endTime: string } | null;
 }
 
 export interface CreateOrderInput {

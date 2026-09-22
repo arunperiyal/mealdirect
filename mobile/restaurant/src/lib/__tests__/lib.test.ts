@@ -1,0 +1,120 @@
+import type { Order } from '@mealdirect/shared';
+import { canRestaurantCancel, customerName, nextStep, paymentLabel } from '../orderActions';
+import { summarizeToday } from '../today';
+import { dayLabel, isBefore, isValidTime, toHHmm } from '../time';
+import { validateIfsc, validateMoney, validatePhone, validateUpi } from '../validation';
+
+const order = (overrides: Partial<Order> = {}): Order =>
+  ({
+    id: 'abcdef12-0000-0000-0000-000000000000',
+    status: 'pending',
+    deliveryType: 'delivery',
+    paymentMethod: 'cod',
+    paymentStatus: 'pending',
+    total: '100.00',
+    createdAt: new Date(2026, 8, 23, 12, 0).toISOString(),
+    items: [],
+    statusHistory: [],
+    ...overrides,
+  }) as Order;
+
+describe('nextStep', () => {
+  test('walks a delivery order through every action', () => {
+    const steps = (['pending', 'confirmed', 'preparing', 'ready', 'out_for_delivery'] as const).map(
+      (status) => nextStep(order({ status }))
+    );
+    expect(steps.map((s) => (s.kind === 'action' ? s.action : s.kind))).toEqual([
+      'confirm',
+      'mark-preparing',
+      'mark-ready',
+      'mark-out-for-delivery',
+      'mark-delivered',
+    ]);
+  });
+
+  test('ready pickup orders wait for the customer', () => {
+    expect(nextStep(order({ status: 'ready', deliveryType: 'pickup' })).kind).toBe('waiting');
+  });
+
+  test('unpaid online orders cannot be accepted yet', () => {
+    const step = nextStep(order({ paymentMethod: 'online' }));
+    expect(step).toEqual({ kind: 'waiting', message: expect.stringMatching(/pay online/) });
+    expect(nextStep(order({ paymentMethod: 'online', paymentStatus: 'completed' })).kind).toBe('action');
+  });
+
+  test('finished orders have nothing to do', () => {
+    for (const status of ['delivered', 'picked_up', 'cancelled'] as const) {
+      expect(nextStep(order({ status }))).toEqual({ kind: 'done' });
+    }
+  });
+});
+
+describe('order helpers', () => {
+  test('restaurants can cancel until the food leaves', () => {
+    expect(canRestaurantCancel({ status: 'ready' })).toBe(true);
+    expect(canRestaurantCancel({ status: 'out_for_delivery' })).toBe(false);
+  });
+
+  test('payment labels', () => {
+    expect(paymentLabel(order())).toBe('Cash on delivery');
+    expect(paymentLabel(order({ deliveryType: 'pickup' }))).toBe('Pay at pickup');
+    expect(paymentLabel(order({ paymentMethod: 'online', paymentStatus: 'completed' }))).toBe('Paid online');
+    expect(paymentLabel(order({ paymentMethod: 'online', paymentStatus: 'failed' }))).toBe('Online payment failed');
+  });
+
+  test('customer name falls back when missing', () => {
+    expect(customerName(order({ customer: { id: 'u', firstName: 'Priya', lastName: null, phone: null } }))).toBe('Priya');
+    expect(customerName(order())).toBe('Customer');
+  });
+});
+
+describe('summarizeToday', () => {
+  const now = new Date(2026, 8, 23, 18, 0);
+  const yesterday = new Date(2026, 8, 22, 12, 0).toISOString();
+
+  test('counts only today and leaves cancelled orders out of sales', () => {
+    const summary = summarizeToday(
+      [
+        order({ status: 'pending', total: '100' }),
+        order({ status: 'pending', paymentMethod: 'online', total: '50' }), // awaiting payment
+        order({ status: 'preparing', total: '200' }),
+        order({ status: 'delivered', total: '300' }),
+        order({ status: 'cancelled', total: '999' }),
+        order({ status: 'delivered', total: '1000', createdAt: yesterday }),
+      ],
+      now
+    );
+    expect(summary).toEqual({ newOrders: 1, inProgress: 2, completed: 1, cancelled: 1, revenue: 650 });
+  });
+});
+
+describe('time and validation', () => {
+  test('time helpers', () => {
+    expect(isValidTime('08:00')).toBe(true);
+    expect(isValidTime('8:00')).toBe(false);
+    expect(isValidTime('24:00')).toBe(false);
+    expect(toHHmm('18:30:00')).toBe('18:30');
+    expect(isBefore('12:00', '12:30')).toBe(true);
+    expect(isBefore('12:30', '12:30')).toBe(false);
+  });
+
+  test('day labels', () => {
+    const now = new Date(2026, 8, 23, 10);
+    expect(dayLabel('2026-09-23', now)).toBe('Today');
+    expect(dayLabel('2026-09-24', now)).toBe('Tomorrow');
+    expect(dayLabel('2026-09-22', now)).toBe('Yesterday');
+    expect(dayLabel('2026-09-27', now)).toMatch(/27/);
+  });
+
+  test('form validators', () => {
+    expect(validatePhone('')).toBeNull();
+    expect(validatePhone('98765 43210')).toBeNull();
+    expect(validatePhone('123')).toBeTruthy();
+    expect(validateMoney('-1', 'Fee')).toBeTruthy();
+    expect(validateMoney('25.50', 'Fee')).toBeNull();
+    expect(validateIfsc('hdfc0001234')).toBeNull();
+    expect(validateIfsc('HDFC1234')).toBeTruthy();
+    expect(validateUpi('kitchen@okaxis')).toBeNull();
+    expect(validateUpi('kitchen')).toBeTruthy();
+  });
+});

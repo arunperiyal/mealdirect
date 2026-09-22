@@ -6,11 +6,13 @@ today's or tomorrow's menu, pay with Razorpay or cash, and track the order.
 ## Run it
 
 ```bash
-cd mobile/customer
-npm install
+cd mobile && npm install    # installs every app in the workspace
+cd customer
 cp .env.example .env        # then set EXPO_PUBLIC_API_URL
 npx expo start              # press a (Android) or i (iOS), or scan with Expo Go
 ```
+
+Shared code (API client, session, helpers, theme, common components) lives in `mobile/packages/shared`.
 
 `EXPO_PUBLIC_API_URL` is the backend's base URL without `/api`:
 
@@ -63,7 +65,9 @@ npx expo-doctor          # dependency and config health
 restaurant and menu, then registers, browses, orders, cancels and starts a payment:
 
 ```bash
-LIVE_API_URL=http://localhost:3000 npx jest src/__contract__
+# needs a system admin: in backend/, ADMIN_PASSWORD=... npm run create-admin -- --email admin@example.com
+LIVE_API_ADMIN_EMAIL=admin@example.com LIVE_API_ADMIN_PASSWORD=... \
+  LIVE_API_URL=http://localhost:3000 npx jest src/__contract__
 # add LIVE_API_SQLITE=1 if the backend runs on SQLite (restaurant search needs Postgres)
 ```
 

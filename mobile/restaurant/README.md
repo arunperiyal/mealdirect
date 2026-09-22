@@ -1,0 +1,65 @@
+# MealDirect Partner (restaurant app)
+
+Expo (SDK 57) app for restaurant owners. It runs in Expo Go, so no custom build is needed.
+
+## Run it
+
+```bash
+cd mobile && npm install    # once, installs every app in the workspace
+cd restaurant
+cp .env.example .env        # set EXPO_PUBLIC_API_URL, same values as the customer app
+npx expo start
+```
+
+Sign up in the app, add your restaurant, then approve it. There's no admin app yet (Phase 2D), so approve it
+with the API as a system admin:
+
+```bash
+# in backend/, once:  ADMIN_PASSWORD=... npm run create-admin -- --email admin@example.com
+curl -X PUT http://localhost:3000/api/restaurants/admin/<restaurantId>/approve \
+  -H "Authorization: Bearer <admin access token from POST /api/auth/login>"
+```
+
+The app checks for approval every 30 seconds and opens once it's through.
+
+## What it does
+
+| Area | Screens |
+| --- | --- |
+| Onboarding | Sign up as a partner → add restaurant → waiting for approval (shows the reviewer's note if rejected) |
+| Today | New / in-progress / completed counts, today's sales, today's menu status, orders waiting to be accepted |
+| Orders | Active / completed / cancelled, new orders first. Each order shows customer name and phone, address, delivery time, notes, items, payment, and one button for the next step: accept → start preparing → mark ready → send out for delivery → mark delivered. Cancelling asks for a reason, which the customer sees. |
+| Menus | Past week and next two weeks. Create a menu for any of the next 7 days, add, edit and remove dishes, switch dishes off when sold out, set delivery times with a limit on orders, publish, stop taking orders. |
+| Settings | Restaurant details, delivery and pickup (fee and minimum order), payout details (UPI or bank account), switch between restaurants, sign out |
+
+The order screens check for changes every 10 seconds while open. Push notifications for new orders come with Phase 4.
+
+Rules that come from the backend:
+- An online order can't be accepted until the customer has paid.
+- Menus can't be created until the restaurant is approved, and only draft menus can have their ordering window changed.
+- A delivery time can't be deleted once orders are booked in it, and its limit can't drop below the orders already booked.
+- Pickup orders are finished by the customer confirming they collected them.
+
+## Checks
+
+```bash
+npm test              # unit and screen tests
+npm run typecheck
+npm run lint
+npx expo-doctor
+```
+
+`src/__contract__/liveApi.test.ts` runs the app's API layer against a real backend: sign up, onboarding and
+approval, settings, menu setup, sold-out dishes, a delivery order from new to delivered, and cancelling:
+
+```bash
+LIVE_API_ADMIN_EMAIL=admin@example.com LIVE_API_ADMIN_PASSWORD=... \
+  LIVE_API_URL=http://localhost:3000 npx jest src/__contract__
+```
+
+## Not built yet
+
+- Operating hours (the backend stores them but nothing uses them yet; each menu has its own ordering window)
+- Push notifications and a sound for new orders (Phase 4)
+- Dish photos
+- Order history beyond the latest 100 orders

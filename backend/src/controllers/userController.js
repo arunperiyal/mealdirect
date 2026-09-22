@@ -1,5 +1,9 @@
 const User = require('../models/User');
-const config = require('../config');
+const validator = require('validator');
+
+// Roles anyone can sign up for. Restaurant admins still need a system admin to
+// approve their restaurant before it is visible to customers.
+const SELF_SIGNUP_ROLES = ['customer', 'restaurant_admin'];
 
 /**
  * Register a new user
@@ -47,12 +51,18 @@ async function registerUser(userData) {
     };
   }
 
-  // Validate role
-  const validRoles = ['customer', 'restaurant_admin', 'system_admin'];
-  if (role && !validRoles.includes(role)) {
+  // Validate role. System admins can't self-register; see createSystemAdmin.
+  if (role === 'system_admin') {
+    throw {
+      code: 'ROLE_NOT_ALLOWED',
+      message: 'System admin accounts cannot be created through registration',
+      statusCode: 403,
+    };
+  }
+  if (!SELF_SIGNUP_ROLES.includes(role)) {
     throw {
       code: 'INVALID_ROLE',
-      message: 'Invalid role. Must be one of: customer, restaurant_admin, system_admin',
+      message: `Invalid role. Must be one of: ${SELF_SIGNUP_ROLES.join(', ')}`,
       statusCode: 400,
     };
   }
@@ -184,8 +194,51 @@ async function updateUser(userId, updates) {
   return user;
 }
 
+/**
+ * Create a system admin. Only reachable from server-side tooling
+ * (scripts/create-admin.js), never from the public API.
+ * @param {Object} data - { email, password, firstName, lastName }
+ * @returns {Promise<Object>} The created user (without password hash)
+ */
+async function createSystemAdmin({ email, password, firstName, lastName }) {
+  const trimmed = String(email || '').trim();
+  if (!validator.isEmail(trimmed)) {
+    throw { code: 'INVALID_EMAIL', message: 'Invalid email format', statusCode: 400 };
+  }
+  // Same normalization as the login route (express-validator normalizeEmail),
+  // otherwise the stored address wouldn't match what login looks up
+  const normalizedEmail = validator.normalizeEmail(trimmed);
+  if (!password || password.length < 12) {
+    throw {
+      code: 'WEAK_PASSWORD',
+      message: 'System admin passwords must be at least 12 characters long',
+      statusCode: 400,
+    };
+  }
+
+  const existingUser = await User.findOne({ where: { email: normalizedEmail } });
+  if (existingUser) {
+    throw {
+      code: 'EMAIL_EXISTS',
+      message: 'User with this email already exists',
+      statusCode: 409,
+    };
+  }
+
+  const user = await User.create({
+    email: normalizedEmail,
+    passwordHash: password, // Will be hashed by beforeCreate hook
+    firstName,
+    lastName,
+    role: 'system_admin',
+  });
+
+  return user.toJSON();
+}
+
 module.exports = {
   registerUser,
+  createSystemAdmin,
   loginUser,
   getUserById,
   getCurrentUser,

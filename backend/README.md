@@ -126,7 +126,7 @@ backend/
 - `GET /api/health` - Health check endpoint
 
 ### Authentication (Phase 1B)
-- `POST /api/auth/register` - User registration
+- `POST /api/auth/register` - User registration (`role` may be `customer` or `restaurant_admin`; defaults to `customer`)
 - `POST /api/auth/login` - User login
 - `POST /api/auth/refresh` - Refresh access token
 - `POST /api/auth/logout` - User logout
@@ -205,6 +205,12 @@ All endpoints return standardized JSON responses:
 - Helmet.js for security headers
 - Input validation with Joi
 - SQL injection prevention (Sequelize parameterized queries)
+- System admins can't self-register. Create them from the server:
+
+  ```bash
+  read -s ADMIN_PASSWORD && export ADMIN_PASSWORD   # at least 12 characters
+  npm run create-admin -- --email admin@example.com --first-name Asha --last-name Rao
+  ```
 
 ## Development Workflow
 

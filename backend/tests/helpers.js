@@ -28,6 +28,26 @@ async function registerAndLogin(app, email, role = 'customer') {
     role,
   };
 
+  // System admins can't self-register, so create them the way scripts/create-admin.js does
+  if (role === 'system_admin') {
+    const { createSystemAdmin } = require('../src/controllers/userController');
+    await createSystemAdmin(userData);
+
+    const login = await request(app)
+      .post('/api/auth/login')
+      .send({ email, password: userData.password });
+    if (login.status !== 200) {
+      throw new Error(`Failed to log in system admin: ${login.body.message}`);
+    }
+    return {
+      user: login.body.data.user,
+      tokens: {
+        accessToken: login.body.data.accessToken,
+        refreshToken: login.body.data.refreshToken,
+      },
+    };
+  }
+
   const response = await request(app).post('/api/auth/register').send(userData);
 
   if (response.status !== 201) {

@@ -11,7 +11,8 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint src/",
     "migrate": "node migrations/run.js",
-    "seed": "node seeds/run.js"
+    "seed": "node seeds/run.js",
+    "create-admin": "node scripts/create-admin.js"
   },
   "keywords": [
     "delivery",
@@ -34,7 +35,8 @@
     "pg": "^8.11.3",
     "razorpay": "^2.9.8",
     "sequelize": "^6.35.2",
-    "socket.io": "^4.7.2"
+    "socket.io": "^4.7.2",
+    "validator": "~13.15.23"
   },
   "devDependencies": {
     "eslint": "^8.55.0",

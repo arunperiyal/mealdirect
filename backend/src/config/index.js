@@ -59,10 +59,16 @@ module.exports = {
   security: {
     bcryptRounds: 12,
     sessionTimeout: 24 * 60 * 60 * 1000, // 24 hours
+    // Per client IP, per 15 minutes. Effectively off in tests, which make many
+    // requests from one address; override with the env vars to test limits.
     rateLimit: {
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100 // max requests per window
-    }
+      windowMs: 15 * 60 * 1000,
+      authMax: parseInt(process.env.RATE_LIMIT_AUTH_MAX || (process.env.NODE_ENV === 'test' ? '100000' : '20'), 10),
+      paymentMax: parseInt(process.env.RATE_LIMIT_PAYMENT_MAX || (process.env.NODE_ENV === 'test' ? '100000' : '30'), 10)
+    },
+    // Number of proxies in front of the API (1 behind nginx), so rate limits
+    // see the real client IP. 0 when clients connect directly.
+    trustProxy: parseInt(process.env.TRUST_PROXY || '0', 10)
   },
 
   // CORS

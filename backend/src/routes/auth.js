@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const { verifyToken } = require('../middleware/auth');
+const { authLimiter } = require('../middleware/rateLimit');
 const { generateAccessToken } = require('../utils/tokenUtils');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
@@ -14,6 +15,7 @@ const config = require('../config');
  */
 router.post(
   '/register',
+  authLimiter,
   [
     body('email').trim().isEmail().normalizeEmail(),
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
@@ -76,6 +78,7 @@ router.post(
  */
 router.post(
   '/login',
+  authLimiter,
   [
     body('email').trim().isEmail().normalizeEmail(),
     body('password').notEmpty().withMessage('Password is required'),
@@ -129,7 +132,7 @@ router.post(
  * Refresh access token using refresh token
  * Body: { refreshToken }
  */
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', authLimiter, async (req, res) => {
   try {
     const { refreshToken } = req.body;
 

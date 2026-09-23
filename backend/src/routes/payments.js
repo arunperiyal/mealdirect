@@ -3,6 +3,7 @@ const { body, param, validationResult } = require('express-validator');
 const router = express.Router();
 const paymentController = require('../controllers/paymentController');
 const { verifyToken, authorize } = require('../middleware/auth');
+const { paymentLimiter } = require('../middleware/rateLimit');
 
 const sendError = (res, error) => {
   const statusCode = error.statusCode || 500;
@@ -30,6 +31,7 @@ const sendValidationErrors = (req, res) => {
  */
 router.post(
   '/create-order',
+  paymentLimiter,
   verifyToken,
   authorize(['customer']),
   [body('orderId').isUUID()],
@@ -56,6 +58,7 @@ router.post(
  */
 router.post(
   '/verify-payment',
+  paymentLimiter,
   verifyToken,
   authorize(['customer']),
   [

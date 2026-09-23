@@ -1,26 +1,22 @@
-FROM node:18-alpine
+FROM node:22-alpine
 
 WORKDIR /app
+ENV NODE_ENV=production
 
-# Copy package files
+# Production dependencies only
 COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
 
-# Install production dependencies only
-RUN npm ci --only=production
+# Application code (.dockerignore keeps .env, tests and local data out)
+COPY src ./src
+COPY scripts ./scripts
 
-# Copy application code
-COPY . .
+# The node image ships an unprivileged "node" user
+USER node
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
-USER nodejs
-
-# Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
-# Start application
 CMD ["node", "src/index.js"]

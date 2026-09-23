@@ -8,6 +8,9 @@ const { verifyToken, authorize } = require('./middleware/auth');
 // Create Express app
 const app = express();
 
+// Behind nginx, use X-Forwarded-For for the client IP (rate limits, logs)
+app.set('trust proxy', config.security.trustProxy);
+
 // Security middleware
 app.use(helmet());
 

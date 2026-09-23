@@ -1,0 +1,56 @@
+# Production stack: Postgres, the API and nginx on one server.
+#
+#   cp .env.production.example .env.production   # then fill in every value
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# See ../DEPLOY.md for the full procedure (schema, first admin, HTTPS).
+name: mealdirect
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:?set DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:?set DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    # No ports: only the API can reach the database
+
+  api:
+    build: ..
+    env_file: .env.production
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      # nginx is the one proxy in front of the API
+      TRUST_PROXY: 1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    # No ports: nginx is the only way in
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

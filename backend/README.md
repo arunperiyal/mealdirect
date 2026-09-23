@@ -68,26 +68,31 @@ npm test:coverage
 npm run lint
 ```
 
-## Docker Deployment
+## Production
 
-### Build and Run with Docker Compose
+See **[DEPLOY.md](DEPLOY.md)** for deploying to a server (HTTPS, Razorpay, backups).
+
+## Local database with Docker
+
+`docker-compose.yml` runs the development Postgres (and Redis). Run the API itself with `npm run dev`, which
+brings the schema up to date on start.
 
 ```bash
-# Start all services (PostgreSQL, Redis, API, NGINX)
-docker-compose up -d
-
-# View logs
-docker-compose logs -f api
-
-# Stop all services
-docker-compose down
+docker compose up -d postgres
+npm run dev
 ```
 
-### Services
-- **API**: http://localhost:3000
-- **PostgreSQL**: localhost:5432
-- **Redis**: localhost:6379
-- **NGINX**: http://localhost (production-like setup)
+The database isn't exposed to the network by default. To reach it from `npm run dev` on the host, add a
+`docker-compose.override.yml`. It isn't committed, so it only affects your machine:
+
+```yaml
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5434:5432"
+```
+
+Then set `DB_HOST=localhost` and `DB_PORT=5434` in `.env`.
 
 ## Project Structure
 

@@ -1,9 +1,8 @@
 const app = require('./app');
 const config = require('./config');
 const sequelize = require('./config/database');
-
-// Import models to register them with Sequelize
-const models = require('./models');
+const { checkProductionConfig } = require('./config/validate');
+const { upgradeDatabase } = require('./db/upgrade');
 
 const PORT = config.port;
 
@@ -11,20 +10,27 @@ const PORT = config.port;
  * Start server and initialize database
  */
 const startServer = async () => {
+  // Refuse to start in production with missing or example secrets
+  if (config.env === 'production') {
+    const { errors, warnings } = checkProductionConfig();
+    warnings.forEach((w) => console.warn(`! ${w}`));
+    if (errors.length) {
+      console.error('Refusing to start: the production configuration is not safe.');
+      errors.forEach((e) => console.error(`  - ${e}`));
+      process.exit(1);
+    }
+  }
+
   try {
     // Test database connection
     await sequelize.authenticate();
     console.info('✓ Database connection successful');
 
-    // Sync database models (creates tables if not exist)
-    // In production, use migrations instead
+    // Development upgrades the schema on start. In production it's a deploy
+    // step (npm run upgrade-db), so a schema change never happens by surprise.
     if (config.env === 'development') {
-      // alter: true re-adds unique constraints on every run with Postgres
-      // (Sequelize v6), so each restart piles up duplicates. Opt in when a
-      // model change needs to reach an existing dev database.
-      const alter = process.env.DB_SYNC_ALTER === 'true';
-      await sequelize.sync({ alter });
-      console.info(`✓ Database models synchronized${alter ? ' (alter)' : ''}`);
+      await upgradeDatabase(sequelize);
+      console.info('✓ Database schema up to date');
     }
 
     // Start Express server

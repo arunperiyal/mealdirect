@@ -6,6 +6,7 @@ import {
   type MenuItem,
   type Order,
   type Collection,
+  type KitchenDay,
   type OwnedRestaurant,
 } from '@mealdirect/shared';
 import { api } from '@/api';
@@ -39,6 +40,17 @@ export interface BankDetails {
   bankAccountNumber?: string;
   bankIFSC?: string;
   upiId?: string;
+}
+
+export interface OrderSettings {
+  autoAcceptOrders: boolean;
+  autoReadyMinutes: number | null; // before a delivery slot starts; null = off
+}
+
+export interface BulkInput {
+  menuId: string;
+  group: string; // delivery slot id, 'unscheduled' or 'pickup'
+  action: 'accept' | 'ready';
 }
 
 export type ItemInput = Pick<MenuItem, 'name' | 'price'> & Partial<Pick<MenuItem, 'description' | 'available'>>;
@@ -76,6 +88,10 @@ export const serverApi = createApi({
       query: ({ id, ...data }) => ({ url: `/restaurants/${id}/bank-details`, method: 'PUT', data }),
       invalidatesTags: ['Restaurant'],
     }),
+    updateOrderSettings: build.mutation<OwnedRestaurant, { id: string } & OrderSettings>({
+      query: ({ id, ...data }) => ({ url: `/restaurants/${id}/order-settings`, method: 'PUT', data }),
+      invalidatesTags: ['Restaurant'],
+    }),
 
     // Orders
     getRestaurantOrders: build.query<Order[], { restaurantId: string }>({
@@ -87,6 +103,16 @@ export const serverApi = createApi({
         { type: 'Order', id: 'LIST' },
         ...orders.map((o) => ({ type: 'Order' as const, id: o.id })),
       ],
+    }),
+    // One day's cooking: dish totals and orders grouped by delivery time
+    getKitchen: build.query<KitchenDay, { restaurantId: string; date: string }>({
+      query: (params) => ({ url: '/orders/kitchen', params }),
+      providesTags: [{ type: 'Order', id: 'LIST' }],
+    }),
+    bulkAdvance: build.mutation<{ updated: number; skipped: number }, BulkInput>({
+      query: (data) => ({ url: '/orders/bulk', method: 'POST', data }),
+      // Every order in the group changed, so refetch all of them
+      invalidatesTags: ['Order'],
     }),
     getOrder: build.query<Order, string>({
       query: (id) => ({ url: `/orders/${id}` }),
@@ -199,7 +225,10 @@ export const {
   useUpdateRestaurantMutation,
   useUpdateDeliverySettingsMutation,
   useUpdateBankDetailsMutation,
+  useUpdateOrderSettingsMutation,
   useGetRestaurantOrdersQuery,
+  useGetKitchenQuery,
+  useBulkAdvanceMutation,
   useGetOrderQuery,
   useAdvanceOrderMutation,
   useRecordPaymentMutation,

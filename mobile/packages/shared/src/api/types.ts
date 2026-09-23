@@ -45,6 +45,8 @@ export interface OwnedRestaurant extends Restaurant {
   bankAccountNumber: string | null;
   bankIFSC: string | null;
   upiId: string | null;
+  autoAcceptOrders: boolean;
+  autoReadyMinutes: number | null; // before a delivery slot starts; null = off
 }
 
 export interface MenuItem {
@@ -246,4 +248,29 @@ export interface RiderCashDetail {
   cash: RiderCash;
   orders: { id: string; total: number | string; collectedAt: string; restaurant?: { id: string; name: string } }[];
   settlements: Settlement[];
+}
+
+// GET /api/orders/kitchen: one day's cooking
+export interface DishTotal {
+  menuItemId: string;
+  name: string;
+  quantity: number;
+}
+
+export interface KitchenGroup {
+  key: string; // delivery slot id, 'unscheduled' or 'pickup'
+  kind: 'slot' | 'unscheduled' | 'pickup';
+  menuId: string;
+  slot: { id: string; startTime: string; endTime: string } | null;
+  counts: Partial<Record<OrderStatus, number>>;
+  dishTotals: DishTotal[];
+  orders: Order[];
+}
+
+export interface KitchenDay {
+  date: string;
+  menus: { id: string; date: string; status: MenuStatus; orderingEndTime: string | null }[];
+  totals: DishTotal[];
+  counts: Partial<Record<OrderStatus, number>>;
+  groups: KitchenGroup[];
 }

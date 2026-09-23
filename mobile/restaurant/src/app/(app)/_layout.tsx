@@ -44,6 +44,7 @@ export default function AppLayout() {
         <Stack.Screen name="settings/profile" options={{ title: 'Restaurant details' }} />
         <Stack.Screen name="settings/delivery" options={{ title: 'Delivery & pickup' }} />
         <Stack.Screen name="settings/bank" options={{ title: 'Payout details' }} />
+        <Stack.Screen name="settings/orders" options={{ title: 'Order handling' }} />
       </Stack.Protected>
     </Stack>
   );

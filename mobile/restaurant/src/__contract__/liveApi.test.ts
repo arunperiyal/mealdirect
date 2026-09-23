@@ -240,6 +240,27 @@ describeLive('restaurant app ↔ live backend', () => {
     expect(cancelled).toMatchObject({ status: 'cancelled', cancellationReason: 'Item sold out' });
   });
 
+  test('kitchen: auto-accept, dish totals per delivery time, and mark all ready', async () => {
+    const settings = await call(
+      d(e.updateOrderSettings.initiate({ id: restaurantId, autoAcceptOrders: true, autoReadyMinutes: 15 }))
+    );
+    expect(settings).toMatchObject({ autoAcceptOrders: true, autoReadyMinutes: 15 });
+
+    const placed = await placeOrder({ deliveryType: 'pickup', paymentMethod: 'cod' });
+    expect(placed.status).toBe('confirmed');
+
+    const kitchen = await call(d(e.getKitchen.initiate({ restaurantId, date: today }, { forceRefetch: true })));
+    const pickup = kitchen.groups.find((g) => g.kind === 'pickup')!;
+    expect(pickup.orders.map((o) => o.id)).toContain(placed.id);
+    expect(kitchen.groups.find((g) => g.key === slotId)?.dishTotals[0]).toMatchObject({ name: 'South Indian Meals' });
+
+    const result = await call(d(e.bulkAdvance.initiate({ menuId, group: 'pickup', action: 'ready' })));
+    expect(result.updated).toBeGreaterThanOrEqual(1);
+    expect((await call(d(e.getOrder.initiate(placed.id, { forceRefetch: true })))).status).toBe('ready');
+
+    await call(d(e.updateOrderSettings.initiate({ id: restaurantId, autoAcceptOrders: false, autoReadyMinutes: null })));
+  });
+
   test('delivery time capacity cannot drop below booked orders', async () => {
     await placeOrder({ deliveryType: 'delivery', deliverySlotId: slotId, deliveryAddress: 'Somewhere', paymentMethod: 'cod' });
     const shrink = await d(e.updateSlot.initiate({ id: slotId, maxOrders: 1 }));

@@ -11,7 +11,7 @@ import {
   ErrorState,
   font,
   formatINR,
-  formatTime,
+  orderingState,
   LoadingState,
   localDateString,
   radius,
@@ -119,13 +119,15 @@ function Header({
         ))}
       </View>
 
-      {menu?.orderingStartTime && menu?.orderingEndTime ? (
-        <Text style={[font.caption, styles.window]}>
-          Ordering open {formatTime(menu.orderingStartTime)} – {formatTime(menu.orderingEndTime)}
-        </Text>
-      ) : null}
+      {menu ? <CutoffNote menu={menu} /> : null}
     </View>
   );
+}
+
+function CutoffNote({ menu }: { menu: Menu }) {
+  const { open, label } = orderingState(menu, localDateString(new Date()));
+  if (!label) return null;
+  return <Text style={[font.caption, styles.window, !open && styles.closed]}>{label}</Text>;
 }
 
 function MenuItemRow({ item, menu, restaurant }: { item: MenuItem; menu: Menu; restaurant: Restaurant }) {
@@ -172,6 +174,8 @@ function MenuItemRow({ item, menu, restaurant }: { item: MenuItem; menu: Menu; r
       </View>
       {!item.available ? (
         <Text style={styles.soldOut}>Sold out</Text>
+      ) : !orderingState(menu, localDateString(new Date())).open ? (
+        <Text style={styles.soldOut}>Closed</Text>
       ) : quantity > 0 ? (
         <QuantityStepper
           label={item.name}
@@ -206,5 +210,6 @@ const styles = StyleSheet.create({
   itemText: { flex: 1, gap: 2 },
   price: { fontSize: 15, fontWeight: '600', color: colors.text },
   soldOut: { color: colors.textMuted, fontWeight: '600' },
+  closed: { color: colors.danger, fontWeight: '600' },
   addButton: { minHeight: 38, minWidth: 84 },
 });

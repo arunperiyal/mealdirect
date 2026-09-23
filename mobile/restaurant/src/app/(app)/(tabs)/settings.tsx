@@ -17,6 +17,10 @@ import { logout } from '@/store/authSlice';
 import { selectRestaurant } from '@/store/restaurantSlice';
 import { useGetMyRestaurantsQuery } from '@/store/serverApi';
 
+const orderHandling = (autoAccept: boolean, autoReady: number | null) =>
+  [autoAccept && 'Auto-accept', autoReady != null && `Ready ${autoReady} min early`].filter(Boolean).join(' · ') ||
+  'Accept and mark ready by hand';
+
 export default function SettingsScreen() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
@@ -54,6 +58,11 @@ export default function SettingsScreen() {
               : 'Not taking orders'
           }
           onPress={() => router.push('/settings/delivery')}
+        />
+        <LinkRow
+          title="Order handling"
+          detail={orderHandling(restaurant.autoAcceptOrders, restaurant.autoReadyMinutes)}
+          onPress={() => router.push('/settings/orders')}
         />
         <LinkRow title="Payout details" detail={payout || 'Not set up'} onPress={() => router.push('/settings/bank')} />
       </Card>

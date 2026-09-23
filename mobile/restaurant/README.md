@@ -22,7 +22,11 @@ The partner app checks for approval every 30 seconds and opens once it's through
 | Today | New / in-progress / completed counts, today's sales, today's menu status, orders waiting to be accepted |
 | Orders | Active / completed / cancelled, new orders first. Each order shows customer name and phone, address, delivery time, notes, items, payment, and one button for the next step: accept → start preparing → mark ready → send out for delivery → mark delivered. Cancelling asks for a reason, which the customer sees. |
 | Menus | Past week and next two weeks. Create a menu for any of the next 7 days, add, edit and remove dishes, switch dishes off when sold out, set delivery times with a limit on orders, publish, stop taking orders. |
-| Settings | Restaurant details, delivery and pickup (fee and minimum order), payout details (UPI or bank account), switch between restaurants, sign out |
+| Kitchen | Today or tomorrow: how much of each dish to cook, then one card per delivery time and one for pickup, each with its own dish totals, **Accept all new** and **Mark all ready** (skips "preparing"). Orders are folded under each card. |
+| Settings | Restaurant details, delivery and pickup (fee and minimum order), order handling, payout details (UPI or bank account), switch between restaurants, sign out |
+
+**Order handling** (off by default) is for messes and busy kitchens: accept pay-on-delivery orders automatically, and
+mark accepted delivery orders ready 10–60 minutes before their delivery time.
 
 The order screens check for changes every 10 seconds while open. Push notifications for new orders come with Phase 4.
 

@@ -1,5 +1,6 @@
 import type { Order } from '@mealdirect/shared';
 import { canRecordPayment, canRestaurantCancel, customerName, nextStep, paymentLabel } from '../orderActions';
+import { bulkResultMessage, countsSummary, groupTitle, kitchenCounts } from '../kitchen';
 import { summarizeToday } from '../today';
 import { dayLabel, isBefore, isValidTime, toHHmm } from '../time';
 import { validateIfsc, validateMoney, validatePhone, validateUpi } from '../validation';
@@ -140,5 +141,29 @@ describe('time and validation', () => {
     expect(validateIfsc('HDFC1234')).toBeTruthy();
     expect(validateUpi('kitchen@okaxis')).toBeNull();
     expect(validateUpi('kitchen')).toBeTruthy();
+  });
+});
+
+describe('kitchen helpers', () => {
+  test('counts preparing orders as accepted, and finished ones as done', () => {
+    const c = kitchenCounts({ pending: 1, confirmed: 2, preparing: 1, ready: 3, delivered: 1, picked_up: 1 });
+    expect(c).toEqual({ new: 1, accepted: 3, ready: 3, done: 2 });
+    expect(countsSummary(c)).toBe('1 new · 3 accepted · 3 ready · 2 done');
+    expect(countsSummary(kitchenCounts({ ready: 2 }))).toBe('2 ready');
+  });
+
+  test('names groups by delivery time or pickup', () => {
+    expect(groupTitle({ kind: 'slot', slot: { id: 's', startTime: '19:30:00', endTime: '20:00:00' } })).toBe(
+      'Delivery 7:30 PM–8:00 PM'
+    );
+    expect(groupTitle({ kind: 'unscheduled', slot: null })).toBe('Delivery (no time chosen)');
+    expect(groupTitle({ kind: 'pickup', slot: null })).toBe('Pickup');
+  });
+
+  test('reports bulk results, including orders still waiting for payment', () => {
+    expect(bulkResultMessage('accept', { updated: 3, skipped: 1 }, 'Pickup')).toBe(
+      'Pickup: 3 orders accepted. 1 order still waiting for online payment.'
+    );
+    expect(bulkResultMessage('ready', { updated: 0, skipped: 0 }, 'Pickup')).toBe('Pickup: nothing to mark ready.');
   });
 });

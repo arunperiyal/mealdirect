@@ -49,6 +49,9 @@ Everything used here ships in Expo Go, so no custom development build is needed.
 4. The order screen checks for status changes every 5 seconds until the order is delivered,
    picked up or cancelled.
 
+The restaurant screen shows when ordering closes for the day ("Order by 11:30 AM today"). After that time, or for a
+past day, dishes show **Closed** and the backend refuses the order.
+
 An order belongs to one restaurant menu, so the cart holds items from one menu at a time.
 Adding a dish from another menu asks before replacing the cart.
 

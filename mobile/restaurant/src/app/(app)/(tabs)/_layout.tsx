@@ -40,6 +40,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="kitchen"
+        options={{
+          title: 'Kitchen',
+          tabBarIcon: ({ color, size }) => (
+            <SymbolView name={{ ios: 'frying.pan', android: 'skillet' }} tintColor={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="menus"
         options={{
           title: 'Menus',

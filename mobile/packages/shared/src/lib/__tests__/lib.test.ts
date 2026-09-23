@@ -2,6 +2,7 @@ import { addDays, formatTime, localDateString } from '../dates';
 import { estimateTotals, formatINR } from '../money';
 import { canCancel, canMarkPickedUp, isActive, needsPayment, paymentLabel, statusSteps } from '../orderStatus';
 import { upiPayUrl } from '../upi';
+import { orderingState } from '../cutoff';
 import type { Order } from '../../api/types';
 import { validateEmail, validatePassword } from '../validation';
 
@@ -101,5 +102,21 @@ describe('pay on delivery', () => {
     expect(upiPayUrl({ id: 'mealdirect@okbank', name: 'Meal Direct' }, 282, '#AB12CD34')).toBe(
       'upi://pay?pa=mealdirect%40okbank&pn=Meal%20Direct&am=282.00&cu=INR&tn=MealDirect%20order%20%23AB12CD34'
     );
+  });
+});
+
+describe('orderingState', () => {
+  const at = (h: number, m = 0) => new Date(2026, 8, 23, h, m);
+  const menu = { date: '2026-09-23', orderingEndTime: '11:30:00' };
+
+  test('open until the cutoff on the menu day, closed after', () => {
+    expect(orderingState(menu, '2026-09-23', at(11, 29))).toEqual({ open: true, label: 'Order by 11:30 AM today' });
+    expect(orderingState(menu, '2026-09-23', at(11, 30))).toEqual({ open: false, label: 'Orders closed at 11:30 AM' });
+  });
+
+  test('earlier days are open; past days are closed; no cutoff means open', () => {
+    expect(orderingState(menu, '2026-09-22', at(20))).toEqual({ open: true, label: 'Order by 11:30 AM' });
+    expect(orderingState(menu, '2026-09-24', at(8)).open).toBe(false);
+    expect(orderingState({ date: '2026-09-23', orderingEndTime: null }, '2026-09-23', at(23))).toEqual({ open: true, label: null });
   });
 });

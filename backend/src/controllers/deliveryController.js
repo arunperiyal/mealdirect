@@ -14,10 +14,17 @@ const MAX_ACTIVE = 3;
 const CLAIMABLE_STATUSES = ['confirmed', 'preparing', 'ready'];
 const ACTIVE_STATUSES = [...CLAIMABLE_STATUSES, 'out_for_delivery'];
 
-// Where to pick up and where to drop off
-const DELIVERY_DETAILS = [
-  ...ORDER_DETAILS,
-  { model: Restaurant, as: 'restaurant', attributes: ['id', 'name', 'address', 'city', 'phone'] },
+const RESTAURANT = { model: Restaurant, as: 'restaurant', attributes: ['id', 'name', 'address', 'city', 'phone'] };
+
+// Where to pick up and where to drop off, for the rider handling the order
+const DELIVERY_DETAILS = [...ORDER_DETAILS, RESTAURANT];
+
+// Riders browsing the queue see only the customer's first name; the phone
+// number appears once they've claimed the order
+const QUEUE_DETAILS = [
+  ...ORDER_DETAILS.filter((i) => i.as !== 'customer'),
+  { model: User, as: 'customer', attributes: ['id', 'firstName'] },
+  RESTAURANT,
 ];
 
 const wrap = (fn) => async (...args) => {
@@ -48,7 +55,7 @@ const assertApprovedRider = wrap(async (userId) => {
 const listAvailable = wrap(async () => {
   const orders = await Order.findAll({
     where: { deliveryType: 'delivery', riderId: null, status: { [Op.in]: CLAIMABLE_STATUSES } },
-    include: DELIVERY_DETAILS,
+    include: QUEUE_DETAILS,
     order: [['createdAt', 'ASC']],
     limit: 50,
   });
@@ -74,11 +81,13 @@ const findMine = async (orderId, riderId) => {
 
 // 3. One order: the rider's own, or one still in the queue
 const getOrder = wrap(async (orderId, riderId) => {
-  const order = await Order.findByPk(orderId, { include: DELIVERY_DETAILS });
-  if (!order) throwError('NOT_FOUND', 'Order not found', 404);
-  const inQueue = !order.riderId && order.deliveryType === 'delivery' && CLAIMABLE_STATUSES.includes(order.status);
-  if (order.riderId !== riderId && !inQueue) throwError('FORBIDDEN', 'This delivery is not yours', 403);
-  return order;
+  const found = await Order.findByPk(orderId, { attributes: ['id', 'riderId', 'deliveryType', 'status'] });
+  if (!found) throwError('NOT_FOUND', 'Order not found', 404);
+  if (found.riderId === riderId) return Order.findByPk(orderId, { include: DELIVERY_DETAILS });
+
+  const inQueue = !found.riderId && found.deliveryType === 'delivery' && CLAIMABLE_STATUSES.includes(found.status);
+  if (!inQueue) throwError('FORBIDDEN', 'This delivery is not yours', 403);
+  return Order.findByPk(orderId, { include: QUEUE_DETAILS });
 });
 
 // 4. Claim. A single conditional UPDATE, so two riders can't both get the order.

@@ -145,7 +145,19 @@ describe('Delivery partners', () => {
       expect(res.body.data.map((o) => o.id)).toEqual([deliverable.id]);
       expect(res.body.data[0].restaurant).toMatchObject({ name: 'Rider Test Kitchen', address: '123 Main St' });
       expect(res.body.data[0].deliveryAddress).toBe('7 Rider Lane');
-      expect(res.body.data[0].customer.firstName).toBe('Customer');
+      expect(res.body.data[0].customer).toEqual({ id: expect.any(String), firstName: 'Customer' });
+
+      // Previewing a queued order doesn't reveal the customer's phone either
+      const preview = await request(app).get(`/api/delivery/orders/${deliverable.id}`).set(riderHeaders);
+      expect(preview.body.data.customer.phone).toBeUndefined();
+
+      // Once claimed, the rider gets the phone number
+      await riderDoes(deliverable.id, 'claim');
+      const claimed = await request(app).get(`/api/delivery/orders/${deliverable.id}`).set(riderHeaders);
+      expect(claimed.body.data.customer).toHaveProperty('phone');
+
+      // Another rider can't open a claimed order
+      expect((await request(app).get(`/api/delivery/orders/${deliverable.id}`).set(rider2Headers)).status).toBe(403);
     });
 
     test('the first rider to claim gets the order; the second is told it is taken', async () => {

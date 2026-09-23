@@ -1,4 +1,6 @@
 const { Op } = require('sequelize');
+const config = require('../config');
+const { assertCustomerCanOrder, recordCollection } = require('./collectionController');
 const { Order, Menu, DeliverySlot, Restaurant, User } = require('../models');
 
 const throwError = (code, message, statusCode = 400) => {
@@ -20,11 +22,10 @@ const assertNoRider = (order) => {
   }
 };
 
-// Mark delivered; cash on delivery counts as collected at the door
+// Mark delivered. Payment on delivery is recorded separately (who collected it, how).
 const completeDelivery = (order, userId) => {
   order.status = 'delivered';
   order.deliveredAt = new Date();
-  if (order.paymentMethod === 'cod') order.paymentStatus = 'completed';
   addStatusHistory(order, 'delivered', userId);
 };
 
@@ -85,6 +86,11 @@ const createOrder = async (customerId, data) => {
       paymentMethod,
       customerNotes,
     } = data;
+
+    if (paymentMethod !== 'cod' && !config.payment.onlineEnabled) {
+      throwError('ONLINE_PAYMENTS_DISABLED', 'Online payment is not available right now. Please pay on delivery.', 400);
+    }
+    await assertCustomerCanOrder(customerId);
 
     // Validate restaurant
     const restaurant = await Restaurant.findByPk(restaurantId);
@@ -174,7 +180,8 @@ const createOrder = async (customerId, data) => {
       deliverySlotId: deliveryType === 'delivery' ? deliverySlotId : null,
       deliveryAddress: deliveryType === 'delivery' ? deliveryAddress : null,
       paymentMethod,
-      paymentStatus: paymentMethod === 'cod' ? 'pending' : 'pending',
+      paymentStatus: 'pending',
+      collectionStatus: paymentMethod === 'cod' ? 'awaiting' : null,
       subtotal,
       tax,
       deliveryFee,
@@ -278,6 +285,7 @@ const listAdminOrders = async (filters = {}) => {
     if (status) where.status = status;
     if (restaurantId) where.restaurantId = restaurantId;
     if (customerId) where.customerId = customerId;
+    if (filters.collection) where.collectionStatus = filters.collection;
 
     const { count, rows } = await Order.findAndCountAll({
       where,
@@ -444,6 +452,29 @@ const markPickedUp = async (orderId, customerId, userId) => {
   }
 };
 
+// 10b. Restaurant records payment for a pickup or self-delivered cash order
+const recordRestaurantPayment = async (orderId, userId, { collection, note }) => {
+  try {
+    const order = await findOwnedOrder(orderId, userId);
+    if (order.paymentMethod !== 'cod') throwError('NOT_CASH_ORDER', 'This order was paid online', 409);
+    if (order.riderId) throwError('RIDER_ASSIGNED', 'The delivery partner records payment for this order', 409);
+    if (order.collectionStatus !== 'awaiting') {
+      throwError('ALREADY_RECORDED', 'Payment for this order has already been recorded', 409);
+    }
+    const handedOver =
+      order.deliveryType === 'pickup' ? ['ready', 'picked_up'].includes(order.status) : order.status === 'delivered';
+    if (!handedOver) {
+      throwError('INVALID_STATUS', 'Record payment when the customer receives the order', 400);
+    }
+    recordCollection(order, { collection, note }, userId);
+    await order.save();
+    return order;
+  } catch (error) {
+    if (error.code) throw error;
+    throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
+  }
+};
+
 // 11. Cancel order
 const cancelOrder = async (orderId, userId, role, reason = '') => {
   try {
@@ -520,6 +551,7 @@ const updateOrder = async (orderId, userId, data) => {
 };
 
 module.exports = {
+  recordRestaurantPayment,
   ORDER_DETAILS,
   addStatusHistory,
   completeDelivery,

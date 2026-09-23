@@ -1,5 +1,5 @@
 const express = require('express');
-const { param, validationResult } = require('express-validator');
+const { body, param, validationResult } = require('express-validator');
 const router = express.Router();
 const deliveryController = require('../controllers/deliveryController');
 const { verifyToken, authorize } = require('../middleware/auth');
@@ -38,6 +38,9 @@ const orderId = [param('id').isUUID()];
 /** GET /api/delivery/available: unclaimed delivery orders */
 router.get('/available', handle(() => deliveryController.listAvailable()));
 
+/** GET /api/delivery/balance: cash held, overdue and collected today */
+router.get('/balance', handle((req) => deliveryController.balance(req.user.id)));
+
 /** GET /api/delivery/orders: this rider's deliveries */
 router.get('/orders', handle((req) => deliveryController.listMine(req.user.id)));
 
@@ -48,6 +51,15 @@ router.get('/orders/:id', orderId, handle((req) => deliveryController.getOrder(r
 router.post('/orders/:id/claim', orderId, handle((req) => deliveryController.claim(req.params.id, req.user.id)));
 router.post('/orders/:id/release', orderId, handle((req) => deliveryController.release(req.params.id, req.user.id)));
 router.post('/orders/:id/pick-up', orderId, handle((req) => deliveryController.pickUp(req.params.id, req.user.id)));
-router.post('/orders/:id/deliver', orderId, handle((req) => deliveryController.deliver(req.params.id, req.user.id)));
+// Body for pay-on-delivery orders: { collection: 'cash' | 'upi' | 'not_paid', note? }
+router.post(
+  '/orders/:id/deliver',
+  [
+    ...orderId,
+    body('collection').optional().isIn(['cash', 'upi', 'not_paid']),
+    body('note').optional().isString().trim().isLength({ max: 500 }),
+  ],
+  handle((req) => deliveryController.deliver(req.params.id, req.user.id, req.body))
+);
 
 module.exports = router;

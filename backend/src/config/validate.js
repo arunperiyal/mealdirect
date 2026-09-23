@@ -50,6 +50,13 @@ const checkProductionConfig = (env = process.env) => {
     }
   }
 
+  if (env.ONLINE_PAYMENTS_ENABLED === 'true' && !(keyId && keySecret)) {
+    errors.push('ONLINE_PAYMENTS_ENABLED is true but the Razorpay keys are not set');
+  }
+  if (!env.MEALDIRECT_UPI_ID) {
+    warnings.push("MEALDIRECT_UPI_ID is not set: riders can't show a UPI QR, so customers can only pay cash");
+  }
+
   return { errors, warnings };
 };
 

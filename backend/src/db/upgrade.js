@@ -39,6 +39,37 @@ const STEPS = [
     name: 'Delivery partners: index on rider and status',
     sql: `CREATE INDEX IF NOT EXISTS "orders_rider_id_status" ON "Orders" ("rider_id", "status")`,
   },
+  {
+    name: 'Pay on delivery: collection status type',
+    sql: `DO $$ BEGIN
+            CREATE TYPE "enum_Orders_collection_status" AS ENUM ('awaiting', 'collected', 'not_paid', 'written_off');
+          EXCEPTION WHEN duplicate_object THEN NULL;
+          END $$`,
+  },
+  {
+    name: 'Pay on delivery: collection method type',
+    sql: `DO $$ BEGIN
+            CREATE TYPE "enum_Orders_collection_method" AS ENUM ('cash', 'upi');
+          EXCEPTION WHEN duplicate_object THEN NULL;
+          END $$`,
+  },
+  {
+    name: 'Pay on delivery: Orders collection columns',
+    sql: `ALTER TABLE "Orders"
+            ADD COLUMN IF NOT EXISTS "collection_status" "enum_Orders_collection_status",
+            ADD COLUMN IF NOT EXISTS "collection_method" "enum_Orders_collection_method",
+            ADD COLUMN IF NOT EXISTS "collected_by_id" UUID REFERENCES "users" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+            ADD COLUMN IF NOT EXISTS "collected_at" TIMESTAMP WITH TIME ZONE,
+            ADD COLUMN IF NOT EXISTS "collection_note" TEXT`,
+  },
+  {
+    // Cash orders from before this change: paid ones count as collected (method
+    // unknown, so they never enter a rider's cash balance), the rest await it
+    name: 'Pay on delivery: backfill existing cash orders',
+    sql: `UPDATE "Orders"
+             SET "collection_status" = CASE WHEN "payment_status" = 'completed' THEN 'collected' ELSE 'awaiting' END::"enum_Orders_collection_status"
+           WHERE "payment_method" = 'cod' AND "collection_status" IS NULL`,
+  },
 ];
 
 const upgradeDatabase = async (sequelize, log = () => {}) => {

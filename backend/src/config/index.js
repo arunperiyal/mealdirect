@@ -52,8 +52,20 @@ module.exports = {
       keySecret: process.env.RAZORPAY_KEY_SECRET || '',
       webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
       currency: 'INR'
+    },
+    // Online payment (Razorpay) is offered only when switched on and configured
+    onlineEnabled:
+      process.env.ONLINE_PAYMENTS_ENABLED === 'true' &&
+      Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
+    // Customers paying by UPI at the door pay MealDirect's account, shown as a QR on the rider's phone
+    upi: {
+      id: process.env.MEALDIRECT_UPI_ID || '',
+      name: process.env.MEALDIRECT_UPI_NAME || 'MealDirect'
     }
   },
+
+  // "Today" for rider cash settlement, in minutes east of UTC (330 = India)
+  businessUtcOffsetMinutes: parseInt(process.env.BUSINESS_UTC_OFFSET_MINUTES || '330', 10),
 
   // Security
   security: {

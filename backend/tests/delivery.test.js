@@ -199,7 +199,7 @@ describe('Delivery partners', () => {
   });
 
   describe('delivering', () => {
-    test('rider picks up a ready order and delivers it; cash is recorded as collected', async () => {
+    test('rider picks up a ready order and delivers it, recording the cash collected', async () => {
       const order = await confirmed();
       await riderDoes(order.id, 'claim');
 
@@ -222,9 +222,9 @@ describe('Delivery partners', () => {
       expect(picked.body.data.status).toBe('out_for_delivery');
       expect((await riderDoes(order.id, 'release')).status).toBe(400);
 
-      const delivered = await riderDoes(order.id, 'deliver');
+      const delivered = await riderDoes(order.id, 'deliver').send({ collection: 'cash' });
       expect(delivered.status).toBe(200);
-      expect(delivered.body.data).toMatchObject({ status: 'delivered', paymentStatus: 'completed' });
+      expect(delivered.body.data).toMatchObject({ status: 'delivered', paymentStatus: 'completed', collectionMethod: 'cash' });
 
       const saved = await models.Order.findByPk(order.id);
       expect(saved.statusHistory.map((h) => h.status)).toEqual([
@@ -263,8 +263,9 @@ describe('Delivery partners', () => {
       for (const action of ['mark-preparing', 'mark-ready', 'mark-out-for-delivery', 'mark-delivered']) {
         expect((await restaurantDoes(order.id, action)).status).toBe(200);
       }
+      // Payment is recorded separately (tests/payOnDelivery.test.js)
       const saved = await models.Order.findByPk(order.id);
-      expect(saved.paymentStatus).toBe('completed');
+      expect(saved.collectionStatus).toBe('awaiting');
     });
   });
 });

@@ -42,6 +42,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Public app settings: which payment options to show, MealDirect's UPI details
+app.get('/api/config', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      onlinePayments: config.payment.onlineEnabled,
+      upi: config.payment.upi.id ? { id: config.payment.upi.id, name: config.payment.upi.name } : null,
+    },
+  });
+});
+
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/restaurants', require('./routes/restaurants'));

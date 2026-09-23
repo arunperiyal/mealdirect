@@ -1,5 +1,7 @@
 const { Op } = require('sequelize');
-const { Order, Restaurant, User } = require('../models');
+const { Order, Restaurant, Settlement, User } = require('../models');
+const { riderCash, round2 } = require('./collectionController');
+const { ORDER_DETAILS } = require('./orderController');
 const { searchWhere } = require('./restaurantController');
 
 const throwError = (code, message, statusCode = 400) => {
@@ -186,8 +188,14 @@ const listRiders = async ({ status }) => {
     });
     for (const row of statusRows) if (row.riderStatus in counts) counts[row.riderStatus] = Number(row.count);
 
+    const cash = await Promise.all(riders.map((r) => riderCash(r.id)));
     return {
-      riders: riders.map((r) => ({ ...r, deliveries: delivered.filter((o) => o.riderId === r.id).length })),
+      riders: riders.map((r, i) => ({
+        ...r,
+        deliveries: delivered.filter((o) => o.riderId === r.id).length,
+        cashBalance: cash[i].balance,
+        cashOverdue: cash[i].overdue,
+      })),
       counts,
     };
   } catch (error) {
@@ -210,4 +218,105 @@ const setRiderStatus = async (riderId, riderStatus) => {
   }
 };
 
-module.exports = { listRestaurants, getRestaurant, getAnalytics, listRiders, setRiderStatus };
+// 6. A rider's cash: balance, recent cash orders and settlement history
+const getRiderCash = async (riderId) => {
+  try {
+    const rider = await User.findOne({
+      where: { id: riderId, role: 'delivery_partner' },
+      attributes: ['id', 'firstName', 'lastName', 'phone', 'email', 'riderStatus'],
+    });
+    if (!rider) throwError('NOT_FOUND', 'Delivery partner not found', 404);
+
+    const [cash, orders, settlements] = await Promise.all([
+      riderCash(riderId),
+      Order.findAll({
+        where: { collectedById: riderId, collectionStatus: 'collected', collectionMethod: 'cash' },
+        attributes: ['id', 'total', 'collectedAt'],
+        include: [{ model: Restaurant, as: 'restaurant', attributes: ['id', 'name'] }],
+        order: [['collectedAt', 'DESC']],
+        limit: 50,
+      }),
+      Settlement.findAll({
+        where: { riderId },
+        include: [{ model: User, as: 'recordedBy', attributes: ['id', 'firstName', 'lastName'] }],
+        order: [['createdAt', 'DESC']],
+        limit: 50,
+      }),
+    ]);
+    return { rider, cash, orders, settlements };
+  } catch (error) {
+    if (error.code) throw error;
+    throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
+  }
+};
+
+// 7. Record cash a rider handed over, or write off part of what they owe
+const addSettlement = async (riderId, adminId, { kind, amount, note }) => {
+  try {
+    const rider = await User.findOne({ where: { id: riderId, role: 'delivery_partner' } });
+    if (!rider) throwError('NOT_FOUND', 'Delivery partner not found', 404);
+    if (kind === 'write_off' && !note?.trim()) {
+      throwError('NOTE_REQUIRED', 'Say why this amount is written off', 400);
+    }
+
+    const { balance } = await riderCash(riderId);
+    const value = round2(Number(amount));
+    if (value > balance) {
+      throwError('MORE_THAN_OWED', `The rider owes ₹${balance.toFixed(2)}; this is more than that`, 400);
+    }
+
+    await Settlement.create({ riderId, kind, amount: value, note: note?.trim() || null, recordedById: adminId });
+    return riderCash(riderId);
+  } catch (error) {
+    if (error.code) throw error;
+    throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
+  }
+};
+
+// 8. Resolve an order whose payment was reported not paid, or never confirmed:
+//    'collected' (paid after all, e.g. to MealDirect directly) or 'written_off'.
+//    Either way the customer can order again.
+const resolvePayment = async (orderId, adminId, { outcome, method, note }) => {
+  try {
+    const order = await Order.findByPk(orderId);
+    if (!order) throwError('NOT_FOUND', 'Order not found', 404);
+    if (order.paymentMethod !== 'cod') throwError('NOT_CASH_ORDER', 'This order was paid online', 409);
+    if (!['not_paid', 'awaiting'].includes(order.collectionStatus)) {
+      throwError('NOTHING_TO_RESOLVE', 'This order has no open payment question', 409);
+    }
+    if (!['delivered', 'picked_up'].includes(order.status)) {
+      throwError('INVALID_STATUS', 'Only delivered or picked-up orders can be resolved', 400);
+    }
+    if (!note?.trim()) throwError('NOTE_REQUIRED', 'Add a note explaining the resolution', 400);
+
+    if (outcome === 'collected') {
+      if (!['cash', 'upi'].includes(method)) throwError('METHOD_REQUIRED', 'Say how it was paid: cash or UPI', 400);
+      order.collectionStatus = 'collected';
+      order.collectionMethod = method;
+      order.paymentStatus = 'completed';
+    } else {
+      order.collectionStatus = 'written_off';
+      order.paymentStatus = 'failed';
+    }
+    // Recorded against the admin, so it never counts toward a rider's cash
+    order.collectedById = adminId;
+    order.collectedAt = new Date();
+    order.collectionNote = note.trim();
+    await order.save();
+    return Order.findByPk(orderId, { include: ORDER_DETAILS });
+  } catch (error) {
+    if (error.code) throw error;
+    throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
+  }
+};
+
+module.exports = {
+  listRestaurants,
+  getRestaurant,
+  getAnalytics,
+  listRiders,
+  setRiderStatus,
+  getRiderCash,
+  addSettlement,
+  resolvePayment,
+};

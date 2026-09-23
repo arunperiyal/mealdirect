@@ -1,5 +1,5 @@
 const express = require('express');
-const { param, query, validationResult } = require('express-validator');
+const { body, param, query, validationResult } = require('express-validator');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const { verifyToken, authorize } = require('../middleware/auth');
@@ -101,5 +101,54 @@ for (const [action, status] of [
     })
   );
 }
+
+/**
+ * GET /api/admin/riders/:id/cash
+ * Balance, recent cash orders and settlements for one rider
+ */
+router.get(
+  '/riders/:id/cash',
+  [param('id').isUUID()],
+  handle(async (req, res) => {
+    res.json({ success: true, data: await adminController.getRiderCash(req.params.id) });
+  })
+);
+
+/**
+ * POST /api/admin/riders/:id/settlements
+ * Body: { kind: 'payment' | 'write_off', amount, note? } (note required for write-offs)
+ */
+router.post(
+  '/riders/:id/settlements',
+  [
+    param('id').isUUID(),
+    body('kind').isIn(['payment', 'write_off']),
+    body('amount').isFloat({ gt: 0 }),
+    body('note').optional().isString().trim().isLength({ max: 500 }),
+  ],
+  handle(async (req, res) => {
+    res.status(201).json({
+      success: true,
+      data: await adminController.addSettlement(req.params.id, req.user.id, req.body),
+    });
+  })
+);
+
+/**
+ * POST /api/admin/orders/:id/resolve-payment
+ * Body: { outcome: 'collected' | 'written_off', method?: 'cash' | 'upi', note }
+ */
+router.post(
+  '/orders/:id/resolve-payment',
+  [
+    param('id').isUUID(),
+    body('outcome').isIn(['collected', 'written_off']),
+    body('method').optional().isIn(['cash', 'upi']),
+    body('note').isString().trim().isLength({ min: 1, max: 500 }),
+  ],
+  handle(async (req, res) => {
+    res.json({ success: true, data: await adminController.resolvePayment(req.params.id, req.user.id, req.body) });
+  })
+);
 
 module.exports = router;

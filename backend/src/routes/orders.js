@@ -193,6 +193,7 @@ router.get(
   [
     query('status').optional(),
     query('restaurantId').optional().isUUID(),
+    query('collection').optional().isIn(['awaiting', 'collected', 'not_paid', 'written_off']),
     query('limit').optional().isInt({ min: 1, max: 100 }),
     query('offset').optional().isInt({ min: 0 }),
   ],
@@ -210,6 +211,7 @@ router.get(
       const result = await orderController.listAdminOrders({
         status: req.query.status,
         restaurantId: req.query.restaurantId,
+        collection: req.query.collection,
         limit: req.query.limit || 20,
         offset: req.query.offset || 0,
       });
@@ -445,6 +447,49 @@ router.post(
       res.json({
         success: true,
         message: 'Order marked as picked up',
+        data: order,
+      });
+    } catch (error) {
+      const statusCode = error.statusCode || 500;
+      res.status(statusCode).json({
+        success: false,
+        code: error.code || 'INTERNAL_ERROR',
+        message: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/orders/:id/record-payment
+ * Restaurant records how a pickup or self-delivered cash order was paid
+ * Body: { collection: 'cash' | 'upi' | 'not_paid', note? }
+ */
+router.post(
+  '/:id/record-payment',
+  verifyToken,
+  authorize(['restaurant_admin']),
+  [
+    param('id').isUUID(),
+    body('collection').isIn(['cash', 'upi', 'not_paid']),
+    body('note').optional().isString().trim().isLength({ max: 500 }),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          code: 'VALIDATION_ERROR',
+          errors: errors.array(),
+        });
+      }
+
+      const order = await orderController.recordRestaurantPayment(req.params.id, req.user.id, req.body);
+
+      res.json({
+        success: true,
+        message: 'Payment recorded',
         data: order,
       });
     } catch (error) {

@@ -5,6 +5,8 @@ process.env.DB_STORAGE = ':memory:';
 process.env.RAZORPAY_KEY_ID = 'rzp_test_dummy';
 process.env.RAZORPAY_KEY_SECRET = 'test_key_secret';
 process.env.RAZORPAY_WEBHOOK_SECRET = 'test_webhook_secret';
+// Online payment is on hold in the product, but its tests keep it switched on
+process.env.ONLINE_PAYMENTS_ENABLED = process.env.ONLINE_PAYMENTS_ENABLED ?? 'true';
 
 // Clear require cache for modules that might have been loaded with wrong env vars
 const modulesToClear = [

@@ -113,6 +113,40 @@ const Order = sequelize.define(
         },
       },
     },
+    // Pay on delivery: whether the money was collected, how, and by whom
+    collectionStatus: {
+      type: sequelize.options.dialect === 'sqlite'
+        ? DataTypes.STRING
+        : DataTypes.ENUM('awaiting', 'collected', 'not_paid', 'written_off'),
+      allowNull: true,
+      validate: {
+        isIn: {
+          args: [['awaiting', 'collected', 'not_paid', 'written_off']],
+          msg: 'Invalid collection status',
+        },
+      },
+    },
+    collectionMethod: {
+      type: sequelize.options.dialect === 'sqlite' ? DataTypes.STRING : DataTypes.ENUM('cash', 'upi'),
+      allowNull: true,
+      validate: {
+        isIn: { args: [['cash', 'upi']], msg: 'Invalid collection method' },
+      },
+    },
+    collectedById: {
+      type: sequelize.options.dialect === 'sqlite' ? DataTypes.STRING : DataTypes.UUID,
+      allowNull: true,
+      references: { model: 'users', key: 'id' },
+      onDelete: 'SET NULL',
+    },
+    collectedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    collectionNote: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
     paymentId: {
       type: DataTypes.STRING,
       allowNull: true,

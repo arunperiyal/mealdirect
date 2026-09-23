@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const { Order, Restaurant, User } = require('../models');
 const { ORDER_DETAILS, addStatusHistory, completeDelivery } = require('./orderController');
+const { recordCollection, riderCash } = require('./collectionController');
 
 const throwError = (code, message, statusCode = 400) => {
   throw { code, message, statusCode };
@@ -92,6 +93,16 @@ const getOrder = wrap(async (orderId, riderId) => {
 
 // 4. Claim. A single conditional UPDATE, so two riders can't both get the order.
 const claim = wrap(async (orderId, riderId) => {
+  // Cash from before today must be handed to MealDirect before taking more orders
+  const cash = await riderCash(riderId);
+  if (cash.overdue > 0) {
+    throwError(
+      'SETTLEMENT_OVERDUE',
+      `Settle ₹${cash.overdue.toFixed(2)} of cash with MealDirect to accept new deliveries`,
+      403
+    );
+  }
+
   const active = await Order.count({ where: { riderId, status: { [Op.in]: ACTIVE_STATUSES } } });
   if (active >= MAX_ACTIVE) {
     throwError('TOO_MANY_ACTIVE', `You can handle up to ${MAX_ACTIVE} deliveries at a time`, 409);
@@ -142,15 +153,20 @@ const pickUp = wrap(async (orderId, riderId) => {
   return order;
 });
 
-// 7. Handed to the customer
-const deliver = wrap(async (orderId, riderId) => {
+// 7. Handed to the customer. For pay-on-delivery orders the rider says how the
+// customer paid: cash, UPI (to MealDirect), or not paid.
+const deliver = wrap(async (orderId, riderId, { collection, note } = {}) => {
   const order = await findMine(orderId, riderId);
   if (order.status !== 'out_for_delivery') {
     throwError('INVALID_STATUS', `Pick up the order before delivering it (status: ${order.status})`, 400);
   }
+  if (order.paymentMethod === 'cod') recordCollection(order, { collection, note }, riderId);
   completeDelivery(order, riderId);
   await order.save();
   return order;
 });
 
-module.exports = { assertApprovedRider, listAvailable, listMine, getOrder, claim, release, pickUp, deliver, MAX_ACTIVE };
+// 8. This rider's cash position with MealDirect
+const balance = wrap(async (riderId) => riderCash(riderId));
+
+module.exports = { assertApprovedRider, listAvailable, listMine, getOrder, claim, release, pickUp, deliver, balance, MAX_ACTIVE };

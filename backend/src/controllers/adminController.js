@@ -166,7 +166,7 @@ const getAnalytics = async ({ days, tzOffset = 0, now = new Date() }) => {
 };
 
 // 4. Delivery partners by status, with how many deliveries each has completed
-const RIDER_FIELDS = ['id', 'email', 'firstName', 'lastName', 'phone', 'riderStatus', 'createdAt'];
+const RIDER_FIELDS = ['id', 'email', 'firstName', 'lastName', 'phone', 'riderStatus', 'createdAt', 'bankAccountName', 'bankAccountNumber', 'bankIFSC', 'upiId'];
 
 const listRiders = async ({ status }) => {
   try {
@@ -223,7 +223,7 @@ const getRiderCash = async (riderId) => {
   try {
     const rider = await User.findOne({
       where: { id: riderId, role: 'delivery_partner' },
-      attributes: ['id', 'firstName', 'lastName', 'phone', 'email', 'riderStatus'],
+      attributes: RIDER_FIELDS,
     });
     if (!rider) throwError('NOT_FOUND', 'Delivery partner not found', 404);
 

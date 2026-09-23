@@ -1,5 +1,5 @@
 const request = require('supertest');
-const { registerAndLogin, getAuthHeaders, cleanupAllData } = require('./helpers');
+const { registerAndLogin, getAuthHeaders, cleanupAllData, TEST_PAYOUT } = require('./helpers');
 
 let app, sequelize, models, kitchen, businessTime;
 let adminHeaders, customerHeaders, ownerHeaders, otherOwnerHeaders;
@@ -24,7 +24,7 @@ describe('Order automation', () => {
     otherOwnerHeaders = getAuthHeaders((await registerAndLogin(app, 'm-other@test.com', 'restaurant_admin')).tokens);
 
     const create = async (body) => {
-      const res = await request(app).post('/api/restaurants').set(ownerHeaders).send({ city: 'Chennai', address: '1 Mess Lane', ...body });
+      const res = await request(app).post('/api/restaurants').set(ownerHeaders).send({ city: 'Chennai', address: '1 Mess Lane', ...TEST_PAYOUT, ...body });
       expect(res.status).toBe(201);
       await request(app).put(`/api/restaurants/admin/${res.body.data.id}/approve`).set(adminHeaders);
       await request(app)

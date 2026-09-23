@@ -1,7 +1,5 @@
 // Online payment is on hold in production; test that behaviour here
 process.env.ONLINE_PAYMENTS_ENABLED = 'false';
-process.env.MEALDIRECT_UPI_ID = 'mealdirect@okbank';
-process.env.MEALDIRECT_UPI_NAME = 'MealDirect';
 
 const request = require('supertest');
 const {
@@ -95,9 +93,9 @@ describe('Pay on delivery', () => {
   };
 
   describe('app settings', () => {
-    test('online payment is off and the MealDirect UPI ID is published', async () => {
+    test('online payment is off', async () => {
       const res = await request(app).get('/api/config');
-      expect(res.body.data).toEqual({ onlinePayments: false, upi: { id: 'mealdirect@okbank', name: 'MealDirect' } });
+      expect(res.body.data).toEqual({ onlinePayments: false });
     });
 
     test('online orders are refused while online payment is off', async () => {
@@ -135,8 +133,11 @@ describe('Pay on delivery', () => {
       expect(balance.body.data).toMatchObject({ balance: Number(order.total), overdue: 0, cashToday: Number(order.total) });
     });
 
-    test('UPI goes to MealDirect, so the rider has nothing to settle', async () => {
+    test("UPI goes to the restaurant, whose UPI ID the rider sees, so there's nothing to settle", async () => {
       const order = await atTheDoor();
+      const mine = await request(app).get(`/api/delivery/orders/${order.id}`).set(riderHeaders);
+      expect(mine.body.data.restaurant.upiId).toBe('testkitchen@okhdfc');
+
       await riderDoes(order.id, 'deliver', { collection: 'upi' });
       const balance = await request(app).get('/api/delivery/balance').set(riderHeaders);
       expect(balance.body.data).toMatchObject({ balance: 0, upiToday: Number(order.total) });

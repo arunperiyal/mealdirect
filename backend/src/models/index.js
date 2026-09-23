@@ -6,6 +6,7 @@ const DeliverySlot = require('./DeliverySlot');
 const Order = require('./Order');
 const Payment = require('./Payment');
 const Settlement = require('./Settlement');
+const ChangeRequest = require('./ChangeRequest');
 
 // Define associations
 User.hasMany(Restaurant, { foreignKey: 'ownerId', as: 'restaurants' });
@@ -47,6 +48,9 @@ Payment.belongsTo(Order, { foreignKey: 'orderId', as: 'order' });
 User.hasMany(Payment, { foreignKey: 'customerId', as: 'payments' });
 Payment.belongsTo(User, { foreignKey: 'customerId', as: 'customer' });
 
+ChangeRequest.belongsTo(User, { foreignKey: 'requestedById', as: 'requestedBy' });
+ChangeRequest.belongsTo(User, { foreignKey: 'reviewedById', as: 'reviewedBy' });
+
 // Export models
 module.exports = {
   User,
@@ -56,4 +60,5 @@ module.exports = {
   Order,
   Payment,
   Settlement,
+  ChangeRequest,
 };

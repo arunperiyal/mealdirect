@@ -76,6 +76,14 @@ const STEPS = [
             ADD COLUMN IF NOT EXISTS "auto_accept_orders" BOOLEAN NOT NULL DEFAULT false,
             ADD COLUMN IF NOT EXISTS "auto_ready_minutes" INTEGER`,
   },
+  {
+    name: 'Payout details: users payout columns',
+    sql: `ALTER TABLE "users"
+            ADD COLUMN IF NOT EXISTS "bank_account_name" VARCHAR(255),
+            ADD COLUMN IF NOT EXISTS "bank_account_number" VARCHAR(255),
+            ADD COLUMN IF NOT EXISTS "bank_i_f_s_c" VARCHAR(255),
+            ADD COLUMN IF NOT EXISTS "upi_id" VARCHAR(255)`,
+  },
 ];
 
 const upgradeDatabase = async (sequelize, log = () => {}) => {

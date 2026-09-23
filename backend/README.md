@@ -78,7 +78,6 @@ backups.
 | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | PostgreSQL connection |
 | `JWT_SECRET`, `JWT_REFRESH_SECRET` | Token signing keys (production refuses weak or example ones) |
 | `ONLINE_PAYMENTS_ENABLED`, `RAZORPAY_*` | Online payment. Off for now: customers pay on delivery. |
-| `MEALDIRECT_UPI_ID`, `MEALDIRECT_UPI_NAME` | The UPI account customers pay at the door (QR code on the rider's phone) |
 | `BUSINESS_UTC_OFFSET_MINUTES` | The business day for cash settlement, order cutoffs and auto-ready (330 = India) |
 | `AUTO_READY_JOB` | `false` stops the job that marks orders ready before their delivery time |
 | `TRUST_PROXY` | Number of reverse proxies in front of the API, so rate limits see the real client IP |
@@ -89,13 +88,18 @@ backups.
   Orders close at the menu's ordering end time on the menu's day (`409 ORDERING_CLOSED`).
 - **Order status:** pending → confirmed → preparing → ready → out for delivery → delivered (or picked up), or
   cancelled.
-- **Pay on delivery:** the rider records cash, UPI to MealDirect, or **Not paid**. Pickup orders and restaurant
+- **Pay on delivery:** the rider records cash, UPI to the restaurant (a QR code of the restaurant's UPI ID on the
+  rider's phone), or **Not paid**. Pickup orders and restaurant
   self-deliveries are recorded by the restaurant. A customer with an unresolved not-paid order can't place new
   orders. Riders settle cash with MealDirect daily and can't claim new orders while holding cash from an earlier
   day. Admins record settlements and resolve disputes.
 - **Order handling settings** (per restaurant, off by default): auto-accept pay-on-delivery orders, and mark
   accepted delivery orders ready a set number of minutes before their delivery time.
 - **Riders** claim orders from a shared queue. On Postgres, two riders can't claim the same order.
+- **Payout details:** a restaurant must add its UPI ID and bank account (`upiId`, `bankAccountName`,
+  `bankAccountNumber`, `bankIFSC`) before an admin can approve it. Riders can add theirs for tips and earnings, and
+  edit their name and phone. Until approval, changes apply at once; after, each change is a `ChangeRequest` that
+  an admin approves or rejects (with a note the owner or rider sees). The saved details stay in use meanwhile.
 
 ## API
 
@@ -105,7 +109,7 @@ All responses are JSON: `{ "success": true, "data": ... }` or
 
 ### Public
 - `GET /api/health`: health check
-- `GET /api/config`: which payment options the apps should offer, and MealDirect's UPI details
+- `GET /api/config`: which payment options the apps should offer
 
 ### Auth
 - `POST /api/auth/register`: sign up as `customer` (default), `restaurant_admin` or `delivery_partner` (needs a
@@ -116,7 +120,9 @@ All responses are JSON: `{ "success": true, "data": ... }` or
 - `GET /api/restaurants`, `GET /api/restaurants/:id`: public listing and details
 - `POST /api/restaurants`, `GET /api/restaurants/my-restaurants`: an owner's restaurants
 - `PUT /api/restaurants/:id`, and `PUT /api/restaurants/:id/` + `operating-hours`, `delivery-settings`,
-  `order-settings`, `bank-details`: owner settings
+  `order-settings`: owner settings
+- `PUT /api/restaurants/:id/bank-details`: payout details, all four fields. `200` when saved at once (before
+  approval), `202` when sent for review. `GET /api/restaurants/my-restaurants` includes `changeRequests.payout`.
 - `PUT /api/restaurants/admin/:id/approve`, `PUT /api/restaurants/admin/:id/reject`: admin review
 
 ### Menus
@@ -141,11 +147,19 @@ All responses are JSON: `{ "success": true, "data": ... }` or
 - `POST /api/delivery/orders/:id/` + `claim`, `release`, `pick-up`, `deliver` (with the payment collected)
 - `GET /api/delivery/balance`: cash held and whether settlement is due
 
+### Rider profile (open to riders waiting for approval)
+- `GET /api/profile`: name, phone, payout details, and any change waiting for review or rejected
+- `PUT /api/profile/personal` (`firstName`, `lastName`, `phone`), `PUT /api/profile/payout` (all four payout
+  fields): `200` when saved at once, `202` when sent for review
+
 ### Admin
 - `GET /api/admin/restaurants`, `GET /api/admin/restaurants/:id`, `GET /api/admin/analytics`
 - `GET /api/admin/riders`, `PUT /api/admin/riders/:id/approve`, `PUT /api/admin/riders/:id/suspend`
 - `GET /api/admin/riders/:id/cash`, `POST /api/admin/riders/:id/settlements`
 - `POST /api/admin/orders/:id/resolve-payment`
+- `GET /api/admin/change-requests?status=pending`: detail changes with the current values;
+  `POST /api/admin/change-requests/:id/approve` (optional `note`), `POST /api/admin/change-requests/:id/reject`
+  (`note` required)
 
 ### Payments (Razorpay, on hold)
 - `POST /api/payments/create-order`, `POST /api/payments/verify-payment`, `GET /api/payments/status/:orderId`

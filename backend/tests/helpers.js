@@ -99,6 +99,13 @@ async function createUserWithRole(app, email, role) {
  * @param {object} data - Optional restaurant data
  * @returns {Promise<object>} Restaurant object
  */
+const TEST_PAYOUT = {
+  bankAccountName: 'Test Kitchen',
+  bankAccountNumber: '123456789012',
+  bankIFSC: 'HDFC0001234',
+  upiId: 'testkitchen@okhdfc',
+};
+
 async function createRestaurant(app, ownerId, headers, data = {}) {
   const restaurantData = {
     name: data.name || `Test Restaurant ${Date.now()}`,
@@ -108,6 +115,8 @@ async function createRestaurant(app, ownerId, headers, data = {}) {
     address: data.address || '123 Main St',
     city: data.city || 'Test City',
     zipCode: data.zipCode || '12345',
+    // Required before an admin can approve the restaurant
+    ...TEST_PAYOUT,
     ...data,
   };
 
@@ -529,6 +538,8 @@ async function listOrders(app, headers, filters = {}) {
  */
 async function cleanupAllData(models) {
   // Delete in reverse dependency order
+  await models.ChangeRequest?.destroy({ where: {}, force: true });
+  await models.Settlement?.destroy({ where: {}, force: true });
   await models.Payment?.destroy({ where: {}, force: true });
   await models.Order?.destroy({ where: {}, force: true });
   await models.DeliverySlot?.destroy({ where: {}, force: true });
@@ -549,6 +560,7 @@ module.exports = {
   createRestaurant,
   getRestaurant,
   approveRestaurant,
+  TEST_PAYOUT,
   rejectRestaurant,
   updateDeliverySettings,
   setupCompleteRestaurant,

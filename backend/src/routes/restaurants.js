@@ -4,6 +4,8 @@ const { isUUID } = require('validator');
 const router = express.Router();
 const restaurantController = require('../controllers/restaurantController');
 const { verifyToken, authorize } = require('../middleware/auth');
+const changeRequestController = require('../controllers/changeRequestController');
+const { payoutValidators } = require('../lib/payout');
 
 /**
  * POST /api/restaurants
@@ -21,6 +23,7 @@ router.post(
     body('address').optional().trim(),
     body('city').optional().trim(),
     body('zipCode').optional().trim(),
+    ...payoutValidators({ optional: true }),
   ],
   async (req, res) => {
     try {
@@ -86,7 +89,8 @@ router.get(
 
       res.json({
         success: true,
-        data: result.rows,
+        // With any payout change waiting for review, or turned down
+        data: await changeRequestController.withRestaurantRequests(result.rows),
         meta: { total: result.count },
       });
     } catch (error) {
@@ -369,17 +373,16 @@ router.put(
 
 /**
  * PUT /api/restaurants/:id/bank-details
- * Update bank details (owner only)
+ * Payout details: UPI ID and bank account, all required (owner only).
+ * Before approval they apply at once. After, they wait for an admin:
+ * data is { applied, changeRequest, restaurant } and the saved details don't change yet.
  */
 router.put(
   '/:id/bank-details',
   verifyToken,
   authorize(['restaurant_admin']),
   [
-    body('bankAccountName').optional().trim(),
-    body('bankAccountNumber').optional().trim(),
-    body('bankIFSC').optional().trim(),
-    body('upiId').optional().trim(),
+    ...payoutValidators(),
   ],
   async (req, res) => {
     try {
@@ -393,16 +396,12 @@ router.put(
         });
       }
 
-      const restaurant = await restaurantController.updateBankDetails(
-        req.params.id,
-        req.user.id,
-        req.body
-      );
+      const result = await changeRequestController.submitRestaurantPayout(req.params.id, req.user.id, req.body);
 
-      res.json({
+      res.status(result.applied ? 200 : 202).json({
         success: true,
-        message: 'Bank details updated successfully',
-        data: restaurant,
+        message: result.applied ? 'Payout details saved' : 'Payout details sent to MealDirect for review',
+        data: result,
       });
     } catch (error) {
       const statusCode = error.statusCode || 500;

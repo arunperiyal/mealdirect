@@ -66,6 +66,23 @@ const User = sequelize.define(
         }
       }
     },
+    // Delivery partners only: where MealDirect pays tips and salary. See lib/payout.js.
+    bankAccountName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bankAccountNumber: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bankIFSC: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    upiId: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,

@@ -1,4 +1,5 @@
 const { Op, fn, col, where } = require('sequelize');
+const { hasPayout, pickPayout } = require('../lib/payout');
 const { Restaurant } = require('../models');
 
 // Helper: throw standardized errors
@@ -34,6 +35,8 @@ const createRestaurant = async (userId, data) => {
       address,
       city,
       zipCode,
+      // Payout details can come with the application; approval needs them
+      ...pickPayout(data),
       ownerId: userId,
       verificationStatus: 'pending',
       isApproved: false,
@@ -161,6 +164,14 @@ const approveRestaurant = async (restaurantId, adminId, notes = '') => {
     if (restaurant.isApproved) {
       throwError('ALREADY_APPROVED', 'Restaurant is already approved', 409);
     }
+    // Customers paying by UPI at the door pay the restaurant, and MealDirect pays out to its bank
+    if (!hasPayout(restaurant)) {
+      throwError(
+        'PAYOUT_DETAILS_MISSING',
+        "The restaurant hasn't added its UPI ID and bank account yet",
+        409
+      );
+    }
 
     restaurant.isApproved = true;
     restaurant.verificationStatus = 'verified';
@@ -240,26 +251,6 @@ const updateDeliverySettings = async (restaurantId, userId, settings) => {
   }
 };
 
-// 10. Update bank details
-const updateBankDetails = async (restaurantId, userId, details) => {
-  try {
-    const restaurant = await verifyOwnership(restaurantId, userId);
-
-    const { bankAccountName, bankAccountNumber, bankIFSC, upiId } = details;
-
-    if (bankAccountName) restaurant.bankAccountName = bankAccountName;
-    if (bankAccountNumber) restaurant.bankAccountNumber = bankAccountNumber;
-    if (bankIFSC) restaurant.bankIFSC = bankIFSC;
-    if (upiId) restaurant.upiId = upiId;
-
-    await restaurant.save();
-    return restaurant;
-  } catch (error) {
-    if (error.code) throw error;
-    throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
-  }
-};
-
 // How orders are handled: auto-accept and auto-ready (owner only)
 const updateOrderSettings = async (restaurantId, userId, settings) => {
   try {
@@ -287,5 +278,4 @@ module.exports = {
   rejectRestaurant,
   updateOperatingHours,
   updateDeliverySettings,
-  updateBankDetails,
 };

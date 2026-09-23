@@ -2,6 +2,7 @@ const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const changeRequestController = require('../controllers/changeRequestController');
 const { verifyToken, authorize } = require('../middleware/auth');
 
 // Everything here is for system admins
@@ -148,6 +149,44 @@ router.post(
   ],
   handle(async (req, res) => {
     res.json({ success: true, data: await adminController.resolvePayment(req.params.id, req.user.id, req.body) });
+  })
+);
+
+/**
+ * GET /api/admin/change-requests?status=pending|approved|rejected|all
+ * Payout and personal detail changes from approved restaurants and riders, with the current values
+ */
+router.get(
+  '/change-requests',
+  [query('status').optional().isIn(['pending', 'approved', 'rejected', 'all'])],
+  handle(async (req, res) => {
+    res.json({ success: true, data: await changeRequestController.listRequests(req.query) });
+  })
+);
+
+/**
+ * POST /api/admin/change-requests/:id/approve   Body: { note? }
+ * POST /api/admin/change-requests/:id/reject    Body: { note }, shown to the restaurant or rider
+ */
+router.post(
+  '/change-requests/:id/approve',
+  [param('id').isUUID(), body('note').optional().isString().trim().isLength({ max: 500 })],
+  handle(async (req, res) => {
+    res.json({
+      success: true,
+      data: await changeRequestController.approveRequest(req.params.id, req.user.id, req.body.note),
+    });
+  })
+);
+
+router.post(
+  '/change-requests/:id/reject',
+  [param('id').isUUID(), body('note').isString().trim().isLength({ min: 1, max: 500 }).withMessage('Say why')],
+  handle(async (req, res) => {
+    res.json({
+      success: true,
+      data: await changeRequestController.rejectRequest(req.params.id, req.user.id, req.body.note),
+    });
   })
 );
 

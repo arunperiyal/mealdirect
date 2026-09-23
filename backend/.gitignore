@@ -18,3 +18,6 @@ yarn-error.log*
 .tmp/
 temp/
 backups/
+
+# Local-only Docker settings (see README: reaching the database from the host)
+docker-compose.override.yml

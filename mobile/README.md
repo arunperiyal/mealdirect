@@ -30,3 +30,27 @@ workspace causes runtime errors. After adding a dependency, check with `npm ls r
 npm test            # all workspaces
 npm run typecheck   # all workspaces
 ```
+
+## Building the apps (EAS)
+
+Each app has an `eas.json` with two profiles:
+
+| Profile | Output | API address |
+| --- | --- | --- |
+| `preview` | Installable Android APK for testers | Expo environment variable `EXPO_PUBLIC_API_URL` (environment `preview`). May be plain HTTP, e.g. a dev server on your LAN; only this profile allows cleartext traffic. |
+| `production` | Android App Bundle for Google Play, with an auto-incremented version code | `EXPO_PUBLIC_API_URL` (environment `production`), which must be `https://`. The build fails otherwise. |
+
+Local `.env` files are not uploaded to EAS, so set the address per app once:
+
+```bash
+npx eas-cli login                  # once, with your Expo account
+cd mobile/customer                 # repeat in restaurant/, admin/ and delivery/
+npx eas-cli init                   # links the app to an Expo project (adds its projectId to app.json)
+npx eas-cli env:create --environment preview --name EXPO_PUBLIC_API_URL \
+  --value http://192.168.0.161:3000 --visibility plaintext
+npx eas-cli build --platform android --profile preview
+```
+
+When the build finishes, EAS prints a link and QR code to install the APK. A preview build that points at a
+LAN address only works on the same Wi-Fi as the backend. Once the API is deployed (see `backend/DEPLOY.md`),
+set the preview and production addresses to its `https://` URL.

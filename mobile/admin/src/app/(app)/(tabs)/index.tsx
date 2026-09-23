@@ -19,7 +19,7 @@ import { BarList } from '@/components/BarList';
 import { ColumnChart } from '@/components/ColumnChart';
 import { DataTable } from '@/components/DataTable';
 import { bucketForDisplay, compactCount, compactINR, localTzOffset } from '@/lib/charts';
-import { useGetAnalyticsQuery } from '@/store/serverApi';
+import { useGetAnalyticsQuery, useGetChangeRequestsQuery } from '@/store/serverApi';
 
 const RANGES = [7, 30, 90] as const;
 
@@ -28,6 +28,7 @@ export default function OverviewScreen() {
   const [showTable, setShowTable] = useState(false);
   const tzOffset = useMemo(() => localTzOffset(), []);
   const { data, error, isLoading, isFetching, refetch } = useGetAnalyticsQuery({ days, tzOffset });
+  const { data: changes = [], refetch: refetchChanges } = useGetChangeRequestsQuery();
 
   const display = useMemo(() => (data ? bucketForDisplay(data.byDay) : null), [data]);
 
@@ -48,7 +49,14 @@ export default function OverviewScreen() {
         <ScrollView
           contentContainerStyle={styles.content}
           refreshControl={
-            <RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={colors.brand} />
+            <RefreshControl
+              refreshing={isFetching && !isLoading}
+              onRefresh={() => {
+                refetch();
+                refetchChanges();
+              }}
+              tintColor={colors.brand}
+            />
           }
         >
           {data.restaurants.pending > 0 && (
@@ -58,6 +66,16 @@ export default function OverviewScreen() {
                 for review
               </Text>
               <Button title="Review now" onPress={() => router.navigate('/restaurants')} style={styles.gap} />
+            </Card>
+          )}
+
+          {changes.length > 0 && (
+            <Card style={styles.review}>
+              <Text style={font.heading}>
+                {changes.length} {changes.length === 1 ? 'change' : 'changes'} to payout or personal details waiting
+                for review
+              </Text>
+              <Button title="Review changes" onPress={() => router.push('/changes')} style={styles.gap} />
             </Card>
           )}
 

@@ -9,6 +9,7 @@ import {
   font,
   formatINR,
   LinkRow,
+  maskAccount,
   spacing,
 } from '@mealdirect/shared';
 import { useRestaurant } from '@/lib/useRestaurant';
@@ -30,7 +31,13 @@ export default function SettingsScreen() {
 
   const modes = [restaurant.deliveryEnabled && 'Delivery', restaurant.pickupEnabled && 'Pickup'].filter(Boolean);
   const fee = Number(restaurant.defaultDeliveryFee ?? 0);
-  const payout = restaurant.upiId || (restaurant.bankAccountNumber ? `Account ending ${restaurant.bankAccountNumber.slice(-4)}` : '');
+  const payoutChange = restaurant.changeRequests?.payout;
+  const payout =
+    payoutChange?.status === 'pending'
+      ? 'Change waiting for review'
+      : payoutChange?.status === 'rejected'
+        ? 'Change not approved, tap to see why'
+        : [restaurant.upiId, maskAccount(restaurant.bankAccountNumber)].filter(Boolean).join(' · ');
 
   const confirmSignOut = () =>
     Alert.alert('Sign out?', undefined, [

@@ -10,7 +10,7 @@ claim deliveries from a shared queue.
 | [`mobile/customer/`](mobile/customer/README.md) | Customer app: browse, order, pay on delivery, track |
 | [`mobile/restaurant/`](mobile/restaurant/README.md) | MealDirect Partner: orders, kitchen view, menus, settings |
 | [`mobile/delivery/`](mobile/delivery/README.md) | MealDirect Delivery for riders: claim, pick up, deliver, record payment |
-| [`mobile/admin/`](mobile/admin/README.md) | MealDirect Admin for staff: restaurant and rider review, cash settlement, orders, analytics |
+| [`mobile/admin/`](mobile/admin/README.md) | MealDirect Admin for staff: restaurant and rider review, detail changes, cash settlement, orders, analytics |
 | [`mobile/packages/shared/`](mobile/README.md) | Code the apps share: API client, session, types, helpers, theme, components |
 
 The apps are built with Expo (React Native) and run in Expo Go during development.

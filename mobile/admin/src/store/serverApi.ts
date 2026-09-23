@@ -1,6 +1,7 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import {
   createAxiosBaseQuery,
+  type AdminChangeRequest,
   type AdminRestaurant,
   type AdminRider,
   type RiderCash,
@@ -16,7 +17,7 @@ import { api } from '@/api';
 export const serverApi = createApi({
   reducerPath: 'serverApi',
   baseQuery: createAxiosBaseQuery(api),
-  tagTypes: ['Restaurant', 'Order', 'Analytics', 'Rider', 'Cash'],
+  tagTypes: ['Restaurant', 'Order', 'Analytics', 'Rider', 'Cash', 'Change'],
   endpoints: (build) => ({
     getAnalytics: build.query<Analytics, { days: number; tzOffset: number }>({
       query: (params) => ({ url: '/admin/analytics', params }),
@@ -93,6 +94,20 @@ export const serverApi = createApi({
       query: (id) => ({ url: `/orders/${id}` }),
       providesTags: (_o, _e, id) => [{ type: 'Order', id }],
     }),
+    // Payout and personal detail changes from approved restaurants and riders
+    getChangeRequests: build.query<AdminChangeRequest[], void>({
+      query: () => ({ url: '/admin/change-requests', params: { status: 'pending' } }),
+      providesTags: ['Change'],
+    }),
+    reviewChange: build.mutation<AdminChangeRequest, { id: string; decision: 'approve' | 'reject'; note?: string }>({
+      query: ({ id, decision, note }) => ({
+        url: `/admin/change-requests/${id}/${decision}`,
+        method: 'POST',
+        data: note ? { note } : {},
+      }),
+      // Approving changes the restaurant's or rider's saved details
+      invalidatesTags: ['Change', 'Restaurant', 'Rider', 'Cash'],
+    }),
     cancelOrder: build.mutation<Order, { id: string; reason: string }>({
       query: ({ id, reason }) => ({ url: `/orders/${id}/cancel`, method: 'POST', data: { reason } }),
       invalidatesTags: ['Order', 'Analytics'],
@@ -114,4 +129,6 @@ export const {
   useGetOrdersQuery,
   useGetOrderQuery,
   useCancelOrderMutation,
+  useGetChangeRequestsQuery,
+  useReviewChangeMutation,
 } = serverApi;

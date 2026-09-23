@@ -1,4 +1,13 @@
 import { addDays, formatTime, localDateString } from '../dates';
+import {
+  changedFieldsLabel,
+  hasPayoutErrors,
+  isPayoutComplete,
+  maskAccount,
+  normalizePayout,
+  payoutForm,
+  validatePayout,
+} from '../payout';
 import { estimateTotals, formatINR } from '../money';
 import { canCancel, canMarkPickedUp, isActive, needsPayment, paymentLabel, statusSteps } from '../orderStatus';
 import { upiPayUrl } from '../upi';
@@ -118,5 +127,41 @@ describe('orderingState', () => {
     expect(orderingState(menu, '2026-09-22', at(20))).toEqual({ open: true, label: 'Order by 11:30 AM' });
     expect(orderingState(menu, '2026-09-24', at(8)).open).toBe(false);
     expect(orderingState({ date: '2026-09-23', orderingEndTime: null }, '2026-09-23', at(23))).toEqual({ open: true, label: null });
+  });
+});
+
+describe('payout details', () => {
+  const good = { upiId: 'kitchen@okhdfc', bankAccountName: 'Amma Foods', bankAccountNumber: '1234 5678 9012', bankIFSC: 'hdfc0001234' };
+
+  test('all four fields are checked', () => {
+    expect(hasPayoutErrors(validatePayout(good))).toBe(false);
+    expect(validatePayout(payoutForm())).toEqual({
+      upiId: 'Enter a UPI ID',
+      bankAccountName: 'Enter the account holder name',
+      bankAccountNumber: 'Account number is 9 to 18 digits',
+      bankIFSC: 'IFSC is 11 characters, like HDFC0001234',
+    });
+    expect(validatePayout({ ...good, upiId: 'kitchen' }).upiId).toBe('UPI ID looks like name@bank');
+  });
+
+  test('normalizes what is sent to the server', () => {
+    expect(normalizePayout(good)).toEqual({
+      upiId: 'kitchen@okhdfc',
+      bankAccountName: 'Amma Foods',
+      bankAccountNumber: '123456789012',
+      bankIFSC: 'HDFC0001234',
+    });
+  });
+
+  test('knows when details are complete, and masks account numbers', () => {
+    expect(isPayoutComplete(normalizePayout(good))).toBe(true);
+    expect(isPayoutComplete({ ...normalizePayout(good), upiId: null })).toBe(false);
+    expect(maskAccount('123456789012')).toBe('Account ending 9012');
+    expect(maskAccount(null)).toBe('');
+  });
+
+  test('names the fields a change touches', () => {
+    expect(changedFieldsLabel({ changes: { upiId: 'x' } })).toBe('UPI ID');
+    expect(changedFieldsLabel({ changes: { upiId: 'x', bankIFSC: 'y', phone: 'z' } })).toBe('UPI ID, IFSC and phone');
   });
 });

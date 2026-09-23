@@ -1,7 +1,20 @@
 import { useState } from 'react';
 import { Text } from 'react-native';
-import { errorMessage, font, spacing, TextField, validateEmail } from '@mealdirect/shared';
-import { FormScreen } from '@/components/FormScreen';
+import {
+  errorMessage,
+  font,
+  FormScreen,
+  hasPayoutErrors,
+  normalizePayout,
+  PayoutFields,
+  payoutForm,
+  spacing,
+  TextField,
+  validateEmail,
+  validatePayout,
+  type PayoutErrors,
+  type PayoutField,
+} from '@mealdirect/shared';
 import { validatePhone, validateRestaurantName } from '@/lib/validation';
 import { useAppSelector } from '@/store';
 import { useCreateRestaurantMutation } from '@/store/serverApi';
@@ -21,6 +34,8 @@ export default function SetupScreen() {
     zipCode: '',
   });
   const [errors, setErrors] = useState<Partial<Record<Field, string | null>>>({});
+  const [payout, setPayout] = useState(payoutForm());
+  const [payoutErrors, setPayoutErrors] = useState<PayoutErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const set = (field: Field) => (value: string) => setForm((f) => ({ ...f, [field]: value }));
 
@@ -32,8 +47,10 @@ export default function SetupScreen() {
       address: form.address.trim() ? null : 'Enter the address customers pick up from',
       city: form.city.trim() ? null : 'Enter the city',
     };
+    const nextPayout = validatePayout(payout);
     setErrors(next);
-    if (Object.values(next).some(Boolean)) return;
+    setPayoutErrors(nextPayout);
+    if (Object.values(next).some(Boolean) || hasPayoutErrors(nextPayout)) return;
 
     setFormError(null);
     try {
@@ -46,6 +63,7 @@ export default function SetupScreen() {
         address: form.address.trim(),
         city: form.city.trim(),
         zipCode: form.zipCode.trim(),
+        ...normalizePayout(payout),
       }).unwrap();
     } catch (e) {
       setFormError(errorMessage(e));
@@ -84,6 +102,18 @@ export default function SetupScreen() {
       <TextField label="Address" value={form.address} onChangeText={set('address')} error={errors.address} multiline />
       <TextField label="City" value={form.city} onChangeText={set('city')} error={errors.city} />
       <TextField label="PIN code (optional)" value={form.zipCode} onChangeText={set('zipCode')} keyboardType="number-pad" />
+
+      <Text style={[font.heading, { marginTop: spacing.lg }]}>Payout details</Text>
+      <Text style={[font.caption, { marginBottom: spacing.md }]}>
+        Customers paying by UPI at the door pay this UPI ID, and MealDirect sends your earnings to this bank account.
+        Only you and MealDirect see these.
+      </Text>
+      <PayoutFields
+        form={payout}
+        errors={payoutErrors}
+        onChange={(field: PayoutField, value: string) => setPayout((p) => ({ ...p, [field]: value }))}
+        upiPlaceholder="kitchen@okbank"
+      />
     </FormScreen>
   );
 }

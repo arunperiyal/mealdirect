@@ -11,6 +11,8 @@ import {
   font,
   formatDateTime,
   formatINR,
+  isPayoutComplete,
+  maskAccount,
   LoadingState,
   SheetForm,
   spacing,
@@ -50,11 +52,7 @@ function Details({
   const owner = restaurant.owner;
   const ownerName = [owner?.firstName, owner?.lastName].filter(Boolean).join(' ') || 'Owner';
   const status = restaurant.verificationStatus;
-  const payout = [
-    restaurant.upiId && `UPI ${restaurant.upiId}`,
-    restaurant.bankAccountNumber &&
-      `Account ending ${restaurant.bankAccountNumber.slice(-4)}${restaurant.bankIFSC ? ` · ${restaurant.bankIFSC}` : ''}`,
-  ].filter(Boolean);
+  const payoutReady = isPayoutComplete(restaurant);
 
   const open = (d: Decision) => {
     setNotes('');
@@ -104,7 +102,13 @@ function Details({
                 Check the details below. Approving makes the restaurant visible to customers.
               </Text>
             )}
-            <Button title="Approve" onPress={() => open('approve')} />
+            {!payoutReady && (
+              <Banner
+                tone="warning"
+                message="The owner hasn't added a UPI ID and bank account yet. They're needed before approval."
+              />
+            )}
+            <Button title="Approve" onPress={() => open('approve')} disabled={!payoutReady} />
             {status === 'pending' && (
               <Button title="Reject" variant="danger" onPress={() => open('reject')} style={styles.gap} />
             )}
@@ -120,7 +124,18 @@ function Details({
             label="Orders"
             value={[restaurant.deliveryEnabled && 'Delivery', restaurant.pickupEnabled && 'Pickup'].filter(Boolean).join(' & ') || 'Not set up'}
           />
-          <Detail label="Payouts" value={payout.join('\n') || 'Not set up'} />
+        </Card>
+
+        <Card title="Payout details">
+          <Text style={[font.caption, styles.gapBottom]}>
+            Customers paying by UPI at the door pay this UPI ID. Check the account belongs to the restaurant.
+          </Text>
+          <Detail label="UPI ID" value={restaurant.upiId} />
+          <Detail label="Account holder" value={restaurant.bankAccountName} />
+          <Detail
+            label="Bank account"
+            value={[maskAccount(restaurant.bankAccountNumber), restaurant.bankIFSC].filter(Boolean).join(' · ')}
+          />
         </Card>
 
         <Card title="Owner">

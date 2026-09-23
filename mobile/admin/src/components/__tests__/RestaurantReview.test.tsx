@@ -36,7 +36,8 @@ const detail = (overrides: Partial<AdminRestaurantDetail['restaurant']> = {}): A
       isApproved: false,
       deliveryEnabled: true,
       pickupEnabled: true,
-      upiId: null,
+      upiId: 'janesdiner@okhdfc',
+      bankAccountName: 'Janes Diner Pvt Ltd',
       bankAccountNumber: '123456789012',
       bankIFSC: 'HDFC0001234',
       createdAt: '2026-09-22T21:27:05.000Z',
@@ -66,11 +67,12 @@ const renderScreen = async (d: AdminRestaurantDetail) => {
 describe('restaurant review', () => {
   beforeEach(() => mockReview.mockReset().mockResolvedValue({}));
 
-  test('shows owner contact and masks the bank account', async () => {
+  test('shows owner contact and payout details, masking the account number', async () => {
     await renderScreen(detail());
     expect(screen.getByText('Jane Doe')).toBeTruthy();
     expect(screen.getByText('jane@example.com')).toBeTruthy();
     expect(screen.getByText('Account ending 9012 · HDFC0001234')).toBeTruthy();
+    expect(screen.getByText('janesdiner@okhdfc')).toBeTruthy();
     expect(screen.queryByText(/123456789012/)).toBeNull();
   });
 
@@ -80,6 +82,13 @@ describe('restaurant review', () => {
     await fireEvent.press(screen.getAllByText('Approve').at(-1)!);
     expect(mockReview).toHaveBeenCalledWith({ id: 'r1', decision: 'approve', notes: '' });
     expect(screen.getByText("Jane's Diner is live.")).toBeTruthy();
+  });
+
+  test("can't approve until the owner adds payout details", async () => {
+    await renderScreen(detail({ upiId: null }));
+    expect(screen.getByText(/hasn't added a UPI ID and bank account/)).toBeTruthy();
+    await fireEvent.press(screen.getByText('Approve'));
+    expect(screen.getAllByText('Approve')).toHaveLength(1); // no confirmation sheet
   });
 
   test('rejecting requires a note for the owner', async () => {

@@ -70,6 +70,12 @@ api.defaults.adapter = httpAdapter;
 axios.defaults.adapter = httpAdapter;
 
 const http = nodeAxios.create({ baseURL: `${LIVE_API_URL}/api` });
+const PAYOUT = {
+  upiId: 'contractkitchen@okhdfc',
+  bankAccountName: 'Contract Kitchen',
+  bankAccountNumber: '123456789012',
+  bankIFSC: 'HDFC0001234',
+};
 const unique = Date.now().toString(36);
 const today = localDateString(new Date());
 
@@ -115,6 +121,7 @@ describeLive('customer app ↔ live backend', () => {
         address: '12 Test Street',
         city: 'Chennai',
         description: 'Seeded by the customer app contract test',
+        ...PAYOUT,
       },
       { headers: owner.headers }
     );

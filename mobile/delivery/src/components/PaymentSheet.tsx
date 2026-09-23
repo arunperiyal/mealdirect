@@ -12,7 +12,6 @@ import {
   spacing,
   TextField,
   upiPayUrl,
-  type AppConfig,
   type Collection,
 } from '@mealdirect/shared';
 
@@ -22,14 +21,15 @@ interface Props {
   visible: boolean;
   amount: number;
   reference: string; // short order number shown in the customer's UPI app
-  upi: AppConfig['upi'];
+  // The restaurant's UPI ID; null when it hasn't added one
+  upi: { id: string; name: string } | null;
   submitting: boolean;
   error: string | null;
   onClose: () => void;
   onSubmit: (collection: Collection, note?: string) => void;
 }
 
-// How the customer paid at the door: cash, UPI to MealDirect (QR), or not at all
+// How the customer paid at the door: cash, UPI to the restaurant (QR), or not at all
 export function PaymentSheet({ visible, amount, reference, upi, submitting, error, onClose, onSubmit }: Props) {
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState<Step>('choose');
@@ -69,7 +69,7 @@ export function PaymentSheet({ visible, amount, reference, upi, submitting, erro
                   disabled={!upi || submitting}
                 />
                 {!upi && (
-                  <Text style={font.caption}>UPI isn’t set up yet: MealDirect’s UPI ID is missing on the server.</Text>
+                  <Text style={font.caption}>This restaurant hasn’t added a UPI ID yet, so collect cash.</Text>
                 )}
                 <Button title="Not paid" variant="danger" onPress={() => setStep('not_paid')} disabled={submitting} />
               </View>

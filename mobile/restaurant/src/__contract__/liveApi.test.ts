@@ -69,6 +69,12 @@ const http = nodeAxios.create({ baseURL: `${LIVE_API_URL}/api` });
 const unique = Date.now().toString(36);
 const today = localDateString(new Date());
 const bearer = (token: string) => ({ headers: { Authorization: `Bearer ${token}` } });
+const PAYOUT = {
+  upiId: 'partnerkitchen@okhdfc',
+  bankAccountName: 'Partner Kitchen',
+  bankAccountNumber: '123456789012',
+  bankIFSC: 'HDFC0001234',
+};
 
 describeLive('restaurant app ↔ live backend', () => {
   const store = makeStore();
@@ -129,6 +135,7 @@ describeLive('restaurant app ↔ live backend', () => {
           phone: '9876543210',
           address: '12 Test Street',
           city: 'Chennai',
+          ...PAYOUT,
         })
       )
     );
@@ -144,7 +151,7 @@ describeLive('restaurant app ↔ live backend', () => {
     expect(approved).toMatchObject({ id: restaurantId, isApproved: true, verificationStatus: 'verified' });
   });
 
-  test('settings: delivery and payout details save, and payout details stay private', async () => {
+  test('settings: delivery saves; a payout change waits for review; payout details stay private', async () => {
     await call(
       d(
         e.updateDeliverySettings.initiate({
@@ -156,10 +163,17 @@ describeLive('restaurant app ↔ live backend', () => {
         })
       )
     );
-    await call(d(e.updateBankDetails.initiate({ id: restaurantId, bankAccountNumber: '123456789012', bankIFSC: 'HDFC0001234' })));
-    const [mine] = await call(d(e.getMyRestaurants.initiate(undefined, { forceRefetch: true })));
-    expect(mine).toMatchObject({ deliveryEnabled: true, bankAccountNumber: '123456789012' });
+    const sent = await call(d(e.updateBankDetails.initiate({ id: restaurantId, ...PAYOUT, upiId: 'newkitchen@okhdfc' })));
+    expect(sent).toMatchObject({ applied: false, changeRequest: { status: 'pending', changes: { upiId: 'newkitchen@okhdfc' } } });
+
+    let [mine] = await call(d(e.getMyRestaurants.initiate(undefined, { forceRefetch: true })));
+    expect(mine).toMatchObject({ deliveryEnabled: true, upiId: PAYOUT.upiId });
+    expect(mine.changeRequests?.payout?.status).toBe('pending');
     expect(Number(mine.defaultDeliveryFee)).toBe(30);
+
+    await http.post(`/admin/change-requests/${sent.changeRequest!.id}/approve`, {}, adminAuth);
+    [mine] = await call(d(e.getMyRestaurants.initiate(undefined, { forceRefetch: true })));
+    expect(mine.upiId).toBe('newkitchen@okhdfc');
 
     const publicView = (await http.get(`/restaurants/${restaurantId}`)).data.data;
     expect(publicView.bankAccountNumber).toBeUndefined();

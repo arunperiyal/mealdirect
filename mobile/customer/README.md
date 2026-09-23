@@ -1,7 +1,7 @@
 # MealDirect Customer App
 
 React Native (Expo SDK 57) app for customers: browse approved restaurants, order from
-today's or tomorrow's menu, pay on delivery (cash, or UPI to MealDirect), and track the order.
+today's or tomorrow's menu, pay on delivery (cash, or UPI to the restaurant), and track the order.
 
 ## Run it
 

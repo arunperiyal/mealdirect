@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
-import { Chip, colors, errorMessage, font, spacing } from '@mealdirect/shared';
-import { FormScreen } from '@/components/FormScreen';
+import { Chip, colors, errorMessage, font, FormScreen, spacing } from '@mealdirect/shared';
 import { useRestaurant } from '@/lib/useRestaurant';
 import { useUpdateOrderSettingsMutation } from '@/store/serverApi';
 

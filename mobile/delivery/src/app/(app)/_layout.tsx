@@ -22,6 +22,9 @@ export default function AppLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="delivery/[id]" options={{ title: 'Delivery' }} />
       </Stack.Protected>
+      {/* Riders can fill these in while waiting for approval too */}
+      <Stack.Screen name="profile/personal" options={{ title: 'Personal details' }} />
+      <Stack.Screen name="profile/payout" options={{ title: 'Payout details' }} />
     </Stack>
   );
 }

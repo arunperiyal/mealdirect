@@ -45,6 +45,7 @@ export interface OwnedRestaurant extends Restaurant {
   bankAccountNumber: string | null;
   bankIFSC: string | null;
   upiId: string | null;
+  changeRequests?: OpenChangeRequests; // payout changes waiting for review, or turned down
   autoAcceptOrders: boolean;
   autoReadyMinutes: number | null; // before a delivery slot starts; null = off
 }
@@ -88,7 +89,59 @@ export type Collection = 'cash' | 'upi' | 'not_paid';
 // GET /api/config
 export interface AppConfig {
   onlinePayments: boolean;
-  upi: { id: string; name: string } | null;
+}
+
+// Where MealDirect pays a restaurant or rider; customers paying by UPI at the door pay the restaurant's UPI ID
+export interface PayoutDetails {
+  upiId: string;
+  bankAccountName: string;
+  bankAccountNumber: string;
+  bankIFSC: string;
+}
+
+// A change to an approved restaurant's or rider's details, waiting for an admin (or turned down)
+export type ChangeKind = 'payout' | 'personal';
+export interface ChangeRequest {
+  id: string;
+  kind: ChangeKind;
+  status: 'pending' | 'approved' | 'rejected';
+  changes: Record<string, string | null>;
+  reviewNote: string | null;
+  createdAt: string;
+  updatedAt: string;
+  reviewedAt: string | null;
+}
+
+// The latest change of each kind the owner should see; null or missing when there's none
+export type OpenChangeRequests = Partial<Record<ChangeKind, ChangeRequest | null>>;
+
+// PUT /restaurants/:id/bank-details, PUT /profile/*: applied at once (before approval) or sent for review
+export interface ChangeResult {
+  applied: boolean;
+  changeRequest: ChangeRequest | null;
+}
+
+// GET /api/profile (delivery partners)
+export interface RiderProfile {
+  id: string;
+  email: string;
+  riderStatus: RiderStatus;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  upiId: string | null;
+  bankAccountName: string | null;
+  bankAccountNumber: string | null;
+  bankIFSC: string | null;
+  changeRequests: OpenChangeRequests;
+}
+
+// GET /api/admin/change-requests
+export interface AdminChangeRequest extends ChangeRequest {
+  subjectType: 'restaurant' | 'rider';
+  subject: { id: string; name: string; city?: string | null; email?: string; phone?: string | null } | null;
+  current: Record<string, string | null> | null;
+  requestedBy: { id: string; firstName: string | null; lastName: string | null } | null;
 }
 
 // A delivery partner's cash position with MealDirect
@@ -148,7 +201,15 @@ export interface Order {
   customer?: { id: string; firstName: string | null; lastName: string | null; phone: string | null };
   deliverySlot?: { id: string; startTime: string; endTime: string } | null;
   // Included on the system admin order list and rider views (with address and phone)
-  restaurant?: { id: string; name: string; address?: string | null; city?: string | null; phone?: string | null };
+  // upiId: on a rider's own deliveries, for the QR the customer pays at the door
+  restaurant?: {
+    id: string;
+    name: string;
+    address?: string | null;
+    city?: string | null;
+    phone?: string | null;
+    upiId?: string | null;
+  };
   // The delivery partner who claimed the order
   rider?: { id: string; firstName: string | null; lastName: string | null; phone: string | null } | null;
   riderId?: string | null;
@@ -229,6 +290,11 @@ export interface AdminRider {
   phone: string | null;
   riderStatus: RiderStatus;
   createdAt: string;
+  // Where MealDirect pays the rider (tips, salary); null until they add it
+  upiId: string | null;
+  bankAccountName: string | null;
+  bankAccountNumber: string | null;
+  bankIFSC: string | null;
   deliveries: number; // completed
   cashBalance: number;
   cashOverdue: number;
@@ -244,7 +310,7 @@ export interface Settlement {
 }
 
 export interface RiderCashDetail {
-  rider: Pick<AdminRider, 'id' | 'firstName' | 'lastName' | 'phone' | 'email' | 'riderStatus'>;
+  rider: Omit<AdminRider, 'deliveries' | 'cashBalance' | 'cashOverdue'>;
   cash: RiderCash;
   orders: { id: string; total: number | string; collectedAt: string; restaurant?: { id: string; name: string } }[];
   settlements: Settlement[];

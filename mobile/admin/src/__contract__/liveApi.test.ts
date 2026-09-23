@@ -65,6 +65,12 @@ api.defaults.adapter = httpAdapter;
 axios.defaults.adapter = httpAdapter;
 
 const http = nodeAxios.create({ baseURL: `${LIVE_API_URL}/api` });
+const PAYOUT = {
+  upiId: 'contractkitchen@okhdfc',
+  bankAccountName: 'Contract Kitchen',
+  bankAccountNumber: '123456789012',
+  bankIFSC: 'HDFC0001234',
+};
 const unique = Date.now().toString(36);
 const bearer = (token: string) => ({ headers: { Authorization: `Bearer ${token}` } });
 
@@ -128,10 +134,15 @@ describeLive('admin app ↔ live backend', () => {
     expect((await http.get(`/restaurants/${restaurantId}`, { validateStatus: () => true })).status).toBe(404);
   });
 
-  test('rejects with a note, then approves', async () => {
+  test('rejects with a note, then approves once payout details are in', async () => {
     await call(d(e.reviewRestaurant.initiate({ id: restaurantId, decision: 'reject', notes: 'Add FSSAI licence' })));
     let detail = await call(d(e.getRestaurant.initiate(restaurantId, { forceRefetch: true })));
     expect(detail.restaurant).toMatchObject({ verificationStatus: 'rejected', verificationNotes: 'Add FSSAI licence' });
+
+    const early = await d(e.reviewRestaurant.initiate({ id: restaurantId, decision: 'approve', notes: '' }));
+    expect('error' in early && early.error).toMatchObject({ code: 'PAYOUT_DETAILS_MISSING', status: 409 });
+    // Not approved yet, so the owner's details apply at once
+    await http.put(`/restaurants/${restaurantId}/bank-details`, PAYOUT, ownerAuth);
 
     await call(d(e.reviewRestaurant.initiate({ id: restaurantId, decision: 'approve', notes: '' })));
     detail = await call(d(e.getRestaurant.initiate(restaurantId, { forceRefetch: true })));
@@ -140,6 +151,25 @@ describeLive('admin app ↔ live backend', () => {
     const publicView = (await http.get(`/restaurants/${restaurantId}`)).data.data;
     expect(publicView.name).toBe(`Review Kitchen ${unique}`);
     expect(publicView.owner).toBeUndefined();
+    expect(publicView.upiId).toBeUndefined();
+  });
+
+  test('reviews a payout change from the live restaurant', async () => {
+    const sent = await http.put(`/restaurants/${restaurantId}/bank-details`, { ...PAYOUT, upiId: 'newkitchen@oksbi' }, ownerAuth);
+    expect(sent.status).toBe(202);
+
+    const queue = await call(d(e.getChangeRequests.initiate(undefined, { forceRefetch: true })));
+    const mine = queue.find((q) => q.subject?.id === restaurantId)!;
+    expect(mine).toMatchObject({
+      subjectType: 'restaurant',
+      kind: 'payout',
+      changes: { upiId: 'newkitchen@oksbi' },
+      current: { upiId: PAYOUT.upiId },
+    });
+
+    await call(d(e.reviewChange.initiate({ id: mine.id, decision: 'approve' })));
+    const detail = await call(d(e.getRestaurant.initiate(restaurantId, { forceRefetch: true })));
+    expect(detail.restaurant.upiId).toBe('newkitchen@oksbi');
   });
 
   test('analytics count the restaurant’s sales today, excluding cancelled orders', async () => {

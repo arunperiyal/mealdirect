@@ -1,5 +1,13 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
-import { createAxiosBaseQuery, type AppConfig, type Collection, type Order, type RiderCash } from '@mealdirect/shared';
+import {
+  createAxiosBaseQuery,
+  type ChangeResult,
+  type Collection,
+  type Order,
+  type PayoutDetails,
+  type RiderCash,
+  type RiderProfile,
+} from '@mealdirect/shared';
 import { api } from '@/api';
 
 export type DeliveryAction = 'claim' | 'release' | 'pick-up' | 'deliver';
@@ -7,11 +15,25 @@ export type DeliveryAction = 'claim' | 'release' | 'pick-up' | 'deliver';
 export const serverApi = createApi({
   reducerPath: 'serverApi',
   baseQuery: createAxiosBaseQuery(api),
-  tagTypes: ['Queue', 'Mine', 'Order', 'Balance'],
+  tagTypes: ['Queue', 'Mine', 'Order', 'Balance', 'Profile'],
   endpoints: (build) => ({
-    // MealDirect's UPI details for the QR shown at the door
-    getConfig: build.query<AppConfig, void>({
-      query: () => ({ url: '/config' }),
+    // Personal and payout details, and any change waiting for MealDirect's review.
+    // Works before approval too.
+    getProfile: build.query<RiderProfile, void>({
+      query: () => ({ url: '/profile' }),
+      providesTags: ['Profile'],
+    }),
+    // Before approval these save at once; after, they wait for review (applied: false)
+    updatePersonal: build.mutation<
+      ChangeResult & { profile: RiderProfile },
+      { firstName: string; lastName: string | null; phone: string }
+    >({
+      query: (data) => ({ url: '/profile/personal', method: 'PUT', data }),
+      invalidatesTags: ['Profile'],
+    }),
+    updatePayout: build.mutation<ChangeResult & { profile: RiderProfile }, PayoutDetails>({
+      query: (data) => ({ url: '/profile/payout', method: 'PUT', data }),
+      invalidatesTags: ['Profile'],
     }),
     // Unclaimed delivery orders from every restaurant
     getAvailable: build.query<Order[], void>({
@@ -45,7 +67,9 @@ export const serverApi = createApi({
 });
 
 export const {
-  useGetConfigQuery,
+  useGetProfileQuery,
+  useUpdatePersonalMutation,
+  useUpdatePayoutMutation,
   useGetAvailableQuery,
   useGetMyDeliveriesQuery,
   useGetDeliveryQuery,

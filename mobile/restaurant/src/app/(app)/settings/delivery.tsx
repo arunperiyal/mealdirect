@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
-import { colors, errorMessage, font, spacing, TextField } from '@mealdirect/shared';
-import { FormScreen } from '@/components/FormScreen';
+import { colors, errorMessage, font, FormScreen, spacing, TextField } from '@mealdirect/shared';
 import { useRestaurant } from '@/lib/useRestaurant';
 import { validateMoney } from '@/lib/validation';
 import { useUpdateDeliverySettingsMutation } from '@/store/serverApi';

@@ -3,7 +3,7 @@ import { canRecordPayment, canRestaurantCancel, customerName, nextStep, paymentL
 import { bulkResultMessage, countsSummary, groupTitle, kitchenCounts } from '../kitchen';
 import { summarizeToday } from '../today';
 import { dayLabel, isBefore, isValidTime, toHHmm } from '../time';
-import { validateIfsc, validateMoney, validatePhone, validateUpi } from '../validation';
+import { validateMoney, validatePhone } from '../validation';
 
 const order = (overrides: Partial<Order> = {}): Order =>
   ({
@@ -137,10 +137,6 @@ describe('time and validation', () => {
     expect(validatePhone('123')).toBeTruthy();
     expect(validateMoney('-1', 'Fee')).toBeTruthy();
     expect(validateMoney('25.50', 'Fee')).toBeNull();
-    expect(validateIfsc('hdfc0001234')).toBeNull();
-    expect(validateIfsc('HDFC1234')).toBeTruthy();
-    expect(validateUpi('kitchen@okaxis')).toBeNull();
-    expect(validateUpi('kitchen')).toBeTruthy();
   });
 });
 

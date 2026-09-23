@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { Button, colors, font, spacing } from '@mealdirect/shared';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { logout, refreshProfile } from '@/store/authSlice';
@@ -38,6 +39,12 @@ export default function PendingScreen() {
       </View>
       <View style={styles.actions}>
         <Button title="Check again" onPress={checkNow} loading={checking} />
+        {!suspended && (
+          <>
+            <Button title="Add payout details" variant="secondary" onPress={() => router.push('/profile/payout')} />
+            <Button title="Edit personal details" variant="secondary" onPress={() => router.push('/profile/personal')} />
+          </>
+        )}
         <Button title="Sign out" variant="danger" onPress={() => dispatch(logout())} />
       </View>
     </SafeAreaView>

@@ -24,7 +24,7 @@ import { ORDER_POLL_MS } from '@/config';
 import { canRelease, cashToCollect, mapsUrl, restaurantPlace, riderStep } from '@/lib/riderSteps';
 import { useAppSelector } from '@/store';
 import { PaymentSheet } from '@/components/PaymentSheet';
-import { serverApi, useActMutation, useGetConfigQuery, useGetDeliveryQuery } from '@/store/serverApi';
+import { serverApi, useActMutation, useGetDeliveryQuery } from '@/store/serverApi';
 
 export default function DeliveryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -47,7 +47,6 @@ export default function DeliveryScreen() {
 function Details({ order, refreshing, onRefresh }: { order: Order; refreshing: boolean; onRefresh: () => void }) {
   const me = useAppSelector((s) => s.auth.user?.id);
   const [act, { isLoading }] = useActMutation();
-  const { data: appConfig } = useGetConfigQuery();
   const [error, setError] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string | null>(null);
@@ -107,7 +106,9 @@ function Details({ order, refreshing, onRefresh }: { order: Order; refreshing: b
               ? `Collect ${formatINR(cash)}`
               : paymentLabel(order)}
         </Text>
-        {cash ? <Text style={font.caption}>Cash, or UPI to MealDirect</Text> : null}
+        {cash ? (
+          <Text style={font.caption}>{order.restaurant?.upiId ? 'Cash, or UPI to the restaurant' : 'Cash'}</Text>
+        ) : null}
         <Text style={font.caption}>
           {items} {items === 1 ? 'item' : 'items'} ·{' '}
           {order.deliverySlot
@@ -187,7 +188,7 @@ function Details({ order, refreshing, onRefresh }: { order: Order; refreshing: b
         visible={paying}
         amount={cash}
         reference={shortId(order.id)}
-        upi={appConfig?.upi ?? null}
+        upi={order.restaurant?.upiId ? { id: order.restaurant.upiId, name: order.restaurant.name } : null}
         submitting={isLoading}
         error={payError}
         onClose={() => setPaying(false)}

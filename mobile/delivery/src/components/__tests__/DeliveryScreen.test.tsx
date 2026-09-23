@@ -21,11 +21,8 @@ jest.mock('expo-router', () => ({
 const mockAct = jest.fn();
 let mockOrder: Order;
 
-let mockUpi: { id: string; name: string } | null = { id: 'mealdirect@okbank', name: 'MealDirect' };
-
 jest.mock('@/store/serverApi', () => ({
   ...jest.requireActual('@/store/serverApi'),
-  useGetConfigQuery: () => ({ data: { onlinePayments: false, upi: mockUpi } }),
   useGetDeliveryQuery: () => ({ data: mockOrder, isLoading: false, isFetching: false, refetch: jest.fn() }),
   useActMutation: () => [(arg: unknown) => ({ unwrap: () => mockAct(arg) }), { isLoading: false }],
 }));
@@ -43,7 +40,7 @@ const base = {
   items: [{ menuItemId: 'i1', name: 'Meals', quantity: 2, price: 120, total: 240 }],
   statusHistory: [],
   createdAt: new Date().toISOString(),
-  restaurant: { id: 'r1', name: 'Amma Mess', address: '12 Main St', city: 'Chennai', phone: '044123' },
+  restaurant: { id: 'r1', name: 'Amma Mess', address: '12 Main St', city: 'Chennai', phone: '044123', upiId: 'ammamess@okaxis' },
   customer: { id: 'c1', firstName: 'Priya', lastName: null, phone: '98765' },
 } as unknown as Order;
 
@@ -70,7 +67,7 @@ describe('DeliveryScreen', () => {
   test('a ready order of mine is picked up', async () => {
     await renderScreen({ riderId: 'rider-1' });
     expect(screen.getByText('Collect ₹282.00')).toBeTruthy();
-    expect(screen.getByText('Cash, or UPI to MealDirect')).toBeTruthy();
+    expect(screen.getByText('Cash, or UPI to the restaurant')).toBeTruthy();
     await fireEvent.press(screen.getByText('Picked up from restaurant'));
     expect(mockAct).toHaveBeenCalledWith({ id: 'o1', action: 'pick-up' });
   });
@@ -82,12 +79,12 @@ describe('DeliveryScreen', () => {
     expect(mockAct).toHaveBeenCalledWith({ id: 'o1', action: 'deliver', collection: 'cash', note: undefined });
   });
 
-  test('UPI shows a QR for the exact amount to MealDirect, then records UPI', async () => {
+  test("UPI shows a QR for the exact amount to the restaurant's UPI ID, then records UPI", async () => {
     await renderScreen({ riderId: 'rider-1', status: 'out_for_delivery' });
     await fireEvent.press(screen.getByText('Delivered · collect ₹282.00'));
     await fireEvent.press(screen.getByText('Customer pays by UPI'));
     expect(screen.getByTestId('upi-qr').props.children).toBe(
-      'upi://pay?pa=mealdirect%40okbank&pn=MealDirect&am=282.00&cu=INR&tn=MealDirect%20order%20%23O1'
+      'upi://pay?pa=ammamess%40okaxis&pn=Amma%20Mess&am=282.00&cu=INR&tn=MealDirect%20order%20%23O1'
     );
     await fireEvent.press(screen.getByText('Customer has paid'));
     expect(mockAct).toHaveBeenCalledWith({ id: 'o1', action: 'deliver', collection: 'upi', note: undefined });
@@ -102,12 +99,15 @@ describe('DeliveryScreen', () => {
     expect(mockAct).toHaveBeenCalledWith({ id: 'o1', action: 'deliver', collection: 'not_paid', note: 'Nobody answered' });
   });
 
-  test('UPI is unavailable when MealDirect’s UPI ID is not set', async () => {
-    mockUpi = null;
-    await renderScreen({ riderId: 'rider-1', status: 'out_for_delivery' });
+  test("UPI is unavailable when the restaurant hasn't added a UPI ID", async () => {
+    await renderScreen({
+      riderId: 'rider-1',
+      status: 'out_for_delivery',
+      restaurant: { ...base.restaurant!, upiId: null },
+    });
+    expect(screen.getByText('Cash')).toBeTruthy();
     await fireEvent.press(screen.getByText('Delivered · collect ₹282.00'));
-    expect(screen.getByText(/UPI isn’t set up yet/)).toBeTruthy();
-    mockUpi = { id: 'mealdirect@okbank', name: 'MealDirect' };
+    expect(screen.getByText(/hasn’t added a UPI ID yet/)).toBeTruthy();
   });
 
   test("another rider's order shows no actions", async () => {

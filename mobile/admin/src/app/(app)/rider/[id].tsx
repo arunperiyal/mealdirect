@@ -11,6 +11,7 @@ import {
   font,
   formatDateTime,
   formatINR,
+  maskAccount,
   LoadingState,
   SheetForm,
   spacing,
@@ -80,7 +81,7 @@ export default function RiderCashScreen() {
           <StatTile label="Settled so far" value={formatINR(cash.settled)} />
         </View>
         <Text style={[font.caption, styles.gapBottom]}>
-          Today: {formatINR(cash.cashToday)} cash, {formatINR(cash.upiToday)} UPI (UPI goes straight to MealDirect).
+          Today: {formatINR(cash.cashToday)} cash, {formatINR(cash.upiToday)} UPI (UPI goes straight to the restaurant).
           {rider.phone ? ` Phone ${rider.phone}.` : ''}
         </Text>
 
@@ -92,6 +93,19 @@ export default function RiderCashScreen() {
           disabled={cash.balance <= 0}
           style={styles.gap}
         />
+
+        <Card title="Payout details" style={styles.section}>
+          {rider.upiId || rider.bankAccountNumber ? (
+            <>
+              <Text style={font.body}>UPI {rider.upiId ?? '—'}</Text>
+              <Text style={font.body}>
+                {[rider.bankAccountName, maskAccount(rider.bankAccountNumber), rider.bankIFSC].filter(Boolean).join(' · ')}
+              </Text>
+            </>
+          ) : (
+            <Text style={font.caption}>Not added yet. Riders add these in the Delivery app.</Text>
+          )}
+        </Card>
 
         <Card title="Settlements" style={styles.section}>
           {settlements.length === 0 && <Text style={font.caption}>None yet.</Text>}

@@ -31,16 +31,24 @@ If you pulled this onto an existing Postgres database, run `npm run upgrade-db` 
 For pay-on-delivery orders, **Delivered** asks how the customer paid:
 
 - **Cash received**: the rider now holds that cash for MealDirect.
-- **Customer pays by UPI**: shows a QR code for MealDirect's UPI ID with the exact amount and the order
+- **Customer pays by UPI**: shows a QR code for the restaurant's UPI ID with the exact amount and the order
   number. The customer scans it with any UPI app, and the rider taps **Customer has paid** once their screen
-  shows success. The money goes straight to MealDirect, so the rider has nothing to settle.
+  shows success. The money goes straight to the restaurant, so the rider has nothing to settle.
 - **Not paid**: with an optional note. The customer can't order again until a MealDirect admin resolves it.
 
 Riders hand collected cash to MealDirect. **My deliveries** shows the cash to settle. A rider can't accept new
 deliveries while holding cash from before today (India time); an admin records the settlement in the
 MealDirect Admin app.
 
-MealDirect's UPI ID comes from the backend (`MEALDIRECT_UPI_ID`). Without it, the UPI option is disabled.
+The UPI ID is the one in the restaurant's payout details. A restaurant can't be approved without one; for an
+older restaurant that has none, the UPI option is disabled and the rider collects cash.
+
+## Your details
+
+**Account** has **Personal details** (name and phone) and **Payout details** (UPI ID and bank account, where
+MealDirect pays tips and earnings). Riders waiting for approval can fill these in and they save at once. After
+approval, a change waits for a MealDirect admin: the app shows it as waiting, keeps the current details in use,
+and shows the admin's note if it's turned down. Email can't be changed.
 
 Before accepting, riders see the restaurant, the drop address, the time and the amount to collect, but only the
 customer's first name. The customer's phone number shows once they accept. Customers, restaurants and admins see
@@ -69,5 +77,6 @@ LIVE_API_ADMIN_EMAIL=admin@example.com LIVE_API_ADMIN_PASSWORD=... \
 ## Not built yet
 
 - Live location and customer tracking (later phase)
-- Rider earnings and payouts
+- Rider earnings and paying out tips and salary (payout details are collected, payments aren't built)
+- Paying the rider's UPI when the restaurant's doesn't work (planned)
 - Push notifications for new orders (the queue refreshes every 15 seconds)

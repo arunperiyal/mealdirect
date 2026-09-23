@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Button, colors, font, spacing } from '@mealdirect/shared';
+import { Banner, Button, colors, font, isPayoutComplete, spacing } from '@mealdirect/shared';
 import { useAppDispatch } from '@/store';
 import { logout } from '@/store/authSlice';
 import { useRestaurant } from '@/lib/useRestaurant';
@@ -15,6 +15,7 @@ export default function PendingScreen() {
   // Re-check periodically; the layout switches to the app once approved
   const { refetch, isFetching } = useGetMyRestaurantsQuery(undefined, { pollingInterval: CHECK_EVERY_MS });
   const rejected = restaurant.verificationStatus === 'rejected';
+  const payoutMissing = !isPayoutComplete(restaurant);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -32,6 +33,12 @@ export default function PendingScreen() {
             <Text style={font.body}>{restaurant.verificationNotes}</Text>
           </View>
         ) : null}
+        {payoutMissing && (
+          <Banner
+            tone="warning"
+            message="Add your UPI ID and bank account. MealDirect needs them before approving your restaurant."
+          />
+        )}
         {rejected && (
           <Text style={[font.caption, styles.text]}>
             Update your details below, then contact support to request another review.
@@ -39,7 +46,8 @@ export default function PendingScreen() {
         )}
       </View>
       <View style={styles.actions}>
-        <Button title="Check again" onPress={refetch} loading={isFetching} />
+        {payoutMissing && <Button title="Add payout details" onPress={() => router.push('/settings/bank')} />}
+        <Button title="Check again" variant={payoutMissing ? 'secondary' : 'primary'} onPress={refetch} loading={isFetching} />
         <Button title="Edit restaurant details" variant="secondary" onPress={() => router.push('/settings/profile')} />
         <Button title="Sign out" variant="danger" onPress={() => dispatch(logout())} />
       </View>

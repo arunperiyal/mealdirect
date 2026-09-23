@@ -1,7 +1,9 @@
 import { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Banner, Button, colors, spacing } from '@mealdirect/shared';
+import { Button } from './Button';
+import { Banner } from './States';
+import { colors, spacing } from '../theme';
 
 interface Props {
   children: ReactNode;

@@ -65,6 +65,12 @@ api.defaults.adapter = httpAdapter;
 axios.defaults.adapter = httpAdapter;
 
 const http = nodeAxios.create({ baseURL: `${LIVE_API_URL}/api` });
+const PAYOUT = {
+  upiId: 'contractkitchen@okhdfc',
+  bankAccountName: 'Contract Kitchen',
+  bankAccountNumber: '123456789012',
+  bankIFSC: 'HDFC0001234',
+};
 const unique = Date.now().toString(36);
 const bearer = (token: string) => ({ headers: { Authorization: `Bearer ${token}` } });
 
@@ -102,7 +108,7 @@ describeLive('delivery app ↔ live backend', () => {
     restaurantId = (
       await http.post(
         '/restaurants',
-        { name: `Rider Kitchen ${unique}`, email: `rk.${unique}@contract.test`, address: '5 Market Rd', city: 'Chennai' },
+        { name: `Rider Kitchen ${unique}`, email: `rk.${unique}@contract.test`, address: '5 Market Rd', city: 'Chennai', ...PAYOUT },
         ownerAuth
       )
     ).data.data.id;
@@ -174,9 +180,27 @@ describeLive('delivery app ↔ live backend', () => {
     const blocked = await d(e.getAvailable.initiate());
     expect('error' in blocked && blocked.error).toMatchObject({ code: 'RIDER_NOT_APPROVED', status: 403 });
 
+    // Before approval, payout details save at once
+    const payout = await call(
+      d(e.updatePayout.initiate({ upiId: 'ravi@okaxis', bankAccountName: 'Ravi Rider', bankAccountNumber: '555566667777', bankIFSC: 'UTIB0001234' }))
+    );
+    expect(payout).toMatchObject({ applied: true, profile: { upiId: 'ravi@okaxis' } });
+
     await http.put(`/admin/riders/${store.getState().auth.user!.id}/approve`, {}, adminAuth);
     await store.dispatch(refreshProfile()).unwrap();
     expect(store.getState().auth.user?.riderStatus).toBe('approved');
+  });
+
+  test('after approval, a change of phone waits for an admin', async () => {
+    const sent = await call(d(e.updatePersonal.initiate({ firstName: 'Ravi', lastName: 'Rider', phone: '9000000009' })));
+    expect(sent).toMatchObject({ applied: false, changeRequest: { status: 'pending', changes: { phone: '9000000009' } } });
+    let profile = await call(d(e.getProfile.initiate(undefined, { forceRefetch: true })));
+    expect(profile.phone).toBe('9000000001');
+
+    await http.post(`/admin/change-requests/${sent.changeRequest!.id}/approve`, {}, adminAuth);
+    profile = await call(d(e.getProfile.initiate(undefined, { forceRefetch: true })));
+    expect(profile).toMatchObject({ phone: '9000000009', upiId: 'ravi@okaxis' });
+    expect(profile.changeRequests.personal).toBeNull();
   });
 
   test('sees an accepted order in the queue without the customer phone', async () => {
@@ -205,6 +229,9 @@ describeLive('delivery app ↔ live backend', () => {
     const order = await confirmedOrder();
     const claimed = await call(d(e.act.initiate({ id: order.id, action: 'claim' })));
     expect(claimed.customer?.phone).toBe('9123456780');
+    // Customers paying by UPI at the door pay the restaurant
+    const detail = await call(d(e.getDelivery.initiate(order.id, { forceRefetch: true })));
+    expect(detail.restaurant?.upiId).toBe(PAYOUT.upiId);
 
     const early = await d(e.act.initiate({ id: order.id, action: 'pick-up' }));
     expect('error' in early && early.error).toMatchObject({ code: 'INVALID_STATUS' });
@@ -217,7 +244,8 @@ describeLive('delivery app ↔ live backend', () => {
     await call(d(e.act.initiate({ id: order.id, action: 'pick-up' })));
     const customerView = (await http.get(`/orders/${order.id}`, customerAuth)).data.data;
     expect(customerView.status).toBe('out_for_delivery');
-    expect(customerView.rider).toMatchObject({ firstName: 'Ravi', phone: '9000000001' });
+    // The phone number approved in the earlier test
+    expect(customerView.rider).toMatchObject({ firstName: 'Ravi', phone: '9000000009' });
 
     const done = await call(d(e.act.initiate({ id: order.id, action: 'deliver', collection: 'cash' })));
     expect(done).toMatchObject({ status: 'delivered', paymentStatus: 'completed', collectionMethod: 'cash' });

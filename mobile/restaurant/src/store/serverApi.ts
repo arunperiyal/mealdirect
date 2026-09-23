@@ -5,9 +5,11 @@ import {
   type Menu,
   type MenuItem,
   type Order,
+  type ChangeResult,
   type Collection,
   type KitchenDay,
   type OwnedRestaurant,
+  type PayoutDetails,
 } from '@mealdirect/shared';
 import { api } from '@/api';
 
@@ -35,12 +37,6 @@ export interface DeliverySettings {
   minOrderForDelivery: number;
 }
 
-export interface BankDetails {
-  bankAccountName?: string;
-  bankAccountNumber?: string;
-  bankIFSC?: string;
-  upiId?: string;
-}
 
 export interface OrderSettings {
   autoAcceptOrders: boolean;
@@ -71,7 +67,8 @@ export const serverApi = createApi({
       query: () => ({ url: '/restaurants/my-restaurants', params: { limit: 100 } }),
       providesTags: ['Restaurant'],
     }),
-    createRestaurant: build.mutation<OwnedRestaurant, RestaurantInput>({
+    // Payout details can come with the application; MealDirect needs them to approve it
+    createRestaurant: build.mutation<OwnedRestaurant, RestaurantInput & Partial<PayoutDetails>>({
       query: (data) => ({ url: '/restaurants', method: 'POST', data }),
       invalidatesTags: ['Restaurant'],
     }),
@@ -84,7 +81,8 @@ export const serverApi = createApi({
       query: ({ id, ...data }) => ({ url: `/restaurants/${id}/delivery-settings`, method: 'PUT', data }),
       invalidatesTags: ['Restaurant'],
     }),
-    updateBankDetails: build.mutation<OwnedRestaurant, { id: string } & BankDetails>({
+    // Before approval this saves at once; after, it's sent to MealDirect for review (applied: false)
+    updateBankDetails: build.mutation<ChangeResult & { restaurant: OwnedRestaurant }, { id: string } & PayoutDetails>({
       query: ({ id, ...data }) => ({ url: `/restaurants/${id}/bank-details`, method: 'PUT', data }),
       invalidatesTags: ['Restaurant'],
     }),

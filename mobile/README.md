@@ -7,7 +7,7 @@ An npm workspace with the Expo (SDK 57) apps and the code they share.
 | `customer/` | Customer app: browse, order, pay, track |
 | `restaurant/` | MealDirect Partner app for restaurant owners: orders, menus, settings |
 | `admin/` | MealDirect Admin app for staff: restaurant and rider review, orders, analytics |
-| `delivery/` | MealDirect Delivery app for riders: claim orders, pick up, deliver |
+| `delivery/` | MealDirect Delivery app for riders: claim orders, pick up, deliver, record payment (cash, UPI QR, not paid) |
 | `packages/shared/` | `@mealdirect/shared`: API client and token refresh, SecureStore session, shared types, money/date/status helpers, theme, common components |
 
 ## Setup
@@ -54,3 +54,9 @@ npx eas-cli build --platform android --profile preview
 When the build finishes, EAS prints a link and QR code to install the APK. A preview build that points at a
 LAN address only works on the same Wi-Fi as the backend. Once the API is deployed (see `backend/DEPLOY.md`),
 set the preview and production addresses to its `https://` URL.
+
+## Payments
+
+Online payment (Razorpay) is on hold: the backend's `/api/config` reports `onlinePayments: false`, so checkout
+offers only pay on delivery or pay at pickup. Setting `ONLINE_PAYMENTS_ENABLED=true` (with Razorpay keys) on the
+server brings it back without a new app release.

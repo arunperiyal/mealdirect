@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Alert, FlatList, Linking, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import {
   Banner,
   Button,
@@ -10,6 +11,7 @@ import {
   ErrorState,
   font,
   formatDateTime,
+  formatINR,
   LoadingState,
   radius,
   spacing,
@@ -81,7 +83,11 @@ export default function RidersScreen() {
             />
           }
           renderItem={({ item }) => (
-            <View style={styles.row}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/rider/[id]', params: { id: item.id } })}
+              style={({ pressed }) => [styles.row, pressed && { opacity: 0.9 }]}
+            >
               <Text style={font.heading}>{[item.firstName, item.lastName].filter(Boolean).join(' ') || item.email}</Text>
               <Text style={font.caption}>
                 {item.phone ?? 'No phone'} · {item.email}
@@ -89,6 +95,12 @@ export default function RidersScreen() {
               <Text style={font.caption}>
                 Signed up {formatDateTime(item.createdAt)} · {item.deliveries} {item.deliveries === 1 ? 'delivery' : 'deliveries'}
               </Text>
+              {item.cashBalance > 0 && (
+                <Text style={[font.caption, item.cashOverdue > 0 && styles.overdue]}>
+                  Holding {formatINR(item.cashBalance)} cash
+                  {item.cashOverdue > 0 ? ` · ${formatINR(item.cashOverdue)} overdue, can’t take orders` : ''}
+                </Text>
+              )}
               <View style={styles.actions}>
                 {item.phone ? (
                   <Button title="Call" variant="secondary" onPress={() => Linking.openURL(`tel:${item.phone}`)} style={styles.flex} />
@@ -105,7 +117,7 @@ export default function RidersScreen() {
                   <Button title="Approve" onPress={() => change(item, 'approve')} loading={busy === item.id} style={styles.flex} />
                 )}
               </View>
-            </View>
+            </Pressable>
           )}
         />
       )}
@@ -119,4 +131,5 @@ const styles = StyleSheet.create({
   list: { padding: spacing.lg, flexGrow: 1 },
   row: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md, gap: 4 },
   actions: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
+  overdue: { color: colors.danger, fontWeight: '600' },
 });

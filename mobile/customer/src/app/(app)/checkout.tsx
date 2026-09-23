@@ -27,6 +27,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { clearCart, selectCartSubtotal } from '@/store/cartSlice';
 import {
   useCreateOrderMutation,
+  useGetConfigQuery,
   useGetMenuSlotsQuery,
   useGetRestaurantQuery,
 } from '@/store/serverApi';
@@ -49,7 +50,11 @@ export default function CheckoutScreen() {
     chosenType ?? (restaurant ? (restaurant.deliveryEnabled ? 'delivery' : 'pickup') : null);
   const [address, setAddress] = useState('');
   const [slotId, setSlotId] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('online');
+  const { data: appConfig } = useGetConfigQuery();
+  const onlineAvailable = appConfig?.onlinePayments === true;
+  const [chosenMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
+  // Fall back to pay on delivery if online payment is switched off
+  const paymentMethod: PaymentMethod = chosenMethod === 'online' && !onlineAvailable ? 'cod' : chosenMethod;
   const [notes, setNotes] = useState('');
   const [addressError, setAddressError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -200,19 +205,32 @@ export default function CheckoutScreen() {
         </Card>
 
         <Card title="Payment">
-          <View style={styles.chips} accessibilityRole="radiogroup">
-            <Chip label="Pay online" selected={paymentMethod === 'online'} onPress={() => setPaymentMethod('online')} />
-            <Chip
-              label={deliveryType === 'pickup' ? 'Pay at pickup' : 'Cash on delivery'}
-              selected={paymentMethod === 'cod'}
-              onPress={() => setPaymentMethod('cod')}
-            />
-          </View>
-          <Text style={[font.caption, styles.section]}>
-            {paymentMethod === 'online'
-              ? 'UPI, cards, netbanking and wallets via Razorpay. Your order is confirmed once payment succeeds.'
-              : 'Pay the restaurant directly. Your order is confirmed once the restaurant accepts it.'}
-          </Text>
+          {onlineAvailable && (
+            <View style={styles.chips} accessibilityRole="radiogroup">
+              <Chip
+                label={deliveryType === 'pickup' ? 'Pay at pickup' : 'Pay on delivery'}
+                selected={paymentMethod === 'cod'}
+                onPress={() => setPaymentMethod('cod')}
+              />
+              <Chip label="Pay online now" selected={paymentMethod === 'online'} onPress={() => setPaymentMethod('online')} />
+            </View>
+          )}
+          {paymentMethod === 'online' ? (
+            <Text style={[font.caption, onlineAvailable && styles.section]}>
+              UPI, cards, netbanking and wallets via Razorpay. Your order is confirmed once payment succeeds.
+            </Text>
+          ) : (
+            <>
+              {!onlineAvailable && (
+                <Text style={font.body}>{deliveryType === 'pickup' ? 'Pay at pickup' : 'Pay on delivery'}</Text>
+              )}
+              <Text style={[font.caption, styles.section]}>
+                {deliveryType === 'pickup'
+                  ? 'Pay the restaurant in cash or by UPI when you collect your order.'
+                  : 'Pay the delivery partner in cash, or by UPI with the QR code they show you, when your food arrives.'}
+              </Text>
+            </>
+          )}
         </Card>
 
         <Card title="Notes for the kitchen">

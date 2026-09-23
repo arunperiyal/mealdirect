@@ -1,6 +1,8 @@
 import { addDays, formatTime, localDateString } from '../dates';
 import { estimateTotals, formatINR } from '../money';
-import { canCancel, canMarkPickedUp, isActive, needsPayment, statusSteps } from '../orderStatus';
+import { canCancel, canMarkPickedUp, isActive, needsPayment, paymentLabel, statusSteps } from '../orderStatus';
+import { upiPayUrl } from '../upi';
+import type { Order } from '../../api/types';
 import { validateEmail, validatePassword } from '../validation';
 
 describe('money', () => {
@@ -80,5 +82,24 @@ describe('validation', () => {
     expect(validateEmail(' a@b.co ')).toBeNull();
     expect(validatePassword('1234567')).toBeTruthy();
     expect(validatePassword('12345678')).toBeNull();
+  });
+});
+
+describe('pay on delivery', () => {
+  const cod = (overrides: Partial<Order>) =>
+    ({ paymentMethod: 'cod', paymentStatus: 'pending', deliveryType: 'delivery', ...overrides }) as Order;
+
+  test('payment labels follow what was collected', () => {
+    expect(paymentLabel(cod({ collectionStatus: 'awaiting' }))).toBe('Pay on delivery (cash or UPI)');
+    expect(paymentLabel(cod({ deliveryType: 'pickup' }))).toBe('Pay at pickup (cash or UPI)');
+    expect(paymentLabel(cod({ collectionStatus: 'collected', collectionMethod: 'cash' }))).toBe('Paid in cash');
+    expect(paymentLabel(cod({ collectionStatus: 'collected', collectionMethod: 'upi' }))).toBe('Paid by UPI');
+    expect(paymentLabel(cod({ collectionStatus: 'not_paid' }))).toBe('Not paid');
+  });
+
+  test('UPI link carries payee, exact amount and order reference', () => {
+    expect(upiPayUrl({ id: 'mealdirect@okbank', name: 'Meal Direct' }, 282, '#AB12CD34')).toBe(
+      'upi://pay?pa=mealdirect%40okbank&pn=Meal%20Direct&am=282.00&cu=INR&tn=MealDirect%20order%20%23AB12CD34'
+    );
   });
 });

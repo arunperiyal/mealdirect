@@ -31,6 +31,9 @@ Rules that come from the backend:
 - Menus can't be created until the restaurant is approved, and only draft menus can have their ordering window changed.
 - A delivery time can't be deleted once orders are booked in it, and its limit can't drop below the orders already booked.
 - Pickup orders are finished by the customer confirming they collected them.
+- Pay on delivery: for pickup orders (once ready) and orders you deliver yourself (once delivered), record how
+  the customer paid: **Received cash**, **Received UPI** or **Not paid**. **Today** lists payments still to
+  record. Delivery partners record payment for the orders they deliver.
 - Once a delivery partner accepts a delivery order, they handle pickup and delivery. The order shows their name
   and phone number. Until then, the restaurant can **Send out yourself**.
 

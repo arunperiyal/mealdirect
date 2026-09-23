@@ -16,7 +16,7 @@ import {
 } from '@mealdirect/shared';
 import { OrderRow } from '@/components/OrderRow';
 import { ORDER_POLL_MS } from '@/config';
-import { needsAttention } from '@/lib/orderActions';
+import { canRecordPayment, needsAttention } from '@/lib/orderActions';
 import { summarizeToday } from '@/lib/today';
 import { useRestaurant } from '@/lib/useRestaurant';
 import { useGetMenusQuery, useGetRestaurantOrdersQuery } from '@/store/serverApi';
@@ -40,6 +40,7 @@ export default function TodayScreen() {
   const list = orders.data ?? [];
   const summary = summarizeToday(list);
   const waiting = list.filter(needsAttention);
+  const toRecord = list.filter(canRecordPayment);
   const todaysMenu = menus.data?.[0];
   const soldOut = todaysMenu?.items.filter((i) => !i.available).length ?? 0;
 
@@ -104,6 +105,15 @@ export default function TodayScreen() {
         )}
         {menus.error ? <Text style={[font.caption, { color: colors.danger }]}>{errorMessage(menus.error)}</Text> : null}
       </Card>
+
+      {toRecord.length > 0 && (
+        <>
+          <Text style={[font.heading, styles.section]}>Payments to record</Text>
+          {toRecord.map((o) => (
+            <OrderRow key={o.id} order={o} />
+          ))}
+        </>
+      )}
 
       <Text style={[font.heading, styles.section]}>Waiting for you</Text>
       {waiting.length === 0 ? (

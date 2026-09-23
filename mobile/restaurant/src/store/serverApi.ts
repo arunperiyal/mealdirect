@@ -5,6 +5,7 @@ import {
   type Menu,
   type MenuItem,
   type Order,
+  type Collection,
   type OwnedRestaurant,
 } from '@mealdirect/shared';
 import { api } from '@/api';
@@ -93,6 +94,17 @@ export const serverApi = createApi({
     }),
     advanceOrder: build.mutation<Order, { id: string; action: OrderAction }>({
       query: ({ id, action }) => ({ url: `/orders/${id}/${action}`, method: 'POST' }),
+      invalidatesTags: (_o, _e, { id }) => [
+        { type: 'Order', id },
+        { type: 'Order', id: 'LIST' },
+      ],
+    }),
+    recordPayment: build.mutation<Order, { id: string; collection: Collection; note?: string }>({
+      query: ({ id, collection, note }) => ({
+        url: `/orders/${id}/record-payment`,
+        method: 'POST',
+        data: { collection, ...(note ? { note } : {}) },
+      }),
       invalidatesTags: (_o, _e, { id }) => [
         { type: 'Order', id },
         { type: 'Order', id: 'LIST' },
@@ -190,6 +202,7 @@ export const {
   useGetRestaurantOrdersQuery,
   useGetOrderQuery,
   useAdvanceOrderMutation,
+  useRecordPaymentMutation,
   useCancelOrderMutation,
   useGetMenusQuery,
   useGetMenuQuery,

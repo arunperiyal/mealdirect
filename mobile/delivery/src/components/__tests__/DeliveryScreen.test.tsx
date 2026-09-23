@@ -1,9 +1,16 @@
-import { Alert } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import type { Order, User } from '@mealdirect/shared';
 import DeliveryScreen from '@/app/(app)/delivery/[id]';
 import { makeStore } from '@/store';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
+
+jest.mock('react-native-qrcode-svg', () => {
+  const { Text } = jest.requireActual('react-native');
+  return { __esModule: true, default: ({ value }: { value: string }) => <Text testID="upi-qr">{value}</Text> };
+});
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'o1' }),
@@ -14,8 +21,11 @@ jest.mock('expo-router', () => ({
 const mockAct = jest.fn();
 let mockOrder: Order;
 
+let mockUpi: { id: string; name: string } | null = { id: 'mealdirect@okbank', name: 'MealDirect' };
+
 jest.mock('@/store/serverApi', () => ({
   ...jest.requireActual('@/store/serverApi'),
+  useGetConfigQuery: () => ({ data: { onlinePayments: false, upi: mockUpi } }),
   useGetDeliveryQuery: () => ({ data: mockOrder, isLoading: false, isFetching: false, refetch: jest.fn() }),
   useActMutation: () => [(arg: unknown) => ({ unwrap: () => mockAct(arg) }), { isLoading: false }],
 }));
@@ -59,20 +69,45 @@ describe('DeliveryScreen', () => {
 
   test('a ready order of mine is picked up', async () => {
     await renderScreen({ riderId: 'rider-1' });
-    expect(screen.getByText('Collect ₹282.00 cash')).toBeTruthy();
+    expect(screen.getByText('Collect ₹282.00')).toBeTruthy();
+    expect(screen.getByText('Cash, or UPI to MealDirect')).toBeTruthy();
     await fireEvent.press(screen.getByText('Picked up from restaurant'));
     expect(mockAct).toHaveBeenCalledWith({ id: 'o1', action: 'pick-up' });
   });
 
-  test('delivering a cash order asks to confirm the cash first', async () => {
-    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
-      buttons?.find((b) => b.text === 'Yes, delivered')?.onPress?.();
-    });
+  test('delivering records cash received', async () => {
     await renderScreen({ riderId: 'rider-1', status: 'out_for_delivery' });
-    await fireEvent.press(screen.getByText(/Delivered · collected/));
-    expect(alert).toHaveBeenCalledWith('Collected ₹282.00?', expect.any(String), expect.any(Array));
-    expect(mockAct).toHaveBeenCalledWith({ id: 'o1', action: 'deliver' });
-    alert.mockRestore();
+    await fireEvent.press(screen.getByText('Delivered · collect ₹282.00'));
+    await fireEvent.press(screen.getByText('Cash received · ₹282.00'));
+    expect(mockAct).toHaveBeenCalledWith({ id: 'o1', action: 'deliver', collection: 'cash', note: undefined });
+  });
+
+  test('UPI shows a QR for the exact amount to MealDirect, then records UPI', async () => {
+    await renderScreen({ riderId: 'rider-1', status: 'out_for_delivery' });
+    await fireEvent.press(screen.getByText('Delivered · collect ₹282.00'));
+    await fireEvent.press(screen.getByText('Customer pays by UPI'));
+    expect(screen.getByTestId('upi-qr').props.children).toBe(
+      'upi://pay?pa=mealdirect%40okbank&pn=MealDirect&am=282.00&cu=INR&tn=MealDirect%20order%20%23O1'
+    );
+    await fireEvent.press(screen.getByText('Customer has paid'));
+    expect(mockAct).toHaveBeenCalledWith({ id: 'o1', action: 'deliver', collection: 'upi', note: undefined });
+  });
+
+  test('not paid is recorded with an optional note', async () => {
+    await renderScreen({ riderId: 'rider-1', status: 'out_for_delivery' });
+    await fireEvent.press(screen.getByText('Delivered · collect ₹282.00'));
+    await fireEvent.press(screen.getByText('Not paid'));
+    await fireEvent.changeText(screen.getByLabelText('What happened? (optional)'), 'Nobody answered');
+    await fireEvent.press(screen.getByText('Mark as not paid'));
+    expect(mockAct).toHaveBeenCalledWith({ id: 'o1', action: 'deliver', collection: 'not_paid', note: 'Nobody answered' });
+  });
+
+  test('UPI is unavailable when MealDirect’s UPI ID is not set', async () => {
+    mockUpi = null;
+    await renderScreen({ riderId: 'rider-1', status: 'out_for_delivery' });
+    await fireEvent.press(screen.getByText('Delivered · collect ₹282.00'));
+    expect(screen.getByText(/UPI isn’t set up yet/)).toBeTruthy();
+    mockUpi = { id: 'mealdirect@okbank', name: 'MealDirect' };
   });
 
   test("another rider's order shows no actions", async () => {

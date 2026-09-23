@@ -227,12 +227,16 @@ describeLive('restaurant app ↔ live backend', () => {
     ]);
   });
 
-  test('cannot accept an unpaid online order; can cancel with a reason', async () => {
-    const online = await placeOrder({ deliveryType: 'pickup', paymentMethod: 'online' });
-    const accept = await d(e.advanceOrder.initiate({ id: online.id, action: 'confirm' }));
-    expect('error' in accept && accept.error).toMatchObject({ code: 'PAYMENT_PENDING', status: 409 });
+  test('records payment for a pickup order, and cancels another with a reason', async () => {
+    const pickup = await placeOrder({ deliveryType: 'pickup', paymentMethod: 'cod' });
+    for (const action of ['confirm', 'mark-preparing', 'mark-ready'] as const) {
+      await call(d(e.advanceOrder.initiate({ id: pickup.id, action })));
+    }
+    const paid = await call(d(e.recordPayment.initiate({ id: pickup.id, collection: 'upi' })));
+    expect(paid).toMatchObject({ collectionStatus: 'collected', collectionMethod: 'upi', paymentStatus: 'completed' });
 
-    const cancelled = await call(d(e.cancelOrder.initiate({ id: online.id, reason: 'Item sold out' })));
+    const other = await placeOrder({ deliveryType: 'pickup', paymentMethod: 'cod' });
+    const cancelled = await call(d(e.cancelOrder.initiate({ id: other.id, reason: 'Item sold out' })));
     expect(cancelled).toMatchObject({ status: 'cancelled', cancellationReason: 'Item sold out' });
   });
 

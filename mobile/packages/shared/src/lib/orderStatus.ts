@@ -43,7 +43,16 @@ export const COMPLETED_STATUSES = ['delivered', 'picked_up'] as const;
 
 export const paymentLabel = (order: Order) => {
   if (order.paymentMethod === 'cod') {
-    return order.deliveryType === 'pickup' ? 'Pay at pickup' : 'Cash on delivery';
+    switch (order.collectionStatus) {
+      case 'collected':
+        return order.collectionMethod === 'upi' ? 'Paid by UPI' : 'Paid in cash';
+      case 'not_paid':
+        return 'Not paid';
+      case 'written_off':
+        return 'Not paid (written off)';
+      default:
+        return order.deliveryType === 'pickup' ? 'Pay at pickup (cash or UPI)' : 'Pay on delivery (cash or UPI)';
+    }
   }
   if (order.paymentStatus === 'completed') return 'Paid online';
   return order.paymentStatus === 'failed' ? 'Online payment failed' : 'Awaiting online payment';

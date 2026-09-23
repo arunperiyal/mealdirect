@@ -1,5 +1,5 @@
 import type { Order } from '@mealdirect/shared';
-import { canRestaurantCancel, customerName, nextStep, paymentLabel } from '../orderActions';
+import { canRecordPayment, canRestaurantCancel, customerName, nextStep, paymentLabel } from '../orderActions';
 import { summarizeToday } from '../today';
 import { dayLabel, isBefore, isValidTime, toHHmm } from '../time';
 import { validateIfsc, validateMoney, validatePhone, validateUpi } from '../validation';
@@ -68,8 +68,9 @@ describe('order helpers', () => {
   });
 
   test('payment labels', () => {
-    expect(paymentLabel(order())).toBe('Cash on delivery');
-    expect(paymentLabel(order({ deliveryType: 'pickup' }))).toBe('Pay at pickup');
+    expect(paymentLabel(order())).toBe('Pay on delivery (cash or UPI)');
+    expect(paymentLabel(order({ deliveryType: 'pickup' }))).toBe('Pay at pickup (cash or UPI)');
+    expect(paymentLabel(order({ collectionStatus: 'collected', collectionMethod: 'cash' }))).toBe('Paid in cash');
     expect(paymentLabel(order({ paymentMethod: 'online', paymentStatus: 'completed' }))).toBe('Paid online');
     expect(paymentLabel(order({ paymentMethod: 'online', paymentStatus: 'failed' }))).toBe('Online payment failed');
   });
@@ -77,6 +78,17 @@ describe('order helpers', () => {
   test('customer name falls back when missing', () => {
     expect(customerName(order({ customer: { id: 'u', firstName: 'Priya', lastName: null, phone: null } }))).toBe('Priya');
     expect(customerName(order())).toBe('Customer');
+  });
+});
+
+describe('canRecordPayment', () => {
+  test('pickup once ready, self-delivery once delivered; never rider deliveries or online orders', () => {
+    expect(canRecordPayment(order({ deliveryType: 'pickup', status: 'ready', collectionStatus: 'awaiting' }))).toBe(true);
+    expect(canRecordPayment(order({ deliveryType: 'pickup', status: 'preparing' }))).toBe(false);
+    expect(canRecordPayment(order({ status: 'delivered', collectionStatus: 'awaiting' }))).toBe(true);
+    expect(canRecordPayment(order({ status: 'delivered', riderId: 'r1' }))).toBe(false);
+    expect(canRecordPayment(order({ status: 'delivered', collectionStatus: 'collected' }))).toBe(false);
+    expect(canRecordPayment(order({ status: 'delivered', paymentMethod: 'online' }))).toBe(false);
   });
 });
 

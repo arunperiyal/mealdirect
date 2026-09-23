@@ -1,6 +1,7 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import {
   createAxiosBaseQuery,
+  type AppConfig,
   type CreateOrderInput,
   type DeliverySlot,
   type Menu,
@@ -16,6 +17,11 @@ export const serverApi = createApi({
   baseQuery: createAxiosBaseQuery(api),
   tagTypes: ['Order'],
   endpoints: (build) => ({
+    // Which payment options to offer (online payment can be switched off on the server)
+    getConfig: build.query<AppConfig, void>({
+      query: () => ({ url: '/config' }),
+    }),
+
     getRestaurants: build.query<Restaurant[], { search?: string }>({
       // Without isApproved=true the backend returns only unapproved restaurants
       query: ({ search }) => ({
@@ -91,6 +97,7 @@ export const serverApi = createApi({
 });
 
 export const {
+  useGetConfigQuery,
   useGetRestaurantsQuery,
   useGetRestaurantQuery,
   useGetPublishedMenusQuery,

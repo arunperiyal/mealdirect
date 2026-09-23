@@ -78,6 +78,25 @@ export interface DeliverySlot {
 }
 
 export type DeliveryType = 'delivery' | 'pickup';
+
+export type CollectionStatus = 'awaiting' | 'collected' | 'not_paid' | 'written_off';
+// What the person handing over the order records
+export type Collection = 'cash' | 'upi' | 'not_paid';
+
+// GET /api/config
+export interface AppConfig {
+  onlinePayments: boolean;
+  upi: { id: string; name: string } | null;
+}
+
+// A delivery partner's cash position with MealDirect
+export interface RiderCash {
+  balance: number; // cash held, not yet settled
+  overdue: number; // part of it from before today
+  cashToday: number;
+  upiToday: number;
+  settled: number;
+}
 export type PaymentMethod = 'online' | 'cod';
 
 export type OrderStatus =
@@ -132,6 +151,12 @@ export interface Order {
   rider?: { id: string; firstName: string | null; lastName: string | null; phone: string | null } | null;
   riderId?: string | null;
   claimedAt?: string | null;
+  // Pay on delivery: whether the money was collected, how, and by whom
+  collectionStatus?: CollectionStatus | null;
+  collectionMethod?: 'cash' | 'upi' | null;
+  collectedById?: string | null;
+  collectedAt?: string | null;
+  collectionNote?: string | null;
 }
 
 export interface CreateOrderInput {
@@ -203,4 +228,22 @@ export interface AdminRider {
   riderStatus: RiderStatus;
   createdAt: string;
   deliveries: number; // completed
+  cashBalance: number;
+  cashOverdue: number;
+}
+
+export interface Settlement {
+  id: string;
+  kind: 'payment' | 'write_off';
+  amount: number | string;
+  note: string | null;
+  createdAt: string;
+  recordedBy?: { id: string; firstName: string | null; lastName: string | null };
+}
+
+export interface RiderCashDetail {
+  rider: Pick<AdminRider, 'id' | 'firstName' | 'lastName' | 'phone' | 'email' | 'riderStatus'>;
+  cash: RiderCash;
+  orders: { id: string; total: number | string; collectedAt: string; restaurant?: { id: string; name: string } }[];
+  settlements: Settlement[];
 }

@@ -3,6 +3,8 @@ import {
   createAxiosBaseQuery,
   type AdminRestaurant,
   type AdminRider,
+  type RiderCash,
+  type RiderCashDetail,
   type RiderStatus,
   type AdminRestaurantDetail,
   type Analytics,
@@ -14,7 +16,7 @@ import { api } from '@/api';
 export const serverApi = createApi({
   reducerPath: 'serverApi',
   baseQuery: createAxiosBaseQuery(api),
-  tagTypes: ['Restaurant', 'Order', 'Analytics', 'Rider'],
+  tagTypes: ['Restaurant', 'Order', 'Analytics', 'Rider', 'Cash'],
   endpoints: (build) => ({
     getAnalytics: build.query<Analytics, { days: number; tzOffset: number }>({
       query: (params) => ({ url: '/admin/analytics', params }),
@@ -62,6 +64,27 @@ export const serverApi = createApi({
       invalidatesTags: ['Rider'],
     }),
 
+    getRiderCash: build.query<RiderCashDetail, string>({
+      query: (id) => ({ url: `/admin/riders/${id}/cash` }),
+      providesTags: (_r, _e, id) => [{ type: 'Cash', id }],
+    }),
+    addSettlement: build.mutation<RiderCash, { riderId: string; kind: 'payment' | 'write_off'; amount: number; note?: string }>({
+      query: ({ riderId, ...data }) => ({ url: `/admin/riders/${riderId}/settlements`, method: 'POST', data }),
+      invalidatesTags: (_r, _e, { riderId }) => [{ type: 'Cash', id: riderId }, 'Rider'],
+    }),
+    // Cash orders reported as not paid (latest 100)
+    getUnpaidOrders: build.query<Order[], void>({
+      query: () => ({ url: '/orders/admin/orders', params: { collection: 'not_paid', limit: 100 } }),
+      providesTags: ['Order'],
+    }),
+    resolvePayment: build.mutation<
+      Order,
+      { id: string; outcome: 'collected' | 'written_off'; method?: 'cash' | 'upi'; note: string }
+    >({
+      query: ({ id, ...data }) => ({ url: `/admin/orders/${id}/resolve-payment`, method: 'POST', data }),
+      invalidatesTags: (_o, _e, { id }) => ['Order', { type: 'Order', id }, 'Analytics'],
+    }),
+
     getOrders: build.query<Order[], void>({
       query: () => ({ url: '/orders/admin/orders', params: { limit: 100 } }),
       providesTags: ['Order'],
@@ -84,6 +107,10 @@ export const {
   useReviewRestaurantMutation,
   useGetRidersQuery,
   useSetRiderStatusMutation,
+  useGetRiderCashQuery,
+  useAddSettlementMutation,
+  useGetUnpaidOrdersQuery,
+  useResolvePaymentMutation,
   useGetOrdersQuery,
   useGetOrderQuery,
   useCancelOrderMutation,

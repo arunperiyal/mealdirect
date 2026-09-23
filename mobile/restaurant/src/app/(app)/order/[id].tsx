@@ -24,13 +24,22 @@ import {
   TextField,
 } from '@mealdirect/shared';
 import { ORDER_POLL_MS } from '@/config';
-import { canRestaurantCancel, customerName, nextStep, paymentLabel, riderName, shortId } from '@/lib/orderActions';
+import {
+  canRecordPayment,
+  canRestaurantCancel,
+  customerName,
+  nextStep,
+  paymentLabel,
+  riderName,
+  shortId,
+} from '@/lib/orderActions';
 import { useAppSelector } from '@/store';
 import {
   serverApi,
   useAdvanceOrderMutation,
   useCancelOrderMutation,
   useGetOrderQuery,
+  useRecordPaymentMutation,
 } from '@/store/serverApi';
 
 const CANCEL_REASONS = ['Item sold out', 'Kitchen closed', "Can't deliver to this address", 'Customer requested'];
@@ -57,6 +66,20 @@ export default function OrderScreen() {
 function OrderDetails({ order, refreshing, onRefresh }: { order: Order; refreshing: boolean; onRefresh: () => void }) {
   const [advanceOrder, { isLoading: advancing }] = useAdvanceOrderMutation();
   const [cancelOrder, { isLoading: cancelling }] = useCancelOrderMutation();
+  const [recordPayment, { isLoading: recording }] = useRecordPaymentMutation();
+  const [notPaidOpen, setNotPaidOpen] = useState(false);
+  const [notPaidNote, setNotPaidNote] = useState('');
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  const record = async (collection: 'cash' | 'upi' | 'not_paid', note?: string) => {
+    setPaymentError(null);
+    try {
+      await recordPayment({ id: order.id, collection, note }).unwrap();
+      setNotPaidOpen(false);
+    } catch (e) {
+      setPaymentError(errorMessage(e));
+    }
+  };
   const [actionError, setActionError] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [reason, setReason] = useState('');
@@ -177,8 +200,44 @@ function OrderDetails({ order, refreshing, onRefresh }: { order: Order; refreshi
           ))}
           <View style={styles.divider} />
           <PriceSummary subtotal={order.subtotal} tax={order.tax} deliveryFee={order.deliveryFee} total={order.total} />
-          <Text style={[font.caption, styles.gap, paidOnline && { color: colors.success }]}>{paymentLabel(order)}</Text>
+          {/* Cash orders show payment in their own card once there's something to record or report */}
+          {!canRecordPayment(order) && !(order.paymentMethod === 'cod' && order.riderId && order.collectionStatus !== 'awaiting') && (
+            <Text style={[font.caption, styles.gap, paidOnline && { color: colors.success }]}>{paymentLabel(order)}</Text>
+          )}
         </Card>
+
+        {canRecordPayment(order) && (
+          <Card title={`Collect ${formatINR(order.total)}`}>
+            <Text style={font.caption}>How did the customer pay?</Text>
+            {paymentError && <Banner tone="error" message={paymentError} />}
+            <View style={styles.payButtons}>
+              <Button title="Received cash" onPress={() => record('cash')} loading={recording} style={styles.flex} />
+              <Button
+                title="Received UPI"
+                variant="secondary"
+                onPress={() => record('upi')}
+                disabled={recording}
+                style={styles.flex}
+              />
+            </View>
+            <Button
+              title="Not paid"
+              variant="danger"
+              onPress={() => setNotPaidOpen(true)}
+              disabled={recording}
+              style={styles.gap}
+            />
+          </Card>
+        )}
+        {order.paymentMethod === 'cod' && order.riderId && order.collectionStatus !== 'awaiting' && (
+          <Card title="Payment">
+            <Text style={font.body}>
+              {paymentLabel(order)}
+              {order.collectionStatus === 'collected' ? `, collected by ${riderName(order)}` : ''}
+            </Text>
+            {order.collectionNote ? <Text style={[font.caption, styles.gap]}>{order.collectionNote}</Text> : null}
+          </Card>
+        )}
 
         <Card title="Progress">
           <StatusTimeline order={order} />
@@ -188,6 +247,21 @@ function OrderDetails({ order, refreshing, onRefresh }: { order: Order; refreshi
           <Button title="Cancel order" variant="danger" onPress={() => setCancelOpen(true)} />
         )}
       </ScrollView>
+
+      <SheetForm
+        visible={notPaidOpen}
+        title="Customer didn’t pay?"
+        onClose={() => setNotPaidOpen(false)}
+        onSubmit={() => record('not_paid', notPaidNote.trim() || undefined)}
+        submitTitle="Mark as not paid"
+        submitting={recording}
+        error={paymentError}
+      >
+        <Text style={[font.body, styles.gapBottom]}>
+          The customer can’t order again until MealDirect sorts it out.
+        </Text>
+        <TextField label="What happened? (optional)" value={notPaidNote} onChangeText={setNotPaidNote} multiline />
+      </SheetForm>
 
       <SheetForm
         visible={cancelOpen}
@@ -222,4 +296,7 @@ const styles = StyleSheet.create({
   qty: { fontWeight: '700' },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: spacing.md },
   reasons: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
+  payButtons: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.md },
+  flex: { flex: 1 },
+  gapBottom: { marginBottom: spacing.md },
 });

@@ -1,5 +1,5 @@
 import type { Order } from '@mealdirect/shared';
-import { canRelease, cashToCollect, isActiveDelivery, mapsUrl, riderStep, todaySummary } from '../riderSteps';
+import { canRelease, cashToCollect, deliveredToday, isActiveDelivery, mapsUrl, riderStep } from '../riderSteps';
 
 const order = (overrides: Partial<Order> = {}): Order =>
   ({
@@ -23,8 +23,14 @@ describe('riderStep', () => {
     expect(riderStep(order({ status: 'out_for_delivery' }))).toMatchObject({
       kind: 'action',
       action: 'deliver',
-      label: expect.stringMatching(/Delivered · collected ₹282\.00/),
+      label: expect.stringMatching(/Delivered · collect ₹282\.00/),
     });
+  });
+
+  test('nothing to collect once payment is recorded', () => {
+    expect(cashToCollect(order({ status: 'delivered', collectionStatus: 'not_paid' }))).toBe(0);
+    expect(cashToCollect(order({ status: 'delivered', collectionStatus: 'collected' }))).toBe(0);
+    expect(cashToCollect(order({ collectionStatus: 'awaiting' }))).toBe(282);
   });
 
   test('online-paid deliveries have no cash to collect', () => {
@@ -49,21 +55,22 @@ describe('riderStep', () => {
   });
 });
 
-describe('todaySummary and maps', () => {
-  test('counts deliveries finished today and the cash collected for them', () => {
+describe('deliveredToday and maps', () => {
+  test('counts deliveries finished today', () => {
     const now = new Date(2026, 8, 23, 20);
     const today = new Date(2026, 8, 23, 13).toISOString();
     const yesterday = new Date(2026, 8, 22, 13).toISOString();
-    const summary = todaySummary(
-      [
-        order({ status: 'delivered', deliveredAt: today, total: '100' }),
-        order({ status: 'delivered', deliveredAt: today, total: '50', paymentMethod: 'online' }),
-        order({ status: 'delivered', deliveredAt: yesterday, total: '999' }),
-        order({ status: 'out_for_delivery', total: '70' }),
-      ],
-      now
-    );
-    expect(summary).toEqual({ delivered: 2, cash: 100 });
+    expect(
+      deliveredToday(
+        [
+          order({ status: 'delivered', deliveredAt: today }),
+          order({ status: 'delivered', deliveredAt: today, paymentMethod: 'online' }),
+          order({ status: 'delivered', deliveredAt: yesterday }),
+          order({ status: 'out_for_delivery' }),
+        ],
+        now
+      )
+    ).toBe(2);
   });
 
   test('maps link searches the address text', () => {

@@ -8,13 +8,14 @@ import {
   errorMessage,
   ErrorState,
   font,
+  formatINR,
   LoadingState,
   spacing,
 } from '@mealdirect/shared';
 import { DeliveryCard } from '@/components/DeliveryCard';
 import { ORDER_POLL_MS } from '@/config';
 import { isActiveDelivery } from '@/lib/riderSteps';
-import { useActMutation, useGetAvailableQuery, useGetMyDeliveriesQuery } from '@/store/serverApi';
+import { useActMutation, useGetAvailableQuery, useGetBalanceQuery, useGetMyDeliveriesQuery } from '@/store/serverApi';
 
 // Must match MAX_ACTIVE in backend/src/controllers/deliveryController.js
 const MAX_ACTIVE = 3;
@@ -25,12 +26,15 @@ export default function AvailableScreen() {
     pollingInterval: focused ? ORDER_POLL_MS : 0,
   });
   const { data: mine = [] } = useGetMyDeliveriesQuery();
+  const { data: cash } = useGetBalanceQuery(undefined, { pollingInterval: focused ? ORDER_POLL_MS : 0 });
+  const overdue = cash?.overdue ?? 0;
   const [act] = useActMutation();
   const [accepting, setAccepting] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const active = mine.filter(isActiveDelivery).length;
   const full = active >= MAX_ACTIVE;
+  const canAccept = !full && overdue === 0;
 
   const accept = async (id: string) => {
     setMessage(null);
@@ -62,6 +66,12 @@ export default function AvailableScreen() {
         ListHeaderComponent={
           <>
             {message && <Banner tone="warning" message={message} />}
+            {overdue > 0 && (
+              <Banner
+                tone="error"
+                message={`Settle ${formatINR(overdue)} of cash with MealDirect to accept new deliveries.`}
+              />
+            )}
             {full && (
               <Banner
                 tone="warning"
@@ -76,7 +86,7 @@ export default function AvailableScreen() {
         renderItem={({ item }) => (
           <DeliveryCard
             order={item}
-            onAccept={full ? undefined : () => accept(item.id)}
+            onAccept={canAccept ? () => accept(item.id) : undefined}
             accepting={accepting === item.id}
           />
         )}

@@ -22,6 +22,7 @@ import {
   StatusTimeline,
   type Order,
   riderName,
+  paymentLabel,
 } from '@mealdirect/shared';
 import { ORDER_POLL_MS } from '@/config';
 import { RazorpayCheckout } from '@/payments/RazorpayCheckout';
@@ -30,6 +31,7 @@ import { useAppSelector } from '@/store';
 import {
   serverApi,
   useCancelOrderMutation,
+  useGetConfigQuery,
   useGetOrderQuery,
   useGetRestaurantQuery,
   useMarkPickedUpMutation,
@@ -81,18 +83,20 @@ function OrderDetails({
   const [markPickedUp, { isLoading: markingPickedUp }] = useMarkPickedUpMutation();
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const { data: appConfig } = useGetConfigQuery();
+  const onlineAvailable = appConfig?.onlinePayments !== false;
   const unpaid = needsPayment(order);
   const paidOnline = order.paymentMethod !== 'cod' && order.paymentStatus === 'completed';
 
   // Coming straight from checkout: open Razorpay once, then drop the flag
   const autoPayStarted = useRef(false);
   useEffect(() => {
-    if (autoPay && unpaid && !autoPayStarted.current) {
+    if (autoPay && unpaid && onlineAvailable && !autoPayStarted.current) {
       autoPayStarted.current = true;
       router.setParams({ pay: undefined });
       payment.start();
     }
-  }, [autoPay, unpaid, payment]);
+  }, [autoPay, unpaid, onlineAvailable, payment]);
 
   const confirmCancel = () => {
     Alert.alert(
@@ -147,21 +151,35 @@ function OrderDetails({
         {payment.phase === 'verifying' && <Banner tone="warning" message="Confirming your payment…" />}
         {payment.phase === 'paid' && <Banner tone="success" message="Payment successful. Your order is confirmed." />}
         {payment.error && <Banner tone="error" message={payment.error} />}
+        {order.collectionStatus === 'not_paid' && (
+          <Banner
+            tone="error"
+            message="This order is marked as not paid. Please contact MealDirect support to settle it. You can’t place new orders until then."
+          />
+        )}
 
         {unpaid && payment.phase !== 'verifying' && (
           <Card>
             <Text style={font.heading}>Payment pending</Text>
-            <Text style={[font.caption, styles.gap]}>
-              {order.paymentStatus === 'failed'
-                ? 'Your last payment attempt failed. The restaurant will start once payment goes through.'
-                : 'Complete payment so the restaurant can start preparing your order.'}
-            </Text>
-            <Button
-              title={`Pay ${formatINR(order.total)}`}
-              onPress={payment.start}
-              loading={payment.phase === 'starting'}
-              style={styles.gap}
-            />
+            {onlineAvailable ? (
+              <>
+                <Text style={[font.caption, styles.gap]}>
+                  {order.paymentStatus === 'failed'
+                    ? 'Your last payment attempt failed. The restaurant will start once payment goes through.'
+                    : 'Complete payment so the restaurant can start preparing your order.'}
+                </Text>
+                <Button
+                  title={`Pay ${formatINR(order.total)}`}
+                  onPress={payment.start}
+                  loading={payment.phase === 'starting'}
+                  style={styles.gap}
+                />
+              </>
+            ) : (
+              <Text style={[font.caption, styles.gap]}>
+                Online payment isn’t available right now. Cancel this order and order again with pay on delivery.
+              </Text>
+            )}
           </Card>
         )}
 
@@ -216,13 +234,7 @@ function OrderDetails({
           <Detail
             label="Payment"
             value={
-              order.paymentMethod === 'cod'
-                ? order.deliveryType === 'pickup'
-                  ? 'Pay at pickup'
-                  : 'Cash on delivery'
-                : paidOnline
-                  ? 'Paid online'
-                  : 'Online · not paid yet'
+              order.paymentMethod === 'cod' ? paymentLabel(order) : paidOnline ? 'Paid online' : 'Online · not paid yet'
             }
           />
           {order.customerNotes ? <Detail label="Notes" value={order.customerNotes} /> : null}

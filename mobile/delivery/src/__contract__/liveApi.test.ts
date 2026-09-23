@@ -219,11 +219,36 @@ describeLive('delivery app ↔ live backend', () => {
     expect(customerView.status).toBe('out_for_delivery');
     expect(customerView.rider).toMatchObject({ firstName: 'Ravi', phone: '9000000001' });
 
-    const done = await call(d(e.act.initiate({ id: order.id, action: 'deliver' })));
-    expect(done).toMatchObject({ status: 'delivered', paymentStatus: 'completed' });
+    const done = await call(d(e.act.initiate({ id: order.id, action: 'deliver', collection: 'cash' })));
+    expect(done).toMatchObject({ status: 'delivered', paymentStatus: 'completed', collectionMethod: 'cash' });
+
+    const cash = await call(d(e.getBalance.initiate(undefined, { forceRefetch: true })));
+    expect(cash.balance).toBeGreaterThanOrEqual(Number(order.total));
+    expect(cash.overdue).toBe(0);
 
     const mine = await call(d(e.getMyDeliveries.initiate(undefined, { forceRefetch: true })));
     expect(mine.map((o) => o.id)).toContain(order.id);
+  });
+
+  test('not paid: recorded by the rider, and the customer is blocked from ordering', async () => {
+    const order = await confirmedOrder();
+    await call(d(e.act.initiate({ id: order.id, action: 'claim' })));
+    await http.post(`/orders/${order.id}/mark-preparing`, {}, ownerAuth);
+    await http.post(`/orders/${order.id}/mark-ready`, {}, ownerAuth);
+    await call(d(e.act.initiate({ id: order.id, action: 'pick-up' })));
+    const done = await call(d(e.act.initiate({ id: order.id, action: 'deliver', collection: 'not_paid', note: 'No answer' })));
+    expect(done).toMatchObject({ collectionStatus: 'not_paid' });
+
+    const blocked = await http.post(
+      '/orders',
+      { restaurantId, menuId, items: [{ menuItemId: itemId, quantity: 1 }], deliveryType: 'delivery', deliveryAddress: '22 Beach Rd', paymentMethod: 'cod' },
+      { ...customerAuth, validateStatus: () => true }
+    );
+    expect(blocked.data.code).toBe('PAYMENT_OVERDUE');
+
+    // An admin resolves it and the customer can order again
+    await http.post(`/admin/orders/${order.id}/resolve-payment`, { outcome: 'written_off', note: 'Contract test' }, adminAuth);
+    expect((await confirmedOrder()).id).toBeTruthy();
   });
 
   test('releases an order back to the queue', async () => {

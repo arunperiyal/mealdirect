@@ -256,26 +256,19 @@ describeLive('customer app ↔ live backend', () => {
     expect(fetched.id).toBe(order.id);
   });
 
-  test('online order: payment start surfaces a readable error when Razorpay is not configured', async () => {
-    const order = await run(
-      store.dispatch(
-        serverApi.endpoints.createOrder.initiate({
-          restaurantId,
-          menuId,
-          items: [{ menuItemId: itemIds[0], quantity: 1 }],
-          deliveryType: 'pickup',
-          paymentMethod: 'online',
-        })
-      )
-    );
-    expect(order.paymentMethod).toBe('online');
+  test('online payment is off: the app is told so and online orders are refused', async () => {
+    const config = await run(store.dispatch(serverApi.endpoints.getConfig.initiate()));
+    expect(config.onlinePayments).toBe(false);
 
-    const result = await store.dispatch(serverApi.endpoints.createPaymentOrder.initiate(order.id));
-    if ('error' in result) {
-      // Expected when the backend runs without RAZORPAY_KEY_ID/SECRET
-      expect(result.error).toMatchObject({ code: 'PAYMENT_NOT_CONFIGURED', status: 503 });
-    } else {
-      expect(result.data?.razorpayOrderId).toMatch(/^order_/);
-    }
+    const result = await store.dispatch(
+      serverApi.endpoints.createOrder.initiate({
+        restaurantId,
+        menuId,
+        items: [{ menuItemId: itemIds[0], quantity: 1 }],
+        deliveryType: 'pickup',
+        paymentMethod: 'online',
+      })
+    );
+    expect('error' in result && result.error).toMatchObject({ code: 'ONLINE_PAYMENTS_DISABLED', status: 400 });
   });
 });

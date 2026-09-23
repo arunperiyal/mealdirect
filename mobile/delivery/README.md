@@ -24,8 +24,23 @@ If you pulled this onto an existing Postgres database, run `npm run upgrade-db` 
    can't both win. A rider can hold up to 3 active deliveries.
 3. The rider heads to the restaurant. While the kitchen prepares the order, the rider can give it back to the
    queue.
-4. When the restaurant marks it ready, the rider taps **Picked up from restaurant**, then **Delivered**. For
-   cash orders the app asks the rider to confirm the cash was collected, and the backend records it as paid.
+4. When the restaurant marks it ready, the rider taps **Picked up from restaurant**, then **Delivered**.
+
+## Payment at the door
+
+For pay-on-delivery orders, **Delivered** asks how the customer paid:
+
+- **Cash received**: the rider now holds that cash for MealDirect.
+- **Customer pays by UPI**: shows a QR code for MealDirect's UPI ID with the exact amount and the order
+  number. The customer scans it with any UPI app, and the rider taps **Customer has paid** once their screen
+  shows success. The money goes straight to MealDirect, so the rider has nothing to settle.
+- **Not paid**: with an optional note. The customer can't order again until a MealDirect admin resolves it.
+
+Riders hand collected cash to MealDirect. **My deliveries** shows the cash to settle. A rider can't accept new
+deliveries while holding cash from before today (India time); an admin records the settlement in the
+MealDirect Admin app.
+
+MealDirect's UPI ID comes from the backend (`MEALDIRECT_UPI_ID`). Without it, the UPI option is disabled.
 
 Before accepting, riders see the restaurant, the drop address, the time and the amount to collect, but only the
 customer's first name. The customer's phone number shows once they accept. Customers, restaurants and admins see

@@ -1,6 +1,7 @@
 import { RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native';
 import { useIsFocused } from 'expo-router';
 import {
+  Banner,
   colors,
   EmptyState,
   errorMessage,
@@ -13,14 +14,16 @@ import {
 } from '@mealdirect/shared';
 import { DeliveryCard } from '@/components/DeliveryCard';
 import { ORDER_POLL_MS } from '@/config';
-import { isActiveDelivery, todaySummary } from '@/lib/riderSteps';
-import { useGetMyDeliveriesQuery } from '@/store/serverApi';
+import { deliveredToday, isActiveDelivery } from '@/lib/riderSteps';
+import { useGetBalanceQuery, useGetMyDeliveriesQuery } from '@/store/serverApi';
 
 export default function DeliveriesScreen() {
   const focused = useIsFocused();
   const { data, error, isLoading, isFetching, refetch } = useGetMyDeliveriesQuery(undefined, {
     pollingInterval: focused ? ORDER_POLL_MS : 0,
   });
+  const balance = useGetBalanceQuery(undefined, { pollingInterval: focused ? ORDER_POLL_MS : 0 });
+  const cash = balance.data;
 
   if (isLoading) return <LoadingState />;
   if (error && !data) return <ErrorState message={errorMessage(error)} onRetry={refetch} />;
@@ -28,7 +31,7 @@ export default function DeliveriesScreen() {
   const orders = data ?? [];
   const active = orders.filter(isActiveDelivery);
   const past = orders.filter((o) => !isActiveDelivery(o));
-  const today = todaySummary(orders);
+  const delivered = deliveredToday(orders);
   const sections = [
     { title: 'In progress', data: active },
     ...(past.length ? [{ title: 'Recent', data: past }] : []),
@@ -40,12 +43,38 @@ export default function DeliveriesScreen() {
       keyExtractor={(o) => o.id}
       contentContainerStyle={styles.list}
       stickySectionHeadersEnabled={false}
-      refreshControl={<RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={colors.brand} />}
+      refreshControl={
+        <RefreshControl
+          refreshing={isFetching && !isLoading}
+          onRefresh={() => {
+            refetch();
+            balance.refetch();
+          }}
+          tintColor={colors.brand}
+        />
+      }
       ListHeaderComponent={
-        <View style={styles.tiles}>
-          <StatTile label="Delivered today" value={String(today.delivered)} />
-          <StatTile label="Cash collected today" value={formatINR(today.cash)} />
-        </View>
+        <>
+          {cash && cash.overdue > 0 && (
+            <Banner
+              tone="error"
+              message={`Hand ${formatINR(cash.overdue)} of cash to MealDirect. You can't accept new deliveries until it's settled.`}
+            />
+          )}
+          <View style={styles.tiles}>
+            <StatTile
+              label="Cash to settle"
+              value={formatINR(cash?.balance ?? 0)}
+              highlight={(cash?.overdue ?? 0) > 0}
+              detail={cash && cash.balance > 0 ? 'Hand over to MealDirect by tomorrow' : 'All settled'}
+            />
+            <StatTile
+              label="Delivered today"
+              value={String(delivered)}
+              detail={cash ? `${formatINR(cash.cashToday)} cash · ${formatINR(cash.upiToday)} UPI` : undefined}
+            />
+          </View>
+        </>
       }
       renderSectionHeader={({ section }) => <Text style={[font.heading, styles.section]}>{section.title}</Text>}
       renderSectionFooter={({ section }) =>

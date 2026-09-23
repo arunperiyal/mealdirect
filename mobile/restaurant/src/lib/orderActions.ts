@@ -43,6 +43,14 @@ export const nextStep = (order: Order): NextStep => {
   }
 };
 
+// Pickup and self-delivered cash orders: the restaurant records how it was paid
+// once the customer has the food. Rider deliveries are recorded by the rider.
+export const canRecordPayment = (order: Order) =>
+  order.paymentMethod === 'cod' &&
+  (order.collectionStatus ?? 'awaiting') === 'awaiting' &&
+  !order.riderId &&
+  (order.deliveryType === 'pickup' ? ['ready', 'picked_up'] : ['delivered']).includes(order.status);
+
 // Once food is on its way it can't be taken back
 export const canRestaurantCancel = (order: Pick<Order, 'status'>) =>
   ['pending', 'confirmed', 'preparing', 'ready'].includes(order.status);

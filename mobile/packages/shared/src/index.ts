@@ -10,6 +10,7 @@ export * from './lib/dates';
 export * from './lib/errors';
 export * from './lib/money';
 export * from './lib/orderStatus';
+export * from './lib/upi';
 export * from './lib/useDebounced';
 export * from './lib/validation';
 

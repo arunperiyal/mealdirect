@@ -2,6 +2,7 @@ const express = require('express');
 const { body, query, param, validationResult } = require('express-validator');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
+const kitchenController = require('../controllers/kitchenController');
 const { verifyToken, authorize } = require('../middleware/auth');
 
 /**
@@ -43,6 +44,66 @@ router.post(
     } catch (error) {
       const statusCode = error.statusCode || 500;
       res.status(statusCode).json({
+        success: false,
+        code: error.code || 'INTERNAL_ERROR',
+        message: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/orders/kitchen?restaurantId=&date=YYYY-MM-DD
+ * The day's cooking: dish totals and orders grouped by delivery slot and pickup (owner only).
+ * Declared before GET /:id, which would otherwise capture this path.
+ */
+router.get(
+  '/kitchen',
+  verifyToken,
+  authorize(['restaurant_admin']),
+  [query('restaurantId').isUUID(), query('date').isISO8601({ strict: true }).isLength({ min: 10, max: 10 })],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, code: 'VALIDATION_ERROR', errors: errors.array() });
+      }
+      const data = await kitchenController.getKitchen(req.user.id, req.query.restaurantId, req.query.date);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({
+        success: false,
+        code: error.code || 'INTERNAL_ERROR',
+        message: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/orders/bulk
+ * Accept, or mark ready, every order in one kitchen group at once (owner only).
+ * Body: { menuId, group: <delivery slot id> | 'unscheduled' | 'pickup', action: 'accept' | 'ready' }
+ */
+router.post(
+  '/bulk',
+  verifyToken,
+  authorize(['restaurant_admin']),
+  [
+    body('menuId').isUUID(),
+    body('group').custom((v) => v === 'pickup' || v === 'unscheduled' || /^[0-9a-f-]{36}$/i.test(v)),
+    body('action').isIn(['accept', 'ready']),
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ success: false, code: 'VALIDATION_ERROR', errors: errors.array() });
+      }
+      const data = await kitchenController.bulkAdvance(req.user.id, req.body);
+      res.json({ success: true, data });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({
         success: false,
         code: error.code || 'INTERNAL_ERROR',
         message: error.message,

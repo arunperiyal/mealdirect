@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const config = require('../config');
 const { assertCustomerCanOrder, recordCollection } = require('./collectionController');
+const { assertOrderingOpen } = require('../lib/ordering');
 const { Order, Menu, DeliverySlot, Restaurant, User } = require('../models');
 
 const throwError = (code, message, statusCode = 400) => {
@@ -108,6 +109,7 @@ const createOrder = async (customerId, data) => {
     if (menu.status !== 'published') {
       throwError('MENU_NOT_PUBLISHED', 'Menu is not published', 409);
     }
+    assertOrderingOpen(menu);
 
     // Validate items
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -170,6 +172,10 @@ const createOrder = async (customerId, data) => {
     const discount = 0; // TODO: add promo code support
     const total = subtotal + tax + deliveryFee - discount;
 
+    // Restaurants with auto-accept take cash orders without a tap. Online
+    // orders are accepted when their payment succeeds.
+    const autoAccepted = paymentMethod === 'cod' && restaurant.autoAcceptOrders;
+
     // Create order
     const order = await Order.create({
       customerId,
@@ -187,7 +193,8 @@ const createOrder = async (customerId, data) => {
       deliveryFee,
       discount,
       total,
-      status: 'pending',
+      status: autoAccepted ? 'confirmed' : 'pending',
+      confirmedAt: autoAccepted ? new Date() : null,
       customerNotes,
       statusHistory: [
         {
@@ -195,6 +202,7 @@ const createOrder = async (customerId, data) => {
           timestamp: new Date(),
           changedBy: customerId,
         },
+        ...(autoAccepted ? [{ status: 'confirmed', timestamp: new Date(), changedBy: 'system' }] : []),
       ],
     });
 

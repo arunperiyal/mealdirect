@@ -70,6 +70,20 @@ const STEPS = [
              SET "collection_status" = CASE WHEN "payment_status" = 'completed' THEN 'collected' ELSE 'awaiting' END::"enum_Orders_collection_status"
            WHERE "payment_method" = 'cod' AND "collection_status" IS NULL`,
   },
+  {
+    name: 'Mess caterers: business type',
+    sql: `DO $$ BEGIN
+            CREATE TYPE "enum_Restaurants_business_type" AS ENUM ('restaurant', 'mess');
+          EXCEPTION WHEN duplicate_object THEN NULL;
+          END $$`,
+  },
+  {
+    name: 'Mess caterers: Restaurants order-handling columns',
+    sql: `ALTER TABLE "Restaurants"
+            ADD COLUMN IF NOT EXISTS "business_type" "enum_Restaurants_business_type" NOT NULL DEFAULT 'restaurant',
+            ADD COLUMN IF NOT EXISTS "auto_accept_orders" BOOLEAN NOT NULL DEFAULT false,
+            ADD COLUMN IF NOT EXISTS "auto_ready_minutes" INTEGER`,
+  },
 ];
 
 const upgradeDatabase = async (sequelize, log = () => {}) => {

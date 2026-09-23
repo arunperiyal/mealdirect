@@ -3,6 +3,7 @@ const config = require('./config');
 const sequelize = require('./config/database');
 const { checkProductionConfig } = require('./config/validate');
 const { upgradeDatabase } = require('./db/upgrade');
+const { startAutoReadyJob } = require('./jobs/autoReady');
 
 const PORT = config.port;
 
@@ -33,6 +34,9 @@ const startServer = async () => {
       console.info('✓ Database schema up to date');
     }
 
+    // Marks accepted delivery orders ready before their slot, for restaurants that turned it on
+    const autoReady = startAutoReadyJob();
+
     // Start Express server
     const server = app.listen(PORT, () => {
       console.info(`✓ Server running on port ${PORT}`);
@@ -43,6 +47,7 @@ const startServer = async () => {
     // Graceful shutdown
     process.on('SIGTERM', () => {
       console.info('SIGTERM signal received: closing HTTP server');
+      if (autoReady) clearInterval(autoReady);
       server.close(async () => {
         console.info('HTTP server closed');
         await sequelize.close();

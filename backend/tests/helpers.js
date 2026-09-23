@@ -242,7 +242,8 @@ async function setupCompleteRestaurant(app, adminHeaders, ownerData, restaurantD
  * @returns {Promise<object>} Menu object with items
  */
 async function createMenu(app, restaurantId, headers, data = {}) {
-  const date = data.date || new Date().toISOString().split('T')[0];
+  // Today in the business timezone, which is what ordering cutoffs use
+  const date = data.date || require('../src/lib/businessTime').businessDateString();
   const items = (data.items && data.items.length > 0) ? data.items : [
     { name: 'Item 1', description: 'Test item', price: 100, quantity: 50 },
     { name: 'Item 2', description: 'Test item', price: 150, quantity: 30 },

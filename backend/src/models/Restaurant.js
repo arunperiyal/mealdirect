@@ -75,6 +75,25 @@ const Restaurant = sequelize.define(
       defaultValue: {},
       comment: 'JSON: { mon: {open: "09:00", close: "22:00"}, ... }',
     },
+    // 'mess' caterers cook one menu in bulk for many daily orders
+    businessType: {
+      type: sequelize.options.dialect === 'sqlite' ? DataTypes.STRING : DataTypes.ENUM('restaurant', 'mess'),
+      allowNull: false,
+      defaultValue: 'restaurant',
+      validate: { isIn: { args: [['restaurant', 'mess']], msg: 'Business type must be restaurant or mess' } },
+    },
+    // New cash orders are accepted without a tap
+    autoAcceptOrders: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    // Accepted delivery orders become ready this many minutes before their slot starts (null = off)
+    autoReadyMinutes: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: { min: { args: [0], msg: 'Auto-ready minutes cannot be negative' }, max: { args: [240], msg: 'Auto-ready is at most 4 hours before' } },
+    },
     isApproved: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,

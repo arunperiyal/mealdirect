@@ -1,6 +1,6 @@
 const { Op } = require('sequelize');
 const { Order, Settlement } = require('../models');
-const config = require('../config');
+const { startOfBusinessDay } = require('../lib/businessTime');
 
 const throwError = (code, message, statusCode = 400) => {
   throw { code, message, statusCode };
@@ -8,13 +8,6 @@ const throwError = (code, message, statusCode = 400) => {
 
 const COLLECTIONS = ['cash', 'upi', 'not_paid'];
 const round2 = (n) => Math.round(n * 100) / 100;
-
-// Midnight today in the business timezone (India by default), as a UTC instant
-const startOfBusinessDay = (now = new Date()) => {
-  const offsetMs = config.businessUtcOffsetMinutes * 60 * 1000;
-  const local = new Date(now.getTime() + offsetMs);
-  return new Date(Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate()) - offsetMs);
-};
 
 /**
  * Record what happened with a pay-on-delivery order's money.

@@ -44,6 +44,8 @@ export const buildCheckoutHtml = ({
     prefill,
     theme: { color: themeColor },
     retry: { enabled: true },
+    // Without this Razorpay hides UPI apps (GPay, PhonePe, ...) inside an Android WebView
+    webview_intent: true,
   };
 
   return `<!DOCTYPE html>
@@ -81,6 +83,16 @@ export const buildCheckoutHtml = ({
 </script>
 </body>
 </html>`;
+};
+
+// Turn a link Checkout opens for a UPI app into one the phone can open. Android
+// "intent://" links carry the real scheme in their #Intent fragment, e.g.
+// intent://pay?pa=x#Intent;scheme=upi;package=com.google.android.apps.nbu.paisa.user;end
+export const toAppUrl = (url: string) => {
+  if (!url.startsWith('intent://')) return url;
+  const [target, fragment = ''] = url.slice('intent://'.length).split('#Intent;');
+  const scheme = /(?:^|;)scheme=([^;]+)/.exec(fragment)?.[1];
+  return scheme ? `${scheme}://${target}` : null;
 };
 
 export const parseCheckoutMessage = (data: string): CheckoutMessage | null => {

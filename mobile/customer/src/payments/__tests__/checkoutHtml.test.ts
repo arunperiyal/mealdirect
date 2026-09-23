@@ -1,4 +1,4 @@
-import { buildCheckoutHtml, parseCheckoutMessage } from '../checkoutHtml';
+import { buildCheckoutHtml, parseCheckoutMessage, toAppUrl } from '../checkoutHtml';
 
 const paymentOrder = {
   paymentId: 'p1',
@@ -21,6 +21,8 @@ describe('buildCheckoutHtml', () => {
     expect(html).toContain('"order_id":"order_abc"');
     expect(html).toContain('"amount":21000');
     expect(html).toContain('"key":"rzp_test_key"');
+    // UPI apps only appear in an Android WebView with this flag
+    expect(html).toContain('"webview_intent":true');
   });
 
   test('user-controlled strings cannot break out of the script tag', () => {
@@ -34,6 +36,20 @@ describe('buildCheckoutHtml', () => {
     expect(html).not.toContain('<!--');
     expect(html).not.toContain('\u2028');
     expect(html).toContain('\\u003c/script\\u003e');
+  });
+});
+
+describe('toAppUrl', () => {
+  test('passes UPI and app links through', () => {
+    expect(toAppUrl('upi://pay?pa=merchant@bank&am=10')).toBe('upi://pay?pa=merchant@bank&am=10');
+    expect(toAppUrl('tez://upi/pay?pa=x')).toBe('tez://upi/pay?pa=x');
+  });
+
+  test('converts Android intent links to the scheme they carry', () => {
+    expect(
+      toAppUrl('intent://pay?pa=merchant@bank&am=10#Intent;scheme=upi;package=com.phonepe.app;end')
+    ).toBe('upi://pay?pa=merchant@bank&am=10');
+    expect(toAppUrl('intent://pay#Intent;package=com.example;end')).toBeNull();
   });
 });
 

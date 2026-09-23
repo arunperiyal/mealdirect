@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import type { ShouldStartLoadRequest } from 'react-native-webview/lib/WebViewTypes';
 import { colors, type PaymentOrder, type RazorpaySuccess } from '@mealdirect/shared';
-import { buildCheckoutHtml, parseCheckoutMessage } from './checkoutHtml';
+import { buildCheckoutHtml, parseCheckoutMessage, toAppUrl } from './checkoutHtml';
 
 interface Props {
   paymentOrder: PaymentOrder | null;
@@ -21,9 +21,12 @@ const WEB_SCHEMES = /^(https?|about|data|blob):/i;
 // UPI apps (upi://, tez://, phonepe://, ...) must open outside the WebView
 const handleNavigation = (request: ShouldStartLoadRequest) => {
   if (WEB_SCHEMES.test(request.url)) return true;
-  Linking.openURL(request.url).catch(() => {
-    // No app installed for this scheme; Checkout offers other methods
-  });
+  const appUrl = toAppUrl(request.url);
+  if (appUrl) {
+    Linking.openURL(appUrl).catch(() => {
+      // No app installed for this scheme; Checkout offers other methods
+    });
+  }
   return false;
 };
 

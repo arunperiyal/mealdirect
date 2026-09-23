@@ -6,8 +6,9 @@ export interface RegisterInput {
   password: string;
   firstName: string;
   lastName: string;
+  phone?: string;
   // Only roles the server allows for self-signup
-  role?: 'customer' | 'restaurant_admin';
+  role?: 'customer' | 'restaurant_admin' | 'delivery_partner';
 }
 
 export const createAuthApi = (client: AxiosInstance) => ({

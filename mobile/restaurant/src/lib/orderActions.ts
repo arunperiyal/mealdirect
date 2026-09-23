@@ -1,4 +1,13 @@
-import { ACTIVE_STATUSES, COMPLETED_STATUSES, customerName, needsPayment, paymentLabel, shortId, type Order } from '@mealdirect/shared';
+import {
+  ACTIVE_STATUSES,
+  COMPLETED_STATUSES,
+  customerName,
+  needsPayment,
+  paymentLabel,
+  riderName,
+  shortId,
+  type Order,
+} from '@mealdirect/shared';
 import type { OrderAction } from '@/store/serverApi';
 
 export type NextStep =
@@ -18,11 +27,17 @@ export const nextStep = (order: Order): NextStep => {
     case 'preparing':
       return { kind: 'action', action: 'mark-ready', label: 'Mark ready' };
     case 'ready':
-      return order.deliveryType === 'delivery'
-        ? { kind: 'action', action: 'mark-out-for-delivery', label: 'Send out for delivery' }
-        : { kind: 'waiting', message: 'Ready for pickup. The customer confirms when they collect it.' };
+      if (order.deliveryType !== 'delivery') {
+        return { kind: 'waiting', message: 'Ready for pickup. The customer confirms when they collect it.' };
+      }
+      // A delivery partner who claimed the order takes it from here
+      return order.riderId
+        ? { kind: 'waiting', message: `Ready. ${riderName(order)} is coming to pick it up.` }
+        : { kind: 'action', action: 'mark-out-for-delivery', label: 'Send out yourself' };
     case 'out_for_delivery':
-      return { kind: 'action', action: 'mark-delivered', label: 'Mark delivered' };
+      return order.riderId
+        ? { kind: 'waiting', message: `On the way with ${riderName(order)}.` }
+        : { kind: 'action', action: 'mark-delivered', label: 'Mark delivered' };
     default:
       return { kind: 'done' };
   }
@@ -36,4 +51,4 @@ export const needsAttention = (order: Order) =>
   order.status === 'pending' && !needsPayment(order);
 
 // Shared with the admin app; re-exported so existing imports keep working
-export { ACTIVE_STATUSES, COMPLETED_STATUSES, customerName, paymentLabel, shortId };
+export { ACTIVE_STATUSES, COMPLETED_STATUSES, customerName, paymentLabel, riderName, shortId };

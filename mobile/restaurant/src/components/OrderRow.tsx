@@ -8,9 +8,7 @@ export function OrderRow({ order }: { order: Order }) {
   const summary = order.items.map((i) => `${i.quantity} × ${i.name}`).join(', ');
   const when =
     order.deliveryType === 'delivery'
-      ? order.deliverySlot
-        ? `Delivery ${formatTime(order.deliverySlot.startTime)}–${formatTime(order.deliverySlot.endTime)}`
-        : 'Delivery'
+      ? `${order.deliverySlot ? `Delivery ${formatTime(order.deliverySlot.startTime)}–${formatTime(order.deliverySlot.endTime)}` : 'Delivery'}${order.rider ? ` · ${order.rider.firstName ?? 'rider'}` : ''}`
       : 'Pickup';
 
   return (

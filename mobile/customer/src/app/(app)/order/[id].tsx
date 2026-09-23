@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import {
   Banner,
@@ -21,6 +21,7 @@ import {
   STATUS_LABELS,
   StatusTimeline,
   type Order,
+  riderName,
 } from '@mealdirect/shared';
 import { ORDER_POLL_MS } from '@/config';
 import { RazorpayCheckout } from '@/payments/RazorpayCheckout';
@@ -161,6 +162,22 @@ function OrderDetails({
               loading={payment.phase === 'starting'}
               style={styles.gap}
             />
+          </Card>
+        )}
+
+        {order.rider && isActive(order) && (
+          <Card title="Your delivery partner">
+            <Text style={font.body}>
+              {riderName(order)} {order.status === 'out_for_delivery' ? 'is on the way with your order.' : 'will deliver your order.'}
+            </Text>
+            {order.rider.phone ? (
+              <Button
+                title={`Call ${order.rider.phone}`}
+                variant="secondary"
+                onPress={() => Linking.openURL(`tel:${order.rider!.phone}`)}
+                style={styles.gap}
+              />
+            ) : null}
           </Card>
         )}
 

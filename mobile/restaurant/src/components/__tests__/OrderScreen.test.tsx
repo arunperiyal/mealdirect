@@ -80,7 +80,7 @@ describe('OrderScreen', () => {
 
   test('offers the next step for each status', async () => {
     await renderOrder({ status: 'ready' });
-    await fireEvent.press(screen.getByText('Send out for delivery'));
+    await fireEvent.press(screen.getByText('Send out yourself'));
     expect(mockAdvance).toHaveBeenCalledWith({ id: 'order-1', action: 'mark-out-for-delivery' });
   });
 

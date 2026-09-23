@@ -1,12 +1,14 @@
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { colors } from '@mealdirect/shared';
-import { useGetRestaurantsQuery } from '@/store/serverApi';
+import { useGetRestaurantsQuery, useGetRidersQuery } from '@/store/serverApi';
 
 export default function TabsLayout() {
   // Pending count for the tab badge
   const { data } = useGetRestaurantsQuery({ status: 'pending' });
   const pending = data?.counts.pending ?? 0;
+  const { data: riders } = useGetRidersQuery({ status: 'pending' });
+  const pendingRiders = riders?.counts.pending ?? 0;
 
   return (
     <Tabs
@@ -33,6 +35,16 @@ export default function TabsLayout() {
           tabBarBadge: pending > 0 ? pending : undefined,
           tabBarIcon: ({ color, size }) => (
             <SymbolView name={{ ios: 'storefront', android: 'storefront' }} tintColor={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="riders"
+        options={{
+          title: 'Riders',
+          tabBarBadge: pendingRiders > 0 ? pendingRiders : undefined,
+          tabBarIcon: ({ color, size }) => (
+            <SymbolView name={{ ios: 'bicycle', android: 'pedal_bike' }} tintColor={color} size={size} />
           ),
         }}
       />

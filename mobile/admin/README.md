@@ -26,7 +26,8 @@ npm run create-admin -- --email you@example.com --first-name Asha --last-name Ra
 | --- | --- |
 | Overview | Last 7 / 30 / 90 days: sales, orders, average order, repeat customers; orders and sales per day (per week for 90 days); top 5 restaurants by sales; platform counts; a table view of the chart data. A banner links to restaurants waiting for review. |
 | Restaurants | Waiting / live / rejected, with counts and search. Waiting shows the oldest first. Each restaurant shows its details, the owner's contact details, masked payout details and, once live, sales for the last 30 days. Approve (optional note) or reject (a note for the owner is required; they see it in the partner app). Rejected restaurants can be approved later. |
-| Orders | The latest 100 orders across all restaurants: active / completed / cancelled. Each order shows the restaurant, customer, items, payment and timeline, and can be cancelled with a reason. |
+| Riders | Waiting / approved / suspended delivery partners with phone, sign-up date and completed deliveries. Approve new riders; suspend one to stop them taking or updating deliveries at once. |
+| Orders | The latest 100 orders across all restaurants: active / completed / cancelled. Each order shows the restaurant, customer, delivery partner, items, payment and timeline, and can be cancelled with a reason. |
 | Account | Who's signed in, sign out |
 
 Charts follow the project's dataviz rules: a single series per chart (no dual axes), one validated blue for data

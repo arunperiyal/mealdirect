@@ -53,3 +53,6 @@ export const customerName = (order: Order) =>
   [order.customer?.firstName, order.customer?.lastName].filter(Boolean).join(' ') || 'Customer';
 
 export const shortId = (id: string) => `#${id.slice(0, 8).toUpperCase()}`;
+
+export const riderName = (order: Pick<Order, 'rider'>) =>
+  [order.rider?.firstName, order.rider?.lastName].filter(Boolean).join(' ') || 'Delivery partner';

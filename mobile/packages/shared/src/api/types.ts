@@ -1,6 +1,8 @@
 // Shapes returned by the MealDirect backend (backend/src/models)
 
-export type Role = 'customer' | 'restaurant_admin' | 'system_admin';
+export type Role = 'customer' | 'restaurant_admin' | 'system_admin' | 'delivery_partner';
+
+export type RiderStatus = 'pending' | 'approved' | 'suspended';
 
 export interface User {
   id: string;
@@ -9,6 +11,7 @@ export interface User {
   lastName: string | null;
   phone: string | null;
   role: Role;
+  riderStatus?: RiderStatus; // delivery partners only
 }
 
 export interface Restaurant {
@@ -117,11 +120,18 @@ export interface Order {
   customerNotes: string | null;
   cancellationReason: string | null;
   createdAt: string;
+  confirmedAt?: string | null;
+  readyAt?: string | null;
+  deliveredAt?: string | null;
   // Included on restaurant and single-order reads
   customer?: { id: string; firstName: string | null; lastName: string | null; phone: string | null };
   deliverySlot?: { id: string; startTime: string; endTime: string } | null;
-  // Included on the system admin order list
-  restaurant?: { id: string; name: string };
+  // Included on the system admin order list and rider views (with address and phone)
+  restaurant?: { id: string; name: string; address?: string | null; city?: string | null; phone?: string | null };
+  // The delivery partner who claimed the order
+  rider?: { id: string; firstName: string | null; lastName: string | null; phone: string | null } | null;
+  riderId?: string | null;
+  claimedAt?: string | null;
 }
 
 export interface CreateOrderInput {
@@ -182,4 +192,15 @@ export interface Analytics {
   topRestaurants: { id: string; name: string; orders: number; revenue: number }[];
   restaurants: Record<VerificationStatus, number>;
   users: { customers: number; partners: number; admins: number };
+}
+
+export interface AdminRider {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  riderStatus: RiderStatus;
+  createdAt: string;
+  deliveries: number; // completed
 }

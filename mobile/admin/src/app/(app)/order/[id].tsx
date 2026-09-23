@@ -17,6 +17,7 @@ import {
   LoadingState,
   paymentLabel,
   PriceSummary,
+  riderName,
   SheetForm,
   shortId,
   spacing,
@@ -79,6 +80,12 @@ function OrderDetails({ order, refreshing, onRefresh }: { order: Order; refreshi
                 : 'Customer collects'
             }
           />
+          {order.deliveryType === 'delivery' ? (
+            <Detail
+              label="Delivery partner"
+              value={order.rider ? [riderName(order), order.rider.phone].filter(Boolean).join(' · ') : 'Not claimed yet'}
+            />
+          ) : null}
           {order.customerNotes ? <Detail label="Customer note" value={order.customerNotes} /> : null}
           {order.cancellationReason ? <Detail label="Cancellation reason" value={order.cancellationReason} /> : null}
         </Card>

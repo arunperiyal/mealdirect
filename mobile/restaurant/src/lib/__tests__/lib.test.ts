@@ -32,6 +32,18 @@ describe('nextStep', () => {
     ]);
   });
 
+  test('orders a delivery partner has claimed wait for them', () => {
+    const rider = { id: 'r', firstName: 'Ravi', lastName: 'K', phone: '9' };
+    expect(nextStep(order({ status: 'ready', riderId: 'r', rider }))).toEqual({
+      kind: 'waiting',
+      message: 'Ready. Ravi K is coming to pick it up.',
+    });
+    expect(nextStep(order({ status: 'out_for_delivery', riderId: 'r', rider }))).toEqual({
+      kind: 'waiting',
+      message: 'On the way with Ravi K.',
+    });
+  });
+
   test('ready pickup orders wait for the customer', () => {
     expect(nextStep(order({ status: 'ready', deliveryType: 'pickup' })).kind).toBe('waiting');
   });

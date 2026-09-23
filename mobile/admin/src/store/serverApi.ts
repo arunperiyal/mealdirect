@@ -2,6 +2,8 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import {
   createAxiosBaseQuery,
   type AdminRestaurant,
+  type AdminRider,
+  type RiderStatus,
   type AdminRestaurantDetail,
   type Analytics,
   type Order,
@@ -12,7 +14,7 @@ import { api } from '@/api';
 export const serverApi = createApi({
   reducerPath: 'serverApi',
   baseQuery: createAxiosBaseQuery(api),
-  tagTypes: ['Restaurant', 'Order', 'Analytics'],
+  tagTypes: ['Restaurant', 'Order', 'Analytics', 'Rider'],
   endpoints: (build) => ({
     getAnalytics: build.query<Analytics, { days: number; tzOffset: number }>({
       query: (params) => ({ url: '/admin/analytics', params }),
@@ -47,6 +49,19 @@ export const serverApi = createApi({
       invalidatesTags: ['Restaurant', 'Analytics'],
     }),
 
+    getRiders: build.query<{ riders: AdminRider[]; counts: Record<RiderStatus, number> }, { status: RiderStatus }>({
+      query: ({ status }) => ({ url: '/admin/riders', params: { status } }),
+      transformResponse: (data: AdminRider[], meta) => ({
+        riders: data,
+        counts: (meta?.counts as Record<RiderStatus, number>) ?? { pending: 0, approved: 0, suspended: 0 },
+      }),
+      providesTags: ['Rider'],
+    }),
+    setRiderStatus: build.mutation<AdminRider, { id: string; action: 'approve' | 'suspend' }>({
+      query: ({ id, action }) => ({ url: `/admin/riders/${id}/${action}`, method: 'PUT' }),
+      invalidatesTags: ['Rider'],
+    }),
+
     getOrders: build.query<Order[], void>({
       query: () => ({ url: '/orders/admin/orders', params: { limit: 100 } }),
       providesTags: ['Order'],
@@ -67,6 +82,8 @@ export const {
   useGetRestaurantsQuery,
   useGetRestaurantQuery,
   useReviewRestaurantMutation,
+  useGetRidersQuery,
+  useSetRiderStatusMutation,
   useGetOrdersQuery,
   useGetOrderQuery,
   useCancelOrderMutation,

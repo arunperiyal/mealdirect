@@ -24,7 +24,7 @@ import {
   TextField,
 } from '@mealdirect/shared';
 import { ORDER_POLL_MS } from '@/config';
-import { canRestaurantCancel, customerName, nextStep, paymentLabel, shortId } from '@/lib/orderActions';
+import { canRestaurantCancel, customerName, nextStep, paymentLabel, riderName, shortId } from '@/lib/orderActions';
 import { useAppSelector } from '@/store';
 import {
   serverApi,
@@ -116,6 +116,29 @@ function OrderDetails({ order, refreshing, onRefresh }: { order: Order; refreshi
             <Text style={font.body}>{order.customerNotes}</Text>
           </Card>
         ) : null}
+
+        {order.deliveryType === 'delivery' && isActive(order) && order.status !== 'pending' && (
+          <Card title="Delivery partner">
+            {order.rider ? (
+              <>
+                <Text style={font.body}>{riderName(order)}</Text>
+                {order.rider.phone ? (
+                  <Button
+                    title={`Call ${order.rider.phone}`}
+                    variant="secondary"
+                    onPress={() => Linking.openURL(`tel:${order.rider!.phone}`)}
+                    style={styles.gap}
+                  />
+                ) : null}
+              </>
+            ) : (
+              <Text style={font.caption}>
+                No delivery partner has accepted this order yet. One will pick it up when it’s ready, or you can
+                deliver it yourself.
+              </Text>
+            )}
+          </Card>
+        )}
 
         <Card title={order.deliveryType === 'delivery' ? 'Delivery' : 'Pickup'}>
           {order.deliveryType === 'delivery' ? (

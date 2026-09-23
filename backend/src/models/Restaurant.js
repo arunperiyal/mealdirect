@@ -75,14 +75,7 @@ const Restaurant = sequelize.define(
       defaultValue: {},
       comment: 'JSON: { mon: {open: "09:00", close: "22:00"}, ... }',
     },
-    // 'mess' caterers cook one menu in bulk for many daily orders
-    businessType: {
-      type: sequelize.options.dialect === 'sqlite' ? DataTypes.STRING : DataTypes.ENUM('restaurant', 'mess'),
-      allowNull: false,
-      defaultValue: 'restaurant',
-      validate: { isIn: { args: [['restaurant', 'mess']], msg: 'Business type must be restaurant or mess' } },
-    },
-    // New cash orders are accepted without a tap
+    // New cash orders are accepted without a tap (useful for messes and busy kitchens)
     autoAcceptOrders: {
       type: DataTypes.BOOLEAN,
       allowNull: false,

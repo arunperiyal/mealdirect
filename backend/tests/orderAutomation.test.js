@@ -7,7 +7,8 @@ let mess, restaurant;
 
 const DAY = 24 * 60 * 60 * 1000;
 
-describe('Mess caterers', () => {
+// Settings that save taps for kitchens with many daily orders, such as messes
+describe('Order automation', () => {
   beforeAll(async () => {
     app = require('../src/app');
     sequelize = require('../src/config/database');
@@ -32,7 +33,12 @@ describe('Mess caterers', () => {
         .send({ deliveryEnabled: true, pickupEnabled: true });
       return res.body.data;
     };
-    mess = await create({ name: 'Amma Mess', email: 'amma@test.com', businessType: 'mess' });
+    // A mess is a normal restaurant that turns the automation on
+    mess = await create({ name: 'Amma Mess', email: 'amma@test.com' });
+    await request(app)
+      .put(`/api/restaurants/${mess.id}/order-settings`)
+      .set(ownerHeaders)
+      .send({ autoAcceptOrders: true, autoReadyMinutes: 15 });
     restaurant = await create({ name: 'Plain Restaurant', email: 'plain@test.com' });
   });
 
@@ -78,21 +84,18 @@ describe('Mess caterers', () => {
         ...overrides,
       });
 
-  describe('business type and settings', () => {
-    test('a mess starts with auto-accept on and auto-ready 15 minutes before slots', async () => {
+  describe('settings', () => {
+    test('off by default; owners see them, customers do not', async () => {
       const mine = await request(app).get('/api/restaurants/my-restaurants').set(ownerHeaders);
-      const created = mine.body.data.find((r) => r.id === mess.id);
-      expect(created).toMatchObject({ businessType: 'mess', autoAcceptOrders: true, autoReadyMinutes: 15 });
       expect(mine.body.data.find((r) => r.id === restaurant.id)).toMatchObject({
-        businessType: 'restaurant',
         autoAcceptOrders: false,
         autoReadyMinutes: null,
       });
+      expect(mine.body.data.find((r) => r.id === mess.id)).toMatchObject({ autoAcceptOrders: true, autoReadyMinutes: 15 });
 
-      // Customers see the type but not the owner's settings
       const pub = await request(app).get(`/api/restaurants/${mess.id}`);
-      expect(pub.body.data.businessType).toBe('mess');
       expect(pub.body.data.autoAcceptOrders).toBeUndefined();
+      expect(pub.body.data.autoReadyMinutes).toBeUndefined();
     });
 
     test('owners change order handling; others cannot', async () => {
@@ -109,7 +112,7 @@ describe('Mess caterers', () => {
   });
 
   describe('auto-accept', () => {
-    test("a mess's cash orders are accepted straight away", async () => {
+    test('with auto-accept on, cash orders are accepted straight away', async () => {
       const menu = await publishMenu(mess.id, dateOffset(1));
       const res = await order(mess.id, menu);
       expect(res.body.data.status).toBe('confirmed');
@@ -222,7 +225,7 @@ describe('Mess caterers', () => {
       const late = (await order(mess.id, menu, { deliverySlotId: two.id })).body.data;
       const pickup = (await order(mess.id, menu, { deliveryType: 'pickup', deliveryAddress: undefined })).body.data;
 
-      // 11:50 on the menu day: the 12:00 slot is within the mess's 15 minutes; 14:00 isn't
+      // 11:50 on the menu day: the 12:00 slot is within the 15 minutes; 14:00 isn't
       const marked = await kitchen.runAutoReady(businessTime.businessDateTime(date, '11:50'));
       expect(marked).toBe(1);
 

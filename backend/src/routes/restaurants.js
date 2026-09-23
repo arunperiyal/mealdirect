@@ -21,7 +21,6 @@ router.post(
     body('address').optional().trim(),
     body('city').optional().trim(),
     body('zipCode').optional().trim(),
-    body('businessType').optional().isIn(['restaurant', 'mess']),
   ],
   async (req, res) => {
     try {
@@ -328,14 +327,13 @@ router.put(
 
 /**
  * PUT /api/restaurants/:id/order-settings
- * Business type and order handling: auto-accept, auto-ready before delivery slots (owner only)
+ * Order handling: auto-accept, auto-ready before delivery slots (owner only)
  */
 router.put(
   '/:id/order-settings',
   verifyToken,
   authorize(['restaurant_admin']),
   [
-    body('businessType').optional().isIn(['restaurant', 'mess']),
     body('autoAcceptOrders').optional().isBoolean().toBoolean(),
     // null turns auto-ready off
     body('autoReadyMinutes').optional({ values: 'null' }).isInt({ min: 0, max: 240 }).toInt(),

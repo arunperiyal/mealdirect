@@ -19,7 +19,7 @@ const verifyOwnership = async (restaurantId, userId) => {
 // 1. Create new restaurant (pending approval)
 const createRestaurant = async (userId, data) => {
   try {
-    const { name, email, phone, description, address, city, zipCode, businessType = 'restaurant' } = data;
+    const { name, email, phone, description, address, city, zipCode } = data;
 
     const existingEmail = await Restaurant.findOne({ where: { email } });
     if (existingEmail) {
@@ -37,9 +37,6 @@ const createRestaurant = async (userId, data) => {
       ownerId: userId,
       verificationStatus: 'pending',
       isApproved: false,
-      businessType,
-      // Mess caterers start without per-order taps; both are adjustable later
-      ...(businessType === 'mess' && { autoAcceptOrders: true, autoReadyMinutes: MESS_DEFAULT_READY_MINUTES }),
     });
 
     return restaurant;
@@ -92,8 +89,6 @@ const updateRestaurant = async (restaurantId, userId, data) => {
 
 // 4. List restaurants with filters
 // Fields only the owner and system admins may see
-const MESS_DEFAULT_READY_MINUTES = 15;
-
 const PRIVATE_FIELDS = [
   'autoAcceptOrders',
   'autoReadyMinutes',
@@ -265,12 +260,11 @@ const updateBankDetails = async (restaurantId, userId, details) => {
   }
 };
 
-// Business type and how orders are handled (owner only)
+// How orders are handled: auto-accept and auto-ready (owner only)
 const updateOrderSettings = async (restaurantId, userId, settings) => {
   try {
     const restaurant = await verifyOwnership(restaurantId, userId);
-    const { businessType, autoAcceptOrders, autoReadyMinutes } = settings;
-    if (businessType !== undefined) restaurant.businessType = businessType;
+    const { autoAcceptOrders, autoReadyMinutes } = settings;
     if (autoAcceptOrders !== undefined) restaurant.autoAcceptOrders = autoAcceptOrders;
     if (autoReadyMinutes !== undefined) restaurant.autoReadyMinutes = autoReadyMinutes;
     await restaurant.save();

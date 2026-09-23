@@ -211,6 +211,23 @@ describeLive('restaurant app ↔ live backend', () => {
     expect(menu.items.map((i) => i.id)).toEqual(itemIds);
   });
 
+  test('dish limits: a customer can’t order more than the restaurant allows', async () => {
+    const limited = await call(d(e.updateMenuItem.initiate({ menuId, itemId: itemIds[0], changes: { maxPerOrder: 1 } })));
+    expect(limited.items.find((i) => i.id === itemIds[0])?.maxPerOrder).toBe(1);
+
+    const refused = await http.post(
+      '/orders',
+      { restaurantId, menuId, items: [{ menuItemId: itemIds[0], quantity: 2 }], deliveryType: 'pickup', paymentMethod: 'cod' },
+      { ...customerAuth, validateStatus: () => true }
+    );
+    expect(refused.status).toBe(409);
+    expect(refused.data.code).toBe('ITEM_LIMIT_PER_ORDER');
+
+    // null removes the limit again
+    const cleared = await call(d(e.updateMenuItem.initiate({ menuId, itemId: itemIds[0], changes: { maxPerOrder: null } })));
+    expect(cleared.items.find((i) => i.id === itemIds[0])?.maxPerOrder).toBeNull();
+  });
+
   test('takes a delivery order from new to delivered, seeing who ordered and when', async () => {
     const placed = await placeOrder({
       deliveryType: 'delivery',

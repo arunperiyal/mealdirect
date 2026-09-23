@@ -21,7 +21,7 @@ The partner app checks for approval every 30 seconds and opens once it's through
 | Onboarding | Sign up as a partner → add restaurant with its payout details → waiting for approval (asks for payout details if they are missing; shows the reviewer's note if rejected) |
 | Today | New / in-progress / completed counts, today's sales, today's menu status, orders waiting to be accepted |
 | Orders | Active / completed / cancelled, new orders first. Each order shows customer name and phone, address, delivery time, notes, items, payment, and one button for the next step: accept → start preparing → mark ready → send out for delivery → mark delivered. Cancelling asks for a reason, which the customer sees. |
-| Menus | Past week and next two weeks. Create a menu for any of the next 7 days, add, edit and remove dishes, switch dishes off when sold out, set delivery times with a limit on orders, publish, stop taking orders. |
+| Menus | Past week and next two weeks. Create a menu for any of the next 7 days, add, edit and remove dishes, limit a dish per order or per customer per day (optional), switch dishes off when sold out, set delivery times with a limit on orders, publish, stop taking orders. |
 | Kitchen | Today or tomorrow: how much of each dish to cook, then one card per delivery time and one for pickup, each with its own dish totals, **Accept all new** and **Mark all ready** (skips "preparing"). Orders are folded under each card. |
 | Settings | Restaurant details, delivery and pickup (fee and minimum order), order handling, payout details (UPI ID and bank account), switch between restaurants, sign out |
 

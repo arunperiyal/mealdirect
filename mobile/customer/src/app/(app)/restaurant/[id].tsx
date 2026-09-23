@@ -4,6 +4,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import {
   addDays,
   Button,
+  dishAllowance,
   Chip,
   colors,
   EmptyState,
@@ -14,6 +15,7 @@ import {
   orderingState,
   LoadingState,
   localDateString,
+  orderedFromMenu,
   radius,
   spacing,
   type Menu,
@@ -23,8 +25,8 @@ import {
 import { CartBar } from '@/components/CartBar';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { addItem, decrementItem, MAX_ITEM_QUANTITY } from '@/store/cartSlice';
-import { useGetPublishedMenusQuery, useGetRestaurantQuery } from '@/store/serverApi';
+import { addItem, decrementItem } from '@/store/cartSlice';
+import { useGetMyOrdersQuery, useGetPublishedMenusQuery, useGetRestaurantQuery } from '@/store/serverApi';
 
 const DAYS = [
   { label: 'Today', offset: 0 },
@@ -40,6 +42,9 @@ export default function RestaurantScreen() {
   const menusQuery = useGetPublishedMenusQuery({ restaurantId: id, date });
   const restaurant = restaurantQuery.data;
   const menu = menusQuery.data?.[0];
+  // What this customer already ordered from the menu counts toward daily limits
+  const { data: myOrders } = useGetMyOrdersQuery();
+  const ordered = useMemo(() => (menu ? orderedFromMenu(myOrders ?? [], menu.id) : new Map<string, number>()), [myOrders, menu]);
 
   if (restaurantQuery.isLoading) return <LoadingState />;
   if (!restaurant) {
@@ -67,7 +72,9 @@ export default function RestaurantScreen() {
           />
         }
         renderItem={({ item }) =>
-          menu ? <MenuItemRow item={item} menu={menu} restaurant={restaurant} /> : null
+          menu ? (
+            <MenuItemRow item={item} menu={menu} restaurant={restaurant} orderedBefore={ordered.get(item.id) ?? 0} />
+          ) : null
         }
         ListEmptyComponent={
           menusQuery.isFetching ? (
@@ -130,11 +137,22 @@ function CutoffNote({ menu }: { menu: Menu }) {
   return <Text style={[font.caption, styles.window, !open && styles.closed]}>{label}</Text>;
 }
 
-function MenuItemRow({ item, menu, restaurant }: { item: MenuItem; menu: Menu; restaurant: Restaurant }) {
+function MenuItemRow({
+  item,
+  menu,
+  restaurant,
+  orderedBefore,
+}: {
+  item: MenuItem;
+  menu: Menu;
+  restaurant: Restaurant;
+  orderedBefore: number;
+}) {
   const dispatch = useAppDispatch();
   const cart = useAppSelector((s) => s.cart);
   const quantity =
     cart.menuId === menu.id ? cart.lines.find((l) => l.menuItemId === item.id)?.quantity ?? 0 : 0;
+  const allowance = dishAllowance(item, orderedBefore);
 
   const add = () => {
     const payload = {
@@ -143,6 +161,7 @@ function MenuItemRow({ item, menu, restaurant }: { item: MenuItem; menu: Menu; r
       menuId: menu.id,
       menuDate: menu.date,
       item,
+      maxQuantity: allowance.max,
     };
     if (cart.menuId && cart.menuId !== menu.id) {
       const sameRestaurant = cart.restaurantId === restaurant.id;
@@ -171,16 +190,19 @@ function MenuItemRow({ item, menu, restaurant }: { item: MenuItem; menu: Menu; r
             {item.description}
           </Text>
         ) : null}
+        {allowance.note && item.available ? <Text style={styles.limit}>{allowance.note}</Text> : null}
       </View>
       {!item.available ? (
         <Text style={styles.soldOut}>Sold out</Text>
       ) : !orderingState(menu, localDateString(new Date())).open ? (
         <Text style={styles.soldOut}>Closed</Text>
+      ) : quantity === 0 && allowance.max === 0 ? (
+        <Text style={styles.soldOut}>Limit reached</Text>
       ) : quantity > 0 ? (
         <QuantityStepper
           label={item.name}
           quantity={quantity}
-          max={MAX_ITEM_QUANTITY}
+          max={allowance.max}
           onIncrement={add}
           onDecrement={() => dispatch(decrementItem(item.id))}
         />
@@ -210,6 +232,7 @@ const styles = StyleSheet.create({
   itemText: { flex: 1, gap: 2 },
   price: { fontSize: 15, fontWeight: '600', color: colors.text },
   soldOut: { color: colors.textMuted, fontWeight: '600' },
+  limit: { fontSize: 12, color: colors.warning, fontWeight: '600' },
   closed: { color: colors.danger, fontWeight: '600' },
   addButton: { minHeight: 38, minWidth: 84 },
 });

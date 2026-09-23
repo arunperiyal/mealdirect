@@ -9,14 +9,16 @@ jest.mock('react-native-safe-area-context', () => require('react-native-safe-are
 
 const { router } = jest.requireMock('expo-router') as { router: { push: jest.Mock; dismissTo: jest.Mock } };
 
-const renderCart = async (lines: { menuItemId: string; name: string; price: number; quantity: number }[]) => {
+const renderCart = async (
+  lines: { menuItemId: string; name: string; price: number; quantity: number; maxQuantity?: number }[]
+) => {
   const store = makeStore({
     cart: {
       restaurantId: 'r1',
       restaurantName: 'Amma Mess',
       menuId: 'm1',
       menuDate: '2026-09-23',
-      lines,
+      lines: lines.map((l) => ({ maxQuantity: 20, ...l })),
     },
   });
   await render(

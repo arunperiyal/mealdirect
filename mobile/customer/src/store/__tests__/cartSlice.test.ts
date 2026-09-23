@@ -28,8 +28,8 @@ describe('cartSlice', () => {
     const state = apply(add('m1', 'a'), add('m1', 'a'), add('m1', 'b', 50));
     expect(state.menuId).toBe('m1');
     expect(state.lines).toEqual([
-      { menuItemId: 'a', name: 'Dish a', price: 100, quantity: 2 },
-      { menuItemId: 'b', name: 'Dish b', price: 50, quantity: 1 },
+      { menuItemId: 'a', name: 'Dish a', price: 100, quantity: 2, maxQuantity: MAX_ITEM_QUANTITY },
+      { menuItemId: 'b', name: 'Dish b', price: 50, quantity: 1, maxQuantity: MAX_ITEM_QUANTITY },
     ]);
     expect(selectCartCount({ cart: state })).toBe(3);
     expect(selectCartSubtotal({ cart: state })).toBe(250);
@@ -46,6 +46,13 @@ describe('cartSlice', () => {
   test('caps quantity per item', () => {
     const actions = Array.from({ length: MAX_ITEM_QUANTITY + 5 }, () => add('m1', 'a'));
     expect(apply(...actions).lines[0].quantity).toBe(MAX_ITEM_QUANTITY);
+  });
+
+  test("caps quantity at the dish's limit, and adds nothing once the limit is used up", () => {
+    const limited = (max: number) =>
+      addItem({ restaurantId: 'r1', restaurantName: 'Kitchen r1', menuId: 'm1', menuDate: '2026-09-23', item: { id: 'a', name: 'Dish a', price: 100 }, maxQuantity: max });
+    expect(apply(limited(2), limited(2), limited(2)).lines[0]).toMatchObject({ quantity: 2, maxQuantity: 2 });
+    expect(apply(limited(0)).lines).toEqual([]);
   });
 
   test('decrementing the last unit removes the line and resets an empty cart', () => {

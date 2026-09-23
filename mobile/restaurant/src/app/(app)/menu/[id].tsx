@@ -13,6 +13,7 @@ import {
   formatINR,
   formatTime,
   LoadingState,
+  MAX_ITEM_QUANTITY,
   type Menu,
   type MenuItem,
   SheetForm,
@@ -21,7 +22,7 @@ import {
 } from '@mealdirect/shared';
 import { dayLabel, isBefore, isValidTime, toHHmm } from '@/lib/time';
 import { useRestaurant } from '@/lib/useRestaurant';
-import { validateMoney } from '@/lib/validation';
+import { limitValue, validateLimit, validateMoney } from '@/lib/validation';
 import {
   useAddMenuItemMutation,
   useAddSlotMutation,
@@ -34,7 +35,26 @@ import {
   useUpdateSlotMutation,
 } from '@/store/serverApi';
 
-type ItemDraft = { id?: string; name: string; description: string; price: string; available: boolean };
+type ItemDraft = {
+  id?: string;
+  name: string;
+  description: string;
+  price: string;
+  available: boolean;
+  maxPerOrder: string; // blank = no limit
+  maxPerDay: string;
+};
+
+// "₹200 · max 2 per order · 3 a day per person"
+const dishSummary = (item: MenuItem) =>
+  [
+    formatINR(item.price),
+    item.maxPerOrder != null && `max ${item.maxPerOrder} per order`,
+    item.maxPerDay != null && `${item.maxPerDay} a day per person`,
+    !item.available && 'sold out',
+  ]
+    .filter(Boolean)
+    .join(' · ');
 type SlotDraft = { id?: string; startTime: string; endTime: string; maxOrders: string; currentOrders: number };
 
 export default function MenuScreen() {
@@ -149,14 +169,13 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
                     description: menuItem.description ?? '',
                     price: String(menuItem.price),
                     available: menuItem.available,
+                    maxPerOrder: menuItem.maxPerOrder != null ? String(menuItem.maxPerOrder) : '',
+                    maxPerDay: menuItem.maxPerDay != null ? String(menuItem.maxPerDay) : '',
                   })
                 }
               >
                 <Text style={[font.body, !menuItem.available && styles.soldOut]}>{menuItem.name}</Text>
-                <Text style={font.caption}>
-                  {formatINR(menuItem.price)}
-                  {menuItem.available ? '' : ' · sold out'}
-                </Text>
+                <Text style={font.caption}>{dishSummary(menuItem)}</Text>
               </Pressable>
               <Switch
                 accessibilityLabel={`${menuItem.name} available`}
@@ -169,7 +188,9 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
           <Button
             title="Add dish"
             variant="secondary"
-            onPress={() => setItem({ name: '', description: '', price: '', available: true })}
+            onPress={() =>
+              setItem({ name: '', description: '', price: '', available: true, maxPerOrder: '', maxPerDay: '' })
+            }
             style={styles.gap}
           />
         </Card>
@@ -234,7 +255,12 @@ function SlotsCard({ menuId, onEdit }: { menuId: string; onEdit: (draft: SlotDra
 
 function ItemSheet({ menuId, draft, onClose }: { menuId: string; draft: ItemDraft; onClose: () => void }) {
   const [form, setForm] = useState(draft);
-  const [errors, setErrors] = useState<{ name?: string | null; price?: string | null }>({});
+  const [errors, setErrors] = useState<{
+    name?: string | null;
+    price?: string | null;
+    maxPerOrder?: string | null;
+    maxPerDay?: string | null;
+  }>({});
   const [error, setError] = useState<string | null>(null);
   const [addItem, adding] = useAddMenuItemMutation();
   const [updateItem, updating] = useUpdateMenuItemMutation();
@@ -244,15 +270,25 @@ function ItemSheet({ menuId, draft, onClose }: { menuId: string; draft: ItemDraf
     const next = {
       name: form.name.trim() ? null : 'Enter a name',
       price: !form.price.trim() ? 'Enter a price' : validateMoney(form.price, 'Price'),
+      maxPerOrder: validateLimit(form.maxPerOrder, MAX_ITEM_QUANTITY),
+      maxPerDay: validateLimit(form.maxPerDay, 100),
     };
+    const perOrder = limitValue(form.maxPerOrder);
+    const perDay = limitValue(form.maxPerDay);
+    if (!next.maxPerOrder && !next.maxPerDay && perOrder != null && perDay != null && perOrder > perDay) {
+      next.maxPerOrder = 'Can’t be more than the limit per day';
+    }
     setErrors(next);
-    if (next.name || next.price) return;
+    if (Object.values(next).some(Boolean)) return;
 
     const values = {
       name: form.name.trim(),
       description: form.description.trim(),
       price: Number(form.price),
       available: form.available,
+      // null clears a limit
+      maxPerOrder: perOrder,
+      maxPerDay: perDay,
     };
     setError(null);
     try {
@@ -309,6 +345,31 @@ function ItemSheet({ menuId, draft, onClose }: { menuId: string; draft: ItemDraf
         placeholder="Rice, sambar, rasam, 2 curries"
         multiline
       />
+      <Text style={[font.caption, styles.limitHint]}>
+        Limits per customer, optional. Useful for dishes you make in small batches.
+      </Text>
+      <View style={styles.row}>
+        <View style={styles.half}>
+          <TextField
+            label="Max per order"
+            value={form.maxPerOrder}
+            onChangeText={(maxPerOrder) => setForm({ ...form, maxPerOrder })}
+            error={errors.maxPerOrder}
+            keyboardType="number-pad"
+            placeholder="No limit"
+          />
+        </View>
+        <View style={styles.half}>
+          <TextField
+            label="Max per day"
+            value={form.maxPerDay}
+            onChangeText={(maxPerDay) => setForm({ ...form, maxPerDay })}
+            error={errors.maxPerDay}
+            keyboardType="number-pad"
+            placeholder="No limit"
+          />
+        </View>
+      </View>
       <View style={styles.switchRow}>
         <Text style={font.body}>Available</Text>
         <Switch
@@ -445,4 +506,5 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   row: { flexDirection: 'row', gap: spacing.md },
   half: { flex: 1 },
+  limitHint: { marginBottom: spacing.sm },
 });

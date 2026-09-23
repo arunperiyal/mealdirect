@@ -12,7 +12,7 @@ import {
 } from '@mealdirect/shared';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { addItem, decrementItem, MAX_ITEM_QUANTITY, selectCartSubtotal } from '@/store/cartSlice';
+import { addItem, decrementItem, selectCartSubtotal } from '@/store/cartSlice';
 
 export default function CartScreen() {
   const dispatch = useAppDispatch();
@@ -47,7 +47,7 @@ export default function CartScreen() {
               <QuantityStepper
                 label={line.name}
                 quantity={line.quantity}
-                max={MAX_ITEM_QUANTITY}
+                max={line.maxQuantity}
                 onDecrement={() => dispatch(decrementItem(line.menuItemId))}
                 onIncrement={() =>
                   dispatch(
@@ -57,6 +57,7 @@ export default function CartScreen() {
                       menuId,
                       menuDate: menuDate ?? '',
                       item: { id: line.menuItemId, name: line.name, price: line.price },
+                      maxQuantity: line.maxQuantity,
                     })
                   )
                 }

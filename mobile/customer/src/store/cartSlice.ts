@@ -1,11 +1,13 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { MenuItem } from '@mealdirect/shared';
+import { MAX_ITEM_QUANTITY, type MenuItem } from '@mealdirect/shared';
 
 export interface CartLine {
   menuItemId: string;
   name: string;
   price: number;
   quantity: number;
+  // The dish's limit for this customer when it was added (see dishAllowance)
+  maxQuantity: number;
 }
 
 // An order belongs to exactly one restaurant menu, so the cart does too
@@ -31,9 +33,8 @@ export interface AddItemPayload {
   menuId: string;
   menuDate: string;
   item: Pick<MenuItem, 'id' | 'name' | 'price'>;
+  maxQuantity?: number; // defaults to the 20 per order every dish has
 }
-
-const MAX_QUANTITY = 20;
 
 const cartSlice = createSlice({
   name: 'cart',
@@ -51,15 +52,19 @@ const cartSlice = createSlice({
           lines: [],
         });
       }
+      const maxQuantity = payload.maxQuantity ?? MAX_ITEM_QUANTITY;
+      if (maxQuantity < 1) return;
       const line = state.lines.find((l) => l.menuItemId === payload.item.id);
       if (line) {
-        line.quantity = Math.min(line.quantity + 1, MAX_QUANTITY);
+        line.maxQuantity = maxQuantity;
+        line.quantity = Math.min(line.quantity + 1, maxQuantity);
       } else {
         state.lines.push({
           menuItemId: payload.item.id,
           name: payload.item.name,
           price: Number(payload.item.price),
           quantity: 1,
+          maxQuantity,
         });
       }
     },
@@ -88,7 +93,7 @@ const cartSlice = createSlice({
 });
 
 export const { addItem, decrementItem, removeItem, clearCart } = cartSlice.actions;
-export const MAX_ITEM_QUANTITY = MAX_QUANTITY;
+export { MAX_ITEM_QUANTITY };
 export default cartSlice.reducer;
 
 export const selectCartCount = (state: { cart: CartState }) =>

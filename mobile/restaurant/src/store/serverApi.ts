@@ -49,7 +49,8 @@ export interface BulkInput {
   action: 'accept' | 'ready';
 }
 
-export type ItemInput = Pick<MenuItem, 'name' | 'price'> & Partial<Pick<MenuItem, 'description' | 'available'>>;
+export type ItemInput = Pick<MenuItem, 'name' | 'price'> &
+  Partial<Pick<MenuItem, 'description' | 'available' | 'maxPerOrder' | 'maxPerDay'>>;
 
 export interface SlotInput {
   startTime: string; // HH:mm

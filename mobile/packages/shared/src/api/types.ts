@@ -57,6 +57,9 @@ export interface MenuItem {
   price: number;
   imageUrl?: string | null;
   available: boolean;
+  // Set by the restaurant; null or missing means no limit (beyond 20 per order)
+  maxPerOrder?: number | null;
+  maxPerDay?: number | null; // per customer, across their orders from this menu
 }
 
 export type MenuStatus = 'draft' | 'published' | 'closed' | 'archived';

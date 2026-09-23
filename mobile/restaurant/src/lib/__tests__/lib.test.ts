@@ -3,7 +3,7 @@ import { canRecordPayment, canRestaurantCancel, customerName, nextStep, paymentL
 import { bulkResultMessage, countsSummary, groupTitle, kitchenCounts } from '../kitchen';
 import { summarizeToday } from '../today';
 import { dayLabel, isBefore, isValidTime, toHHmm } from '../time';
-import { validateMoney, validatePhone } from '../validation';
+import { limitValue, validateLimit, validateMoney, validatePhone } from '../validation';
 
 const order = (overrides: Partial<Order> = {}): Order =>
   ({
@@ -161,5 +161,17 @@ describe('kitchen helpers', () => {
       'Pickup: 3 orders accepted. 1 order still waiting for online payment.'
     );
     expect(bulkResultMessage('ready', { updated: 0, skipped: 0 }, 'Pickup')).toBe('Pickup: nothing to mark ready.');
+  });
+});
+
+describe('dish limits', () => {
+  test('blank means no limit; otherwise a whole number in range', () => {
+    expect(validateLimit('', 20)).toBeNull();
+    expect(validateLimit('3', 20)).toBeNull();
+    expect(validateLimit('0', 20)).toBeTruthy();
+    expect(validateLimit('2.5', 20)).toBeTruthy();
+    expect(validateLimit('21', 20)).toBeTruthy();
+    expect(limitValue(' ')).toBeNull();
+    expect(limitValue('4')).toBe(4);
   });
 });

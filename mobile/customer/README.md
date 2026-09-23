@@ -54,6 +54,10 @@ Everything used here ships in Expo Go, so no custom development build is needed.
 The restaurant screen shows when ordering closes for the day ("Order by 11:30 AM today"). After that time, or for a
 past day, dishes show **Closed** and the backend refuses the order.
 
+A dish can have limits set by the restaurant, shown under its price ("Max 2 per order · Max 3 per person a day").
+The quantity buttons stop at the limit, counting what the customer already ordered from that menu, and a dish
+whose daily limit is used up shows **Limit reached**. The backend checks the same limits.
+
 An order belongs to one restaurant menu, so the cart holds items from one menu at a time.
 Adding a dish from another menu asks before replacing the cart.
 

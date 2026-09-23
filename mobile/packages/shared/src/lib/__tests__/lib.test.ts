@@ -1,4 +1,5 @@
 import { addDays, formatTime, localDateString } from '../dates';
+import { dishAllowance, MAX_ITEM_QUANTITY, orderedFromMenu } from '../itemLimits';
 import {
   changedFieldsLabel,
   hasPayoutErrors,
@@ -163,5 +164,35 @@ describe('payout details', () => {
   test('names the fields a change touches', () => {
     expect(changedFieldsLabel({ changes: { upiId: 'x' } })).toBe('UPI ID');
     expect(changedFieldsLabel({ changes: { upiId: 'x', bankIFSC: 'y', phone: 'z' } })).toBe('UPI ID, IFSC and phone');
+  });
+});
+
+describe('dish limits', () => {
+  test('no limits: up to 20 per order, no note', () => {
+    expect(dishAllowance({})).toEqual({ max: MAX_ITEM_QUANTITY, note: null });
+  });
+
+  test('per order and per day, counting what was already ordered', () => {
+    expect(dishAllowance({ maxPerOrder: 2, maxPerDay: 3 })).toEqual({
+      max: 2,
+      note: 'Max 2 per order · Max 3 per person a day',
+    });
+    expect(dishAllowance({ maxPerOrder: 2, maxPerDay: 3 }, 2)).toEqual({
+      max: 1,
+      note: 'Max 2 per order · 1 of your 3 for the day left',
+    });
+    expect(dishAllowance({ maxPerDay: 3 }, 5).max).toBe(0);
+  });
+
+  test('adds up active orders from one menu only', () => {
+    const orders = [
+      { menuId: 'm1', status: 'confirmed', items: [{ menuItemId: 'a', quantity: 2 }] },
+      { menuId: 'm1', status: 'cancelled', items: [{ menuItemId: 'a', quantity: 5 }] },
+      { menuId: 'm2', status: 'pending', items: [{ menuItemId: 'a', quantity: 7 }] },
+      { menuId: 'm1', status: 'delivered', items: [{ menuItemId: 'a', quantity: 1 }, { menuItemId: 'b', quantity: 1 }] },
+    ] as unknown as Order[];
+    const totals = orderedFromMenu(orders, 'm1');
+    expect(totals.get('a')).toBe(3);
+    expect(totals.get('b')).toBe(1);
   });
 });

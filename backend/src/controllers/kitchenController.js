@@ -57,14 +57,17 @@ const getKitchen = wrap(async (userId, restaurantId, date) => {
     order: [['createdAt', 'ASC']],
   });
 
+  // Grouped per menu too: a restaurant can publish more than one menu for a day,
+  // and bulk actions work on one menu's group
   const byKey = new Map();
   for (const o of orders) {
-    const key = groupKey(o);
-    if (!byKey.has(key)) byKey.set(key, []);
-    byKey.get(key).push(o);
+    const id = `${o.menuId}|${groupKey(o)}`;
+    if (!byKey.has(id)) byKey.set(id, []);
+    byKey.get(id).push(o);
   }
 
-  const groups = [...byKey.entries()].map(([key, list]) => {
+  const groups = [...byKey.values()].map((list) => {
+    const key = groupKey(list[0]);
     const slot = key === 'pickup' || key === 'unscheduled' ? null : list[0].deliverySlot;
     return {
       key,

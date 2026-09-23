@@ -153,6 +153,11 @@ backend/
 - `GET /api/orders/:id` - Get order details
 - `GET /api/my-orders` - Customer's orders
 - `PUT /api/orders/:id/status` - Update order status (admin)
+- `GET /api/orders/kitchen?restaurantId=&date=` - A day's dish totals and orders grouped by delivery time and pickup (owner)
+- `POST /api/orders/bulk` - Accept, or mark ready, every order in one kitchen group (owner)
+- `PUT /api/restaurants/:id/order-settings` - Auto-accept cash orders; mark accepted delivery orders ready N minutes before their delivery time (owner)
+
+Orders close at the menu's ordering end time on the menu's day (`409 ORDERING_CLOSED`).
 
 ### Reviews (Phase 4)
 - `POST /api/reviews` - Submit review

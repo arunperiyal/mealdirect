@@ -213,6 +213,19 @@ describe('Order automation', () => {
       const other = await request(app).post('/api/orders/bulk').set(otherOwnerHeaders).send({ menuId: menu.id, group: 'pickup', action: 'accept' });
       expect(other.status).toBe(403);
     });
+
+    test('two menus on one day get their own groups', async () => {
+      const date = dateOffset(2);
+      const breakfast = await publishMenu(restaurant.id, date);
+      const lunch = await publishMenu(restaurant.id, date);
+      await order(restaurant.id, breakfast, { deliveryType: 'pickup', deliveryAddress: undefined });
+      await order(restaurant.id, lunch, { deliveryType: 'pickup', deliveryAddress: undefined });
+
+      const res = await request(app).get(`/api/orders/kitchen?restaurantId=${restaurant.id}&date=${date}`).set(ownerHeaders);
+      expect(res.body.data.groups.map((g) => [g.key, g.menuId, g.orders.length]).sort()).toEqual(
+        [['pickup', breakfast.id, 1], ['pickup', lunch.id, 1]].sort()
+      );
+    });
   });
 
   describe('scheduled auto-ready', () => {

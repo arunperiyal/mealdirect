@@ -11,7 +11,7 @@
  *   npm run create-admin -- --email admin@example.com --first-name Asha --last-name Rao
  *
  * Uses the same database settings as the server (.env / DB_* variables), and
- * expects the tables to exist already (start the server once, or run migrations).
+ * expects the tables to exist already (start the server once, or run `npm run upgrade-db`).
  */
 const { parseArgs } = require('util');
 

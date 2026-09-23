@@ -1,84 +1,63 @@
-## Grub - UberEats Clone
+# MealDirect
 
-Grub is a full-featured UberEats clone app template in Java/Kotlin for Android, iOS, Desktop & Web. It helps to build an elaborate cross-platform food delivery app such as UberEats, Foodpanda, GrubHub etc using the new CodeRad tools.
+Food ordering and delivery for local restaurants and messes (canteens that cook one menu in bulk each day).
+Restaurants publish a menu per day with delivery times, customers order ahead and pay on delivery, and riders
+claim deliveries from a shared queue.
 
-<img src="https://sergeycodenameone.github.io/uber-eats-clone-banner.jpg" width="600"></img>
+| Folder | What it is |
+| --- | --- |
+| [`backend/`](backend/README.md) | Node.js + Express REST API with PostgreSQL |
+| [`mobile/customer/`](mobile/customer/README.md) | Customer app: browse, order, pay on delivery, track |
+| [`mobile/restaurant/`](mobile/restaurant/README.md) | MealDirect Partner: orders, kitchen view, menus, settings |
+| [`mobile/delivery/`](mobile/delivery/README.md) | MealDirect Delivery for riders: claim, pick up, deliver, record payment |
+| [`mobile/admin/`](mobile/admin/README.md) | MealDirect Admin for staff: restaurant and rider review, cash settlement, orders, analytics |
+| [`mobile/packages/shared/`](mobile/README.md) | Code the apps share: API client, session, types, helpers, theme, components |
 
-This app was designed as a proof of concept for the [CodeRAD library](https://github.com/shannah/CodeRAD), which facilitates the development of rich, reusable UI components for Codename One.  It contains everything you should need to build a rich and reusable app with the Rapid application development principles.
+The apps are built with Expo (React Native) and run in Expo Go during development.
 
-## Features
+## Getting started
 
-- Light/Dark mode
-- Onboarding screens
-- Register & Sign In
-- Location
-- Search
-- Filters
-- Restaurant Categories
-- Cart - Add to Cart
-- Promo Code
-- Payments - Credit Cards Management
-- Favourites
-- Order Tracking
-- Profile
-- Optimized for both iOS and Android
-- Fully customizable codebase
-- Highly-modularized code
+```bash
+# Backend
+cd backend
+npm install
+cp .env.example .env            # then fill in the values
+docker compose up -d postgres   # see backend/README.md to reach it from the host
 
-## Screenshots
+# Apps
+cd ../mobile
+npm install                     # every app in the workspace
+cp customer/.env.example customer/.env   # likewise for each app you run; set EXPO_PUBLIC_API_URL
+```
 
-Welcome               |  Sign in               | Onboarding               |  Location
-:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:
-![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-1-Welcome.png?raw=true)|![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-2-Sign-In.png?raw=true)|![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-3-Onboarding.png?raw=true)|![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-4-Location.png?raw=true)|
+Then start everything in one tmux session:
 
-Home               |  Restaurants List               | Restaurant Page             |  Order
-:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:
-![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-8-Home.png?raw=true)|![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-9-Restaurants.png?raw=true)|![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-10-Restaurant.png?raw=true)|![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-11-Product.png?raw=true)|
+```bash
+./dev-session.sh                       # backend + all four apps
+./dev-session.sh customer restaurant   # backend + only these apps
+```
 
+Or run the pieces yourself: `npm run dev` in `backend/`, and `npx expo start` in each app's folder.
 
-Filter              |   Favorites               |  Add Card               | Order Placed      
-:-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:
-![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-12-Filter.png?raw=true)|![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-7-Favorite.png?raw=true)|![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-5-Add-Card.png?raw=true)|![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-15-Order-Success.png?raw=true)|
+MealDirect staff accounts can't sign up in the app. Create one with `npm run create-admin` in `backend/`.
 
+## Checks
 
-|  Order Processing       |   Order Cancelled          |  Profile           
-:-------------------------:|:-------------------------:|:-------------------------:
-![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-13-Order-Progress.png?raw=true)|![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-14-Order-Cancel.png?raw=true)|![](https://www.codenameone.com/wp-content/uploads/2021/08/GrubHub-6-Profile.png?raw=true)|
+```bash
+cd backend && npm test                           # API tests
+cd mobile && npm test && npm run typecheck       # every app and the shared package
+```
 
+## Deploying
 
-## Working with Grub Source Code
+- Backend: [backend/DEPLOY.md](backend/DEPLOY.md) (Docker, HTTPS, backups)
+- Apps: Android test builds with EAS, see [mobile/README.md](mobile/README.md#building-the-apps-eas)
 
-Watch this quick [video](https://youtu.be/BzySM_NpcEI) to see how easy it is to run and make changes on the fly to the code.
+## History
+
+The repo started as [Grub](https://github.com/sergeyCodenameOne/UberEatsClone), a Codename One UI template by
+Sergey Gerashenko. That app has been replaced by the Expo apps and API above; it's still in the git history.
 
 ## License
 
-Apache 2.0
-
-## Demo
-
-* Download [Android demo app](https://github.com/sergeyCodenameOne/UberEatsClone/releases/download/v1.0/Grub.apk).
-
-<br>
-
-> **NOTE:**  The app is not connected to any backend server and all the logic is just for the visual effect. Although the app can be easly connected to any server. MVC is separated correctly to make wiring easier.
-
-
-## Installation
-
-From CLI:
-
-```
-mvn install
-```
-
-Or open in your favorite IDE that supports maven (Idea, VSCode, Eclipse, NetBeans etc.).
-
-## Further Reading
-
-- [Codename One](https://www.codenameone.com/)
-- [CodeRAD library](https://github.com/shannah/CodeRAD)
-- [RADChatApp](https://github.com/shannah/RADChatApp)
-
-## Credits
-
-- Created by Sergey Gerashenko, [Codename One](https://www.codenameone.com)
+Apache 2.0, see [LICENSE](LICENSE).

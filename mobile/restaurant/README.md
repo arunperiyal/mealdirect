@@ -63,4 +63,5 @@ LIVE_API_ADMIN_EMAIL=admin@example.com LIVE_API_ADMIN_PASSWORD=... \
 - Operating hours (the backend stores them but nothing uses them yet; each menu has its own ordering window)
 - Push notifications and a sound for new orders (Phase 4)
 - Dish photos
+- Weekly menu scheduling and prepaid meal plans (planned as restaurant features, for messes)
 - Order history beyond the latest 100 orders

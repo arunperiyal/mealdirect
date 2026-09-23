@@ -1,7 +1,7 @@
 # MealDirect Customer App
 
 React Native (Expo SDK 57) app for customers: browse approved restaurants, order from
-today's or tomorrow's menu, pay with Razorpay or cash, and track the order.
+today's or tomorrow's menu, pay on delivery (cash, or UPI to MealDirect), and track the order.
 
 ## Run it
 
@@ -22,9 +22,11 @@ Shared code (API client, session, helpers, theme, common components) lives in `m
 | iOS simulator | `http://localhost:3000` |
 | Physical phone | `http://<your computer's LAN IP>:3000` |
 
-The backend must be running (`cd backend && npm run dev`). For online payments it also needs
-`RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` (test keys start with `rzp_test_`). Without them,
-"Pay online" shows "Online payments are not configured" and cash orders still work.
+The backend must be running (`cd backend && npm run dev`, or `./dev-session.sh` from the repo root).
+
+Online payment (Razorpay) is on hold, so checkout offers only pay on delivery. The backend decides this through
+`GET /api/config`: "Pay online" comes back, without an app update, once the backend has
+`ONLINE_PAYMENTS_ENABLED=true` and `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` (test keys start with `rzp_test_`).
 
 Everything used here ships in Expo Go, so no custom development build is needed.
 

@@ -82,6 +82,8 @@ docker compose up -d postgres
 npm run dev
 ```
 
+To run the API and the Expo apps together in tmux, use `./dev-session.sh` from the repo root (see `mobile/README.md`).
+
 The database isn't exposed to the network by default. To reach it from `npm run dev` on the host, add a
 `docker-compose.override.yml`. It isn't committed, so it only affects your machine:
 

@@ -21,6 +21,27 @@ npm install
 
 Then run an app from its own folder (see each app's README), e.g. `cd restaurant && npx expo start`.
 
+### Running everything at once (tmux)
+
+`dev-session.sh` in the repo root opens a tmux session called `MEALDIRECT`: the backend (`npm run dev`) and one Expo
+dev server per app, each on a fixed port. It starts the `mess_postgres` database container if it's stopped, and
+running it again attaches to the session that's already open.
+
+```bash
+./dev-session.sh                       # backend + all four apps
+./dev-session.sh customer restaurant   # backend + only these apps
+```
+
+| App | Metro port |
+| --- | --- |
+| customer | 8081 |
+| restaurant | 8082 |
+| admin | 8083 |
+| delivery | 8084 |
+
+Windows: `servers` (backend on the left, apps stacked on the right; prefix + `z` enlarges a pane to scan its QR
+code), `main` (`nvim`), and `zsh` (shells in `backend/`, `mobile/` and the repo root).
+
 Keep every app on the same Expo SDK and the same `react` / `react-native` versions. A second copy of React in the
 workspace causes runtime errors. After adding a dependency, check with `npm ls react react-native`.
 

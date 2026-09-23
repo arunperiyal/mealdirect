@@ -4,6 +4,7 @@ const router = express.Router();
 const orderController = require('../controllers/orderController');
 const kitchenController = require('../controllers/kitchenController');
 const { verifyToken, authorize } = require('../middleware/auth');
+const { MAX_QUANTITY } = require('../lib/itemLimits');
 
 /**
  * POST /api/orders
@@ -17,6 +18,9 @@ router.post(
     body('restaurantId').isUUID(),
     body('menuId').isUUID(),
     body('items').isArray({ min: 1 }),
+    body('items.*.menuItemId').isString().notEmpty(),
+    body('items.*.quantity').isInt({ min: 1, max: MAX_QUANTITY }).toInt()
+      .withMessage(`Quantity must be a whole number from 1 to ${MAX_QUANTITY}`),
     body('deliveryType').isIn(['delivery', 'pickup']),
     body('deliverySlotId').optional().isUUID(),
     body('deliveryAddress').optional().trim(),

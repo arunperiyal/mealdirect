@@ -1,4 +1,5 @@
 const { Menu, DeliverySlot, Restaurant } = require('../models');
+const { assertLimitsConsistent } = require('../lib/itemLimits');
 const { v4: uuidv4 } = require('uuid');
 
 const throwError = (code, message, statusCode = 400) => {
@@ -207,7 +208,10 @@ const addMenuItems = async (menuId, userId, items) => {
       price: parseFloat(item.price),
       imageUrl: item.imageUrl || '',
       available: item.available !== false,
+      maxPerOrder: item.maxPerOrder ?? null,
+      maxPerDay: item.maxPerDay ?? null,
     }));
+    newItems.forEach(assertLimitsConsistent);
 
     menu.items = [...(menu.items || []), ...newItems];
     await menu.save();
@@ -235,6 +239,9 @@ const updateMenuItem = async (menuId, userId, itemId, data) => {
     if (data.price) item.price = parseFloat(data.price);
     if (data.imageUrl) item.imageUrl = data.imageUrl;
     if (data.available !== undefined) item.available = data.available;
+    if (data.maxPerOrder !== undefined) item.maxPerOrder = data.maxPerOrder;
+    if (data.maxPerDay !== undefined) item.maxPerDay = data.maxPerDay;
+    assertLimitsConsistent(item);
 
     // Assign a new array: Sequelize doesn't detect in-place changes to JSON
     // columns, so editing the existing array was silently never saved

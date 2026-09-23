@@ -1,4 +1,5 @@
 const { Op } = require('sequelize');
+const { assertWithinLimits, quantitiesByItem } = require('../lib/itemLimits');
 const config = require('../config');
 const { assertCustomerCanOrder, recordCollection } = require('./collectionController');
 const { assertOrderingOpen } = require('../lib/ordering');
@@ -137,6 +138,18 @@ const createOrder = async (customerId, data) => {
         total: itemTotal,
       };
     });
+
+    // Per-dish limits. The menu is one day's food, so "a day" counts this
+    // customer's active orders from the same menu.
+    const requested = quantitiesByItem(orderItems);
+    const dailyLimited = menu.items.some((mi) => requested.has(mi.id) && mi.maxPerDay != null);
+    const earlier = dailyLimited
+      ? await Order.findAll({
+          where: { customerId, menuId, status: { [Op.ne]: 'cancelled' } },
+          attributes: ['items'],
+        })
+      : [];
+    assertWithinLimits(menu.items, requested, quantitiesByItem(earlier.flatMap((o) => o.items || [])));
 
     // Validate delivery slot
     let deliveryFee = 0;

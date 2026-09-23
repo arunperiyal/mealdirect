@@ -4,6 +4,8 @@ const router = express.Router();
 const menuController = require('../controllers/menuController');
 const deliverySlotController = require('../controllers/deliverySlotController');
 const { verifyToken, authorize } = require('../middleware/auth');
+const { MAX_QUANTITY, MAX_DAILY_LIMIT } = require('../lib/itemLimits');
+const { businessDateString } = require('../lib/businessTime');
 
 /**
  * POST /api/menus
@@ -115,8 +117,10 @@ router.get(
 
       const result = await menuController.getMenusByRestaurant(
         req.query.restaurantId,
-        req.query.date || req.query.from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        req.query.date || req.query.to || new Date().toISOString().split('T')[0],
+        // Default: the last 30 days up to today, in the business timezone (not UTC,
+        // which is still on yesterday for the first hours of an Indian day)
+        req.query.date || req.query.from || businessDateString(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
+        req.query.date || req.query.to || businessDateString(),
         req.query.limit || 20,
         req.query.offset || 0
       );
@@ -271,6 +275,11 @@ router.post(
     body('items.*.price').isFloat({ min: 0 }).withMessage('Each item needs a price of 0 or more'),
     body('items.*.description').optional().isString().trim(),
     body('items.*.available').optional().isBoolean(),
+    // Optional limits per customer; null or missing means no limit
+    body('items.*.maxPerOrder').optional({ values: 'null' }).isInt({ min: 1, max: MAX_QUANTITY }).toInt()
+      .withMessage(`Limit per order is 1 to ${MAX_QUANTITY}`),
+    body('items.*.maxPerDay').optional({ values: 'null' }).isInt({ min: 1, max: MAX_DAILY_LIMIT }).toInt()
+      .withMessage(`Limit per day is 1 to ${MAX_DAILY_LIMIT}`),
   ],
   async (req, res) => {
     try {
@@ -320,6 +329,11 @@ router.put(
     body('price').optional().isFloat({ min: 0 }),
     body('imageUrl').optional().isURL(),
     body('available').optional().isBoolean(),
+    // null removes a limit
+    body('maxPerOrder').optional({ values: 'null' }).isInt({ min: 1, max: MAX_QUANTITY }).toInt()
+      .withMessage(`Limit per order is 1 to ${MAX_QUANTITY}`),
+    body('maxPerDay').optional({ values: 'null' }).isInt({ min: 1, max: MAX_DAILY_LIMIT }).toInt()
+      .withMessage(`Limit per day is 1 to ${MAX_DAILY_LIMIT}`),
   ],
   async (req, res) => {
     try {

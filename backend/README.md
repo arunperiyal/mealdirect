@@ -89,6 +89,10 @@ backups.
 - **Dish limits:** each order line is a whole quantity from 1 to 20. A restaurant can also limit a dish per order
   (`maxPerOrder`, up to 20) and per customer per day (`maxPerDay`, counting that customer's orders from the same
   menu that aren't cancelled). Over a limit, orders get `409 ITEM_LIMIT_PER_ORDER` or `ITEM_LIMIT_PER_DAY`.
+- **Orders at the same moment:** placing an order runs in one transaction that locks the delivery time's row (and
+  the customer's row when a dish has a daily limit), so simultaneous orders queue for the last place instead of
+  all getting it. Cancelling locks the order, gives its place back once, and a second cancel gets
+  `409 ALREADY_CANCELLED`. A delivery time must belong to the order's menu.
 - **Order status:** pending → confirmed → preparing → ready → out for delivery → delivered (or picked up), or
   cancelled.
 - **Pay on delivery:** the rider records cash, UPI to the restaurant (a QR code of the restaurant's UPI ID on the

@@ -1,6 +1,7 @@
 const { Op } = require('sequelize');
 const { assertWithinLimits, quantitiesByItem } = require('../lib/itemLimits');
 const config = require('../config');
+const sequelize = require('../config/database');
 const { assertCustomerCanOrder, recordCollection } = require('./collectionController');
 const { assertOrderingOpen } = require('../lib/ordering');
 const { Order, Menu, DeliverySlot, Restaurant, User } = require('../models');
@@ -139,17 +140,10 @@ const createOrder = async (customerId, data) => {
       };
     });
 
-    // Per-dish limits. The menu is one day's food, so "a day" counts this
-    // customer's active orders from the same menu.
+    // Per-order limits now; daily limits are checked below, inside the transaction
     const requested = quantitiesByItem(orderItems);
+    assertWithinLimits(menu.items, requested, new Map());
     const dailyLimited = menu.items.some((mi) => requested.has(mi.id) && mi.maxPerDay != null);
-    const earlier = dailyLimited
-      ? await Order.findAll({
-          where: { customerId, menuId, status: { [Op.ne]: 'cancelled' } },
-          attributes: ['items'],
-        })
-      : [];
-    assertWithinLimits(menu.items, requested, quantitiesByItem(earlier.flatMap((o) => o.items || [])));
 
     // Validate delivery slot
     let deliveryFee = 0;
@@ -159,14 +153,6 @@ const createOrder = async (customerId, data) => {
       }
       if (!deliveryAddress) {
         throwError('VALIDATION_ERROR', 'Delivery address is required for delivery orders');
-      }
-
-      if (deliverySlotId) {
-        const slot = await DeliverySlot.findByPk(deliverySlotId);
-        if (!slot) throwError('NOT_FOUND', 'Delivery slot not found', 404);
-        if (slot.currentOrders >= slot.maxOrders) {
-          throwError('SLOT_FULL', 'This delivery slot is full', 409);
-        }
       }
 
       // Postgres returns DECIMAL columns as strings; without Number() the
@@ -189,42 +175,65 @@ const createOrder = async (customerId, data) => {
     // orders are accepted when their payment succeeds.
     const autoAccepted = paymentMethod === 'cod' && restaurant.autoAcceptOrders;
 
-    // Create order
-    const order = await Order.create({
-      customerId,
-      restaurantId,
-      menuId,
-      items: orderItems,
-      deliveryType,
-      deliverySlotId: deliveryType === 'delivery' ? deliverySlotId : null,
-      deliveryAddress: deliveryType === 'delivery' ? deliveryAddress : null,
-      paymentMethod,
-      paymentStatus: 'pending',
-      collectionStatus: paymentMethod === 'cod' ? 'awaiting' : null,
-      subtotal,
-      tax,
-      deliveryFee,
-      discount,
-      total,
-      status: autoAccepted ? 'confirmed' : 'pending',
-      confirmedAt: autoAccepted ? new Date() : null,
-      customerNotes,
-      statusHistory: [
-        {
-          status: 'pending',
-          timestamp: new Date(),
-          changedBy: customerId,
-        },
-        ...(autoAccepted ? [{ status: 'confirmed', timestamp: new Date(), changedBy: 'system' }] : []),
-      ],
-    });
+    // Only delivery orders take a place in a delivery time
+    const slotId = deliveryType === 'delivery' ? deliverySlotId || null : null;
 
-    // Reserve delivery slot
-    if (deliverySlotId) {
-      const slot = await DeliverySlot.findByPk(deliverySlotId);
-      slot.currentOrders += 1;
-      await slot.save();
-    }
+    // The checks that depend on other orders, and creating this one, happen in one
+    // transaction with row locks, so orders placed at the same moment queue up
+    // instead of all passing the check.
+    const order = await sequelize.transaction(async (transaction) => {
+      if (dailyLimited) {
+        // Lock the customer: their next order waits until this one is saved, so the
+        // two can't both fit under a daily limit
+        await User.findByPk(customerId, { attributes: ['id'], transaction, lock: transaction.LOCK.UPDATE });
+        // The menu is one day's food, so "a day" counts this customer's active orders from it
+        const earlier = await Order.findAll({
+          where: { customerId, menuId, status: { [Op.ne]: 'cancelled' } },
+          attributes: ['items'],
+          transaction,
+        });
+        assertWithinLimits(menu.items, requested, quantitiesByItem(earlier.flatMap((o) => o.items || [])));
+      }
+
+      if (slotId) {
+        // Lock the delivery time: concurrent orders for its last place take turns
+        const slot = await DeliverySlot.findByPk(slotId, { transaction, lock: transaction.LOCK.UPDATE });
+        if (!slot || slot.menuId !== menuId) throwError('NOT_FOUND', 'Delivery slot not found for this menu', 404);
+        if (slot.currentOrders >= slot.maxOrders) {
+          throwError('SLOT_FULL', 'This delivery slot is full', 409);
+        }
+        await slot.increment('currentOrders', { transaction });
+      }
+
+      return Order.create({
+        customerId,
+        restaurantId,
+        menuId,
+        items: orderItems,
+        deliveryType,
+        deliverySlotId: slotId,
+        deliveryAddress: deliveryType === 'delivery' ? deliveryAddress : null,
+        paymentMethod,
+        paymentStatus: 'pending',
+        collectionStatus: paymentMethod === 'cod' ? 'awaiting' : null,
+        subtotal,
+        tax,
+        deliveryFee,
+        discount,
+        total,
+        status: autoAccepted ? 'confirmed' : 'pending',
+        confirmedAt: autoAccepted ? new Date() : null,
+        customerNotes,
+        statusHistory: [
+          {
+            status: 'pending',
+            timestamp: new Date(),
+            changedBy: customerId,
+          },
+          ...(autoAccepted ? [{ status: 'confirmed', timestamp: new Date(), changedBy: 'system' }] : []),
+        ],
+      }, { transaction });
+    });
 
     return order;
   } catch (error) {
@@ -499,40 +508,46 @@ const recordRestaurantPayment = async (orderId, userId, { collection, note }) =>
 // 11. Cancel order
 const cancelOrder = async (orderId, userId, role, reason = '') => {
   try {
-    const order = await Order.findByPk(orderId);
-    if (!order) throwError('NOT_FOUND', 'Order not found', 404);
+    return await sequelize.transaction(async (transaction) => {
+      // Locked so two cancels of one order can't both give its delivery place back
+      const order = await Order.findByPk(orderId, { transaction, lock: transaction.LOCK.UPDATE });
+      if (!order) throwError('NOT_FOUND', 'Order not found', 404);
 
-    // Customer can only cancel if pending/confirmed
-    if (role === 'customer') {
-      if (order.customerId !== userId) {
-        throwError('FORBIDDEN', 'You do not own this order', 403);
+      // Customer can only cancel if pending/confirmed
+      if (role === 'customer') {
+        if (order.customerId !== userId) {
+          throwError('FORBIDDEN', 'You do not own this order', 403);
+        }
+        // An already cancelled order gets ALREADY_CANCELLED below
+        if (!['pending', 'confirmed', 'cancelled'].includes(order.status)) {
+          throwError('INVALID_STATUS', `Cannot cancel order with status: ${order.status}`, 400);
+        }
+      } else if (role === 'restaurant_admin') {
+        if (!(await ownsOrderRestaurant(order, userId))) {
+          throwError('FORBIDDEN', 'You do not own this order', 403);
+        }
+      } else if (role !== 'system_admin') {
+        throwError('FORBIDDEN', 'You cannot cancel this order', 403);
       }
-      if (order.status !== 'pending' && order.status !== 'confirmed') {
-        throwError('INVALID_STATUS', `Cannot cancel order with status: ${order.status}`, 400);
-      }
-    } else if (role === 'restaurant_admin') {
-      if (!(await ownsOrderRestaurant(order, userId))) {
-        throwError('FORBIDDEN', 'You do not own this order', 403);
-      }
-    } else if (role !== 'system_admin') {
-      throwError('FORBIDDEN', 'You cannot cancel this order', 403);
-    }
+      if (order.status === 'cancelled') throwError('ALREADY_CANCELLED', 'This order is already cancelled', 409);
 
-    // Release delivery slot
-    if (order.deliverySlotId) {
-      const slot = await DeliverySlot.findByPk(order.deliverySlotId);
-      if (slot && slot.currentOrders > 0) {
-        slot.currentOrders -= 1;
-        await slot.save();
+      // Give the place in the delivery time back, in one statement so concurrent
+      // changes to the count aren't lost
+      if (order.deliverySlotId) {
+        await DeliverySlot.decrement('currentOrders', {
+          by: 1,
+          where: { id: order.deliverySlotId, currentOrders: { [Op.gt]: 0 } },
+          transaction,
+        });
       }
-    }
 
-    order.status = 'cancelled';
-    order.cancellationReason = reason;
-    addStatusHistory(order, 'cancelled', userId);
+      order.status = 'cancelled';
+      order.cancellationReason = reason;
+      addStatusHistory(order, 'cancelled', userId);
 
-    await order.save();
-    return order;
+      await order.save({ transaction });
+      return order;
+    });
   } catch (error) {
     if (error.code) throw error;
     throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };

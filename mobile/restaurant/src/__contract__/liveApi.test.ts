@@ -228,6 +228,44 @@ describeLive('restaurant app ↔ live backend', () => {
     expect(cleared.items.find((i) => i.id === itemIds[0])?.maxPerOrder).toBeNull();
   });
 
+  test('orders sent at the same moment: a delivery time fills exactly, and a daily limit holds', async () => {
+    const tryOrder = (body: Record<string, unknown>) =>
+      http.post(
+        '/orders',
+        { restaurantId, menuId, items: [{ menuItemId: itemIds[0], quantity: 1 }], paymentMethod: 'cod', ...body },
+        { ...customerAuth, validateStatus: () => true }
+      );
+
+    // Two places, six orders at once
+    const slot = await call(d(e.addSlot.initiate({ menuId, startTime: '20:00', endTime: '20:30', maxOrders: 2 })));
+    const rush = await Promise.all(
+      Array.from({ length: 6 }, () => tryOrder({ deliveryType: 'delivery', deliverySlotId: slot.id, deliveryAddress: 'Rush Lane' }))
+    );
+    expect(rush.filter((r) => r.status === 201)).toHaveLength(2);
+    expect(rush.filter((r) => r.status !== 201).map((r) => r.data.code)).toEqual(Array(4).fill('SLOT_FULL'));
+    const slots = await call(d(e.getMenuSlots.initiate(menuId, { forceRefetch: true })));
+    expect(slots.find((s) => s.id === slot.id)?.currentOrders).toBe(2);
+
+    // Three cancels of one order at once give its place back once
+    const first = rush.find((r) => r.status === 201)!.data.data;
+    const cancels = await Promise.all(
+      Array.from({ length: 3 }, () =>
+        http.post(`/orders/${first.id}/cancel`, { reason: 'Contract test' }, { ...customerAuth, validateStatus: () => true })
+      )
+    );
+    expect(cancels.map((r) => r.status).sort()).toEqual([200, 409, 409]);
+    const after = await call(d(e.getMenuSlots.initiate(menuId, { forceRefetch: true })));
+    expect(after.find((s) => s.id === slot.id)?.currentOrders).toBe(1);
+
+    // A limit of two a day, with one order still active from above: five orders at once, one gets through
+    await call(d(e.updateMenuItem.initiate({ menuId, itemId: itemIds[0], changes: { maxPerDay: 2 } })));
+    const limited = await Promise.all(Array.from({ length: 5 }, () => tryOrder({ deliveryType: 'pickup' })));
+    expect(limited.filter((r) => r.status === 201)).toHaveLength(1);
+    expect(limited.filter((r) => r.status !== 201).map((r) => r.data.code)).toEqual(Array(4).fill('ITEM_LIMIT_PER_DAY'));
+
+    await call(d(e.updateMenuItem.initiate({ menuId, itemId: itemIds[0], changes: { maxPerDay: null } })));
+  });
+
   test('takes a delivery order from new to delivered, seeing who ordered and when', async () => {
     const placed = await placeOrder({
       deliveryType: 'delivery',

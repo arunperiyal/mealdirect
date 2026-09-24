@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import {
   Button,
   Card,
   Chip,
   colors,
+  confirmAction,
   font,
   formatINR,
   LinkRow,
@@ -40,17 +41,15 @@ export default function SettingsScreen() {
         : [restaurant.upiId, maskAccount(restaurant.bankAccountNumber)].filter(Boolean).join(' · ');
 
   const confirmSignOut = () =>
-    Alert.alert('Sign out?', undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign out',
-        style: 'destructive',
-        onPress: async () => {
-          setSigningOut(true);
-          await dispatch(logout());
-        },
+    confirmAction({
+      title: 'Sign out?',
+      confirmText: 'Sign out',
+      destructive: true,
+      onConfirm: async () => {
+        setSigningOut(true);
+        await dispatch(logout());
       },
-    ]);
+    });
 
   return (
     <ScrollView contentContainerStyle={styles.content}>

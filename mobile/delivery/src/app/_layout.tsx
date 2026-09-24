@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Provider } from 'react-redux';
-import { LoadingState } from '@mealdirect/shared';
+import { LoadingState, WebFrame } from '@mealdirect/shared';
 import { store, useAppDispatch, useAppSelector } from '@/store';
 import { bootstrapSession, refreshProfile } from '@/store/authSlice';
 
@@ -40,7 +40,9 @@ export default function RootLayout() {
   return (
     <Provider store={store}>
       <StatusBar style="dark" />
-      <RootNavigator />
+      <WebFrame maxWidth={600}>
+        <RootNavigator />
+      </WebFrame>
     </Provider>
   );
 }

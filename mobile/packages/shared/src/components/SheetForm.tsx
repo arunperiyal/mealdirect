@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, font, radius, spacing } from '../theme';
+import { SHEET_MAX_WIDTH } from './WebFrame';
 import { Button } from './Button';
 import { Banner } from './States';
 
@@ -66,6 +67,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.lg,
     padding: spacing.lg,
     maxHeight: '85%',
+    // Wide browser windows: keep the sheet the width of the app's column
+    width: '100%',
+    maxWidth: SHEET_MAX_WIDTH,
+    alignSelf: 'center',
   },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   close: { color: colors.brand, fontSize: 16, fontWeight: '600' },

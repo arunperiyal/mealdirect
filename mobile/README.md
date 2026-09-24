@@ -45,6 +45,32 @@ code), `main` (`nvim`), and `zsh` (shells in `backend/`, `mobile/` and the repo 
 Keep every app on the same Expo SDK and the same `react` / `react-native` versions. A second copy of React in the
 workspace causes runtime errors. After adding a dependency, check with `npm ls react react-native`.
 
+## Web versions
+
+Every app also runs in a browser (react-native-web), from the same code.
+
+```bash
+cd customer
+npm run web          # dev server; or press w in a running `npx expo start`
+npm run build:web    # static site in dist/
+```
+
+With `./dev-session.sh`, each app's web version is at `http://localhost:<its Metro port>` (8081–8084).
+
+What differs in the browser:
+
+- **Sign-in session** is kept in `localStorage` (phones use SecureStore). Storage is per origin, so host each web
+  app on its own address (e.g. `app.`, `partner.`, `admin.` subdomains); two apps on one origin would share a session.
+- **Confirmations** ("Sign out?", "Mark all ready?") use the browser's dialog, through `confirmAction` in the
+  shared package. Don't call `Alert.alert` with buttons directly: react-native-web shows nothing.
+- **Layout**: each app sits in a centered column on wide screens (customer 720px, partner 900, rider 600,
+  admin 1200). Sheets keep to 640px.
+- **Online payment** loads Razorpay Checkout into the page (`RazorpayCheckout.web.tsx`) instead of a WebView.
+- **API address**: `EXPO_PUBLIC_API_URL` as for the apps, and the backend must allow the site in `CORS_ORIGINS`
+  (development allows any origin).
+
+The build is a single-page app: the web server must answer unknown paths with `index.html`.
+
 ## Checks
 
 ```bash

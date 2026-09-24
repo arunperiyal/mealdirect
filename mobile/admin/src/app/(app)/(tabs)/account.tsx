@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text } from 'react-native';
-import { Button, Card, font, spacing } from '@mealdirect/shared';
+import { ScrollView, StyleSheet, Text } from 'react-native';
+import { Button, Card, confirmAction, font, spacing } from '@mealdirect/shared';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { logout } from '@/store/authSlice';
 
@@ -10,17 +10,15 @@ export default function AccountScreen() {
   const [signingOut, setSigningOut] = useState(false);
 
   const confirmSignOut = () =>
-    Alert.alert('Sign out?', undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign out',
-        style: 'destructive',
-        onPress: async () => {
-          setSigningOut(true);
-          await dispatch(logout());
-        },
+    confirmAction({
+      title: 'Sign out?',
+      confirmText: 'Sign out',
+      destructive: true,
+      onConfirm: async () => {
+        setSigningOut(true);
+        await dispatch(logout());
       },
-    ]);
+    });
 
   return (
     <ScrollView contentContainerStyle={styles.content}>

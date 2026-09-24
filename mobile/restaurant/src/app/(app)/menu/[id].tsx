@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import {
   Banner,
   Button,
   Card,
   colors,
-  type DeliverySlot,
+  confirmAction,
   errorMessage,
   ErrorState,
   font,
@@ -14,11 +14,12 @@ import {
   formatTime,
   LoadingState,
   MAX_ITEM_QUANTITY,
-  type Menu,
-  type MenuItem,
   SheetForm,
   spacing,
   TextField,
+  type DeliverySlot,
+  type Menu,
+  type MenuItem,
 } from '@mealdirect/shared';
 import { dayLabel, isBefore, isValidTime, toHHmm } from '@/lib/time';
 import { useRestaurant } from '@/lib/useRestaurant';
@@ -86,21 +87,21 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
   };
 
   const close = () =>
-    Alert.alert('Stop taking orders?', 'Customers won’t be able to order from this menu. You can’t reopen it.', [
-      { text: 'Keep open', style: 'cancel' },
-      {
-        text: 'Close menu',
-        style: 'destructive',
-        onPress: async () => {
-          setError(null);
-          try {
-            await setMenuStatus({ id: menu.id, action: 'close' }).unwrap();
-          } catch (e) {
-            setError(errorMessage(e));
-          }
-        },
+    confirmAction({
+      title: 'Stop taking orders?',
+      message: 'Customers won’t be able to order from this menu. You can’t reopen it.',
+      confirmText: 'Close menu',
+      cancelText: 'Keep open',
+      destructive: true,
+      onConfirm: async () => {
+        setError(null);
+        try {
+          await setMenuStatus({ id: menu.id, action: 'close' }).unwrap();
+        } catch (e) {
+          setError(errorMessage(e));
+        }
       },
-    ]);
+    });
 
   const toggleAvailable = async (menuItem: MenuItem, available: boolean) => {
     setError(null);
@@ -301,21 +302,21 @@ function ItemSheet({ menuId, draft, onClose }: { menuId: string; draft: ItemDraf
   };
 
   const remove = () =>
-    Alert.alert(`Remove ${draft.name}?`, 'Orders already placed keep this dish.', [
-      { text: 'Keep', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await removeItem({ menuId, itemId: draft.id! }).unwrap();
-            onClose();
-          } catch (e) {
-            setError(errorMessage(e));
-          }
-        },
+    confirmAction({
+      title: `Remove ${draft.name}?`,
+      message: 'Orders already placed keep this dish.',
+      confirmText: 'Remove',
+      cancelText: 'Keep',
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          await removeItem({ menuId, itemId: draft.id! }).unwrap();
+          onClose();
+        } catch (e) {
+          setError(errorMessage(e));
+        }
       },
-    ]);
+    });
 
   return (
     <SheetForm

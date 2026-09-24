@@ -5,6 +5,8 @@
   "private": true,
   "scripts": {
     "start": "expo start",
+    "web": "expo start --web",
+    "build:web": "expo export --platform web",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "test": "jest",
@@ -12,6 +14,7 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@expo/metro-runtime": "~57.0.16",
     "@mealdirect/shared": "*",
     "@reduxjs/toolkit": "^2.12.0",
     "axios": "^1.20.0",
@@ -29,6 +32,7 @@
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
+    "react-native-web": "^0.21.2",
     "react-redux": "^9.3.0"
   },
   "devDependencies": {

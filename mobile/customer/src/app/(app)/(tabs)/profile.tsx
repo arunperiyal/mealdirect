@@ -1,13 +1,7 @@
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import {
-  Button,
-  Card,
-  colors,
-  font,
-  spacing,
-} from '@mealdirect/shared';
+import { Button, Card, colors, confirmAction, font, spacing } from '@mealdirect/shared';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { logout } from '@/store/authSlice';
 
@@ -25,17 +19,16 @@ export default function ProfileScreen() {
     .toUpperCase();
 
   const confirmSignOut = () =>
-    Alert.alert('Sign out?', 'Your cart will be cleared.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign out',
-        style: 'destructive',
-        onPress: async () => {
-          setSigningOut(true);
-          await dispatch(logout());
-        },
+    confirmAction({
+      title: 'Sign out?',
+      message: 'Your cart will be cleared.',
+      confirmText: 'Sign out',
+      destructive: true,
+      onConfirm: async () => {
+        setSigningOut(true);
+        await dispatch(logout());
       },
-    ]);
+    });
 
   return (
     <ScrollView contentContainerStyle={styles.content}>

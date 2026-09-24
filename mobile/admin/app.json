@@ -20,7 +20,13 @@
       "package": "com.mealdirect.admin"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "bundler": "metro",
+      "name": "MealDirect Admin",
+      "shortName": "Admin",
+      "themeColor": "#E23744",
+      "backgroundColor": "#ffffff"
     },
     "scheme": "mealdirect-admin",
     "plugins": [

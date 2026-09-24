@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { colors } from '@mealdirect/shared';
+import { colors, webTabBarOptions } from '@mealdirect/shared';
 import { useGetRestaurantsQuery, useGetRidersQuery } from '@/store/serverApi';
 
 export default function TabsLayout() {
@@ -13,6 +13,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        ...webTabBarOptions,
         tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.textMuted,
         headerTitleStyle: { color: colors.text },
@@ -24,7 +25,7 @@ export default function TabsLayout() {
         options={{
           title: 'Overview',
           tabBarIcon: ({ color, size }) => (
-            <SymbolView name={{ ios: 'chart.bar', android: 'bar_chart' }} tintColor={color} size={size} />
+            <SymbolView name={{ ios: 'chart.bar', android: 'bar_chart', web: 'bar_chart' }} tintColor={color} size={size} />
           ),
         }}
       />
@@ -34,7 +35,7 @@ export default function TabsLayout() {
           title: 'Restaurants',
           tabBarBadge: pending > 0 ? pending : undefined,
           tabBarIcon: ({ color, size }) => (
-            <SymbolView name={{ ios: 'storefront', android: 'storefront' }} tintColor={color} size={size} />
+            <SymbolView name={{ ios: 'storefront', android: 'storefront', web: 'storefront' }} tintColor={color} size={size} />
           ),
         }}
       />
@@ -44,7 +45,7 @@ export default function TabsLayout() {
           title: 'Riders',
           tabBarBadge: pendingRiders > 0 ? pendingRiders : undefined,
           tabBarIcon: ({ color, size }) => (
-            <SymbolView name={{ ios: 'bicycle', android: 'pedal_bike' }} tintColor={color} size={size} />
+            <SymbolView name={{ ios: 'bicycle', android: 'pedal_bike', web: 'pedal_bike' }} tintColor={color} size={size} />
           ),
         }}
       />
@@ -53,7 +54,7 @@ export default function TabsLayout() {
         options={{
           title: 'Orders',
           tabBarIcon: ({ color, size }) => (
-            <SymbolView name={{ ios: 'list.bullet.rectangle', android: 'receipt_long' }} tintColor={color} size={size} />
+            <SymbolView name={{ ios: 'list.bullet.rectangle', android: 'receipt_long', web: 'receipt_long' }} tintColor={color} size={size} />
           ),
         }}
       />
@@ -62,7 +63,7 @@ export default function TabsLayout() {
         options={{
           title: 'Account',
           tabBarIcon: ({ color, size }) => (
-            <SymbolView name={{ ios: 'person.crop.circle', android: 'account_circle' }} tintColor={color} size={size} />
+            <SymbolView name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} tintColor={color} size={size} />
           ),
         }}
       />

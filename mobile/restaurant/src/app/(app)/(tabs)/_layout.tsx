@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { colors } from '@mealdirect/shared';
+import { colors, webTabBarOptions } from '@mealdirect/shared';
 import { needsAttention } from '@/lib/orderActions';
 import { useRestaurant } from '@/lib/useRestaurant';
 import { useGetRestaurantOrdersQuery } from '@/store/serverApi';
@@ -13,6 +13,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        ...webTabBarOptions,
         tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.textMuted,
         headerTitleStyle: { color: colors.text },
@@ -25,7 +26,7 @@ export default function TabsLayout() {
           title: 'Today',
           headerTitle: restaurant.name,
           tabBarIcon: ({ color, size }) => (
-            <SymbolView name={{ ios: 'house', android: 'home' }} tintColor={color} size={size} />
+            <SymbolView name={{ ios: 'house', android: 'home', web: 'home' }} tintColor={color} size={size} />
           ),
         }}
       />
@@ -35,7 +36,7 @@ export default function TabsLayout() {
           title: 'Orders',
           tabBarBadge: newOrders > 0 ? newOrders : undefined,
           tabBarIcon: ({ color, size }) => (
-            <SymbolView name={{ ios: 'list.bullet.rectangle', android: 'receipt_long' }} tintColor={color} size={size} />
+            <SymbolView name={{ ios: 'list.bullet.rectangle', android: 'receipt_long', web: 'receipt_long' }} tintColor={color} size={size} />
           ),
         }}
       />
@@ -44,7 +45,7 @@ export default function TabsLayout() {
         options={{
           title: 'Kitchen',
           tabBarIcon: ({ color, size }) => (
-            <SymbolView name={{ ios: 'frying.pan', android: 'skillet' }} tintColor={color} size={size} />
+            <SymbolView name={{ ios: 'frying.pan', android: 'skillet', web: 'skillet' }} tintColor={color} size={size} />
           ),
         }}
       />
@@ -53,7 +54,7 @@ export default function TabsLayout() {
         options={{
           title: 'Menus',
           tabBarIcon: ({ color, size }) => (
-            <SymbolView name={{ ios: 'menucard', android: 'restaurant_menu' }} tintColor={color} size={size} />
+            <SymbolView name={{ ios: 'menucard', android: 'restaurant_menu', web: 'restaurant_menu' }} tintColor={color} size={size} />
           ),
         }}
       />
@@ -62,7 +63,7 @@ export default function TabsLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color, size }) => (
-            <SymbolView name={{ ios: 'gearshape', android: 'settings' }} tintColor={color} size={size} />
+            <SymbolView name={{ ios: 'gearshape', android: 'settings', web: 'settings' }} tintColor={color} size={size} />
           ),
         }}
       />

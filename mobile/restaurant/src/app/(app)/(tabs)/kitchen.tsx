@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useIsFocused } from 'expo-router';
 import {
   addDays,
@@ -8,6 +8,7 @@ import {
   Card,
   Chip,
   colors,
+  confirmAction,
   EmptyState,
   errorMessage,
   ErrorState,
@@ -132,10 +133,12 @@ function GroupCard({
   };
 
   const confirmReady = () =>
-    Alert.alert(`Mark ${counts.accepted} ready?`, `${title}: every accepted order becomes ready.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Mark ready', onPress: () => run('ready') },
-    ]);
+    confirmAction({
+      title: `Mark ${counts.accepted} ready?`,
+      message: `${title}: every accepted order becomes ready.`,
+      confirmText: 'Mark ready',
+      onConfirm: () => run('ready'),
+    });
 
   return (
     <Card title={title}>

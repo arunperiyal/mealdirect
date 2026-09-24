@@ -6,6 +6,7 @@ export * as session from './api/tokens';
 export * from './api/types';
 
 // Helpers
+export * from './lib/confirm';
 export * from './lib/cutoff';
 export * from './lib/dates';
 export * from './lib/errors';
@@ -28,6 +29,7 @@ export { PayoutFields } from './components/PayoutFields';
 export { PriceSummary } from './components/PriceSummary';
 export { Banner, EmptyState, ErrorState, LoadingState } from './components/States';
 export { FormScreen } from './components/FormScreen';
+export { SHEET_MAX_WIDTH, WebFrame, webTabBarOptions } from './components/WebFrame';
 export { LinkRow } from './components/LinkRow';
 export { SheetForm } from './components/SheetForm';
 export { StatTile } from './components/StatTile';

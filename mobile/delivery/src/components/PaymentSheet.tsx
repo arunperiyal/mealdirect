@@ -9,6 +9,7 @@ import {
   font,
   formatINR,
   radius,
+  SHEET_MAX_WIDTH,
   spacing,
   TextField,
   upiPayUrl,
@@ -128,6 +129,10 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radius.lg,
     padding: spacing.lg,
     maxHeight: '90%',
+    // Wide browser windows: keep the sheet the width of the app's column
+    width: '100%',
+    maxWidth: SHEET_MAX_WIDTH,
+    alignSelf: 'center',
   },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   link: { color: colors.brand, fontSize: 16, fontWeight: '600' },

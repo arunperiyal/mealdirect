@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import {
   Banner,
@@ -8,6 +8,7 @@ import {
   canMarkPickedUp,
   Card,
   colors,
+  confirmAction,
   errorMessage,
   ErrorState,
   font,
@@ -16,13 +17,13 @@ import {
   isActive,
   LoadingState,
   needsPayment,
+  paymentLabel,
   PriceSummary,
+  riderName,
   spacing,
   STATUS_LABELS,
   StatusTimeline,
   type Order,
-  riderName,
-  paymentLabel,
 } from '@mealdirect/shared';
 import { ORDER_POLL_MS } from '@/config';
 import { RazorpayCheckout } from '@/payments/RazorpayCheckout';
@@ -99,27 +100,23 @@ function OrderDetails({
   }, [autoPay, unpaid, onlineAvailable, payment]);
 
   const confirmCancel = () => {
-    Alert.alert(
-      'Cancel this order?',
-      paidOnline
+    confirmAction({
+      title: 'Cancel this order?',
+      message: paidOnline
         ? "You've already paid for this order. Refunds are processed by our team and can take a few days."
         : 'The restaurant will be notified.',
-      [
-        { text: 'Keep order', style: 'cancel' },
-        {
-          text: 'Cancel order',
-          style: 'destructive',
-          onPress: async () => {
-            setActionError(null);
-            try {
-              await cancelOrder({ id: order.id, reason: 'Cancelled by customer' }).unwrap();
-            } catch (e) {
-              setActionError(errorMessage(e));
-            }
-          },
-        },
-      ]
-    );
+      confirmText: 'Cancel order',
+      cancelText: 'Keep order',
+      destructive: true,
+      onConfirm: async () => {
+        setActionError(null);
+        try {
+          await cancelOrder({ id: order.id, reason: 'Cancelled by customer' }).unwrap();
+        } catch (e) {
+          setActionError(errorMessage(e));
+        }
+      },
+    });
   };
 
   const onPickedUp = async () => {

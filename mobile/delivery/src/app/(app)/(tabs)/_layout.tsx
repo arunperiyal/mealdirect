@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { colors } from '@mealdirect/shared';
+import { colors, webTabBarOptions } from '@mealdirect/shared';
 import { isActiveDelivery } from '@/lib/riderSteps';
 import { useGetMyDeliveriesQuery } from '@/store/serverApi';
 
@@ -11,6 +11,7 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
+        ...webTabBarOptions,
         tabBarActiveTintColor: colors.brand,
         tabBarInactiveTintColor: colors.textMuted,
         headerTitleStyle: { color: colors.text },
@@ -23,7 +24,7 @@ export default function TabsLayout() {
           title: 'Available',
           headerTitle: 'Available deliveries',
           tabBarIcon: ({ color, size }) => (
-            <SymbolView name={{ ios: 'tray.full', android: 'inbox' }} tintColor={color} size={size} />
+            <SymbolView name={{ ios: 'tray.full', android: 'inbox', web: 'inbox' }} tintColor={color} size={size} />
           ),
         }}
       />
@@ -33,7 +34,7 @@ export default function TabsLayout() {
           title: 'My deliveries',
           tabBarBadge: active > 0 ? active : undefined,
           tabBarIcon: ({ color, size }) => (
-            <SymbolView name={{ ios: 'bicycle', android: 'pedal_bike' }} tintColor={color} size={size} />
+            <SymbolView name={{ ios: 'bicycle', android: 'pedal_bike', web: 'pedal_bike' }} tintColor={color} size={size} />
           ),
         }}
       />
@@ -42,7 +43,7 @@ export default function TabsLayout() {
         options={{
           title: 'Account',
           tabBarIcon: ({ color, size }) => (
-            <SymbolView name={{ ios: 'person.crop.circle', android: 'account_circle' }} tintColor={color} size={size} />
+            <SymbolView name={{ ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' }} tintColor={color} size={size} />
           ),
         }}
       />

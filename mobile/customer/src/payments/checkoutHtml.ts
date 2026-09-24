@@ -28,25 +28,26 @@ const toScriptJson = (value: unknown) =>
     .replace(/\u2028/g, '\\u2028')
     .replace(/\u2029/g, '\\u2029');
 
-export const buildCheckoutHtml = ({
-  paymentOrder,
+// Razorpay Checkout options, for the app's WebView page and for the web app
+export const checkoutOptions = (
+  { paymentOrder, description, prefill, themeColor }: CheckoutOptions,
+  { inWebView }: { inWebView: boolean }
+) => ({
+  key: paymentOrder.keyId,
+  amount: paymentOrder.amount,
+  currency: paymentOrder.currency,
+  order_id: paymentOrder.razorpayOrderId,
+  name: 'MealDirect',
   description,
   prefill,
-  themeColor,
-}: CheckoutOptions) => {
-  const options = {
-    key: paymentOrder.keyId,
-    amount: paymentOrder.amount,
-    currency: paymentOrder.currency,
-    order_id: paymentOrder.razorpayOrderId,
-    name: 'MealDirect',
-    description,
-    prefill,
-    theme: { color: themeColor },
-    retry: { enabled: true },
-    // Without this Razorpay hides UPI apps (GPay, PhonePe, ...) inside an Android WebView
-    webview_intent: true,
-  };
+  theme: { color: themeColor },
+  retry: { enabled: true },
+  // Without this Razorpay hides UPI apps (GPay, PhonePe, ...) inside an Android WebView
+  ...(inWebView ? { webview_intent: true } : {}),
+});
+
+export const buildCheckoutHtml = (checkout: CheckoutOptions) => {
+  const options = checkoutOptions(checkout, { inWebView: true });
 
   return `<!DOCTYPE html>
 <html>

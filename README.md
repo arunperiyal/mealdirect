@@ -13,7 +13,8 @@ claim deliveries from a shared queue.
 | [`mobile/admin/`](mobile/admin/README.md) | MealDirect Admin for staff: restaurant and rider review, detail changes, cash settlement, orders, analytics |
 | [`mobile/packages/shared/`](mobile/README.md) | Code the apps share: API client, session, types, helpers, theme, components |
 
-The apps are built with Expo (React Native) and run in Expo Go during development.
+The apps are built with Expo (React Native): they run on Android and iOS, and in a browser from the same code (see
+[mobile/README.md](mobile/README.md#web-versions)). They run in Expo Go during development.
 
 ## Getting started
 

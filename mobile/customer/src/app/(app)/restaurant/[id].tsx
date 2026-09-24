@@ -1,21 +1,22 @@
 import { useMemo, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import {
   addDays,
   Button,
-  dishAllowance,
   Chip,
   colors,
+  confirmAction,
+  dishAllowance,
   EmptyState,
   errorMessage,
   ErrorState,
   font,
   formatINR,
-  orderingState,
   LoadingState,
   localDateString,
   orderedFromMenu,
+  orderingState,
   radius,
   spacing,
   type Menu,
@@ -165,16 +166,15 @@ function MenuItemRow({
     };
     if (cart.menuId && cart.menuId !== menu.id) {
       const sameRestaurant = cart.restaurantId === restaurant.id;
-      Alert.alert(
-        'Start a new cart?',
-        sameRestaurant
+      confirmAction({
+        title: 'Start a new cart?',
+        message: sameRestaurant
           ? `Your cart has items from a different day's menu. An order can only include one menu.`
           : `Your cart has items from ${cart.restaurantName}. Adding this will clear it.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Start new cart', style: 'destructive', onPress: () => dispatch(addItem(payload)) },
-        ]
-      );
+        confirmText: 'Start new cart',
+        destructive: true,
+        onConfirm: () => dispatch(addItem(payload)),
+      });
       return;
     }
     dispatch(addItem(payload));

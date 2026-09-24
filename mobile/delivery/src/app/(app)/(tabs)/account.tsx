@@ -1,7 +1,17 @@
 import { useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text } from 'react-native';
 import { router } from 'expo-router';
-import { Button, Card, colors, font, LinkRow, maskAccount, spacing, type ChangeRequest } from '@mealdirect/shared';
+import {
+  Button,
+  Card,
+  colors,
+  confirmAction,
+  font,
+  LinkRow,
+  maskAccount,
+  spacing,
+  type ChangeRequest,
+} from '@mealdirect/shared';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { logout } from '@/store/authSlice';
 import { useGetProfileQuery } from '@/store/serverApi';
@@ -23,17 +33,15 @@ export default function AccountScreen() {
   const me = profile ?? user;
 
   const confirmSignOut = () =>
-    Alert.alert('Sign out?', undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign out',
-        style: 'destructive',
-        onPress: async () => {
-          setSigningOut(true);
-          await dispatch(logout());
-        },
+    confirmAction({
+      title: 'Sign out?',
+      confirmText: 'Sign out',
+      destructive: true,
+      onConfirm: async () => {
+        setSigningOut(true);
+        await dispatch(logout());
       },
-    ]);
+    });
 
   const payout = profile ? [profile.upiId, maskAccount(profile.bankAccountNumber)].filter(Boolean).join(' · ') : '';
 

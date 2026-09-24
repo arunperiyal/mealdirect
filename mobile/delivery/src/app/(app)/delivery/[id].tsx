@@ -1,20 +1,21 @@
 import { useMemo, useState } from 'react';
-import { Alert, Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import {
   Banner,
   Button,
   Card,
   colors,
+  confirmAction,
   customerName,
   errorMessage,
-  paymentLabel,
   ErrorState,
   font,
   formatINR,
   formatTime,
   isActive,
   LoadingState,
+  paymentLabel,
   shortId,
   spacing,
   type Collection,
@@ -85,10 +86,14 @@ function Details({ order, refreshing, onRefresh }: { order: Order; refreshing: b
   };
 
   const confirmRelease = () =>
-    Alert.alert('Give this delivery back?', 'It goes back to the queue for another partner.', [
-      { text: 'Keep it', style: 'cancel' },
-      { text: 'Give back', style: 'destructive', onPress: () => run('release') },
-    ]);
+    confirmAction({
+      title: 'Give this delivery back?',
+      message: 'It goes back to the queue for another partner.',
+      confirmText: 'Give back',
+      cancelText: 'Keep it',
+      destructive: true,
+      onConfirm: () => run('release'),
+    });
 
   const call = (phone: string | null | undefined) => phone && Linking.openURL(`tel:${phone}`);
 

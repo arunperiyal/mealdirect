@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Alert, FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import {
   Banner,
   Button,
   Chip,
   colors,
+  confirmAction,
   EmptyState,
   errorMessage,
   ErrorState,
@@ -46,10 +47,13 @@ export default function RidersScreen() {
   };
 
   const confirmSuspend = (rider: AdminRider) =>
-    Alert.alert(`Suspend ${rider.firstName ?? 'this rider'}?`, 'They can’t accept or update deliveries until approved again.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Suspend', style: 'destructive', onPress: () => change(rider, 'suspend') },
-    ]);
+    confirmAction({
+      title: `Suspend ${rider.firstName ?? 'this rider'}?`,
+      message: 'They can’t accept or update deliveries until approved again.',
+      confirmText: 'Suspend',
+      destructive: true,
+      onConfirm: () => change(rider, 'suspend'),
+    });
 
   return (
     <View style={styles.flex}>

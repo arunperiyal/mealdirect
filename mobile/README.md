@@ -30,7 +30,11 @@ running it again attaches to the session that's already open.
 ```bash
 ./dev-session.sh                       # backend + all four apps
 ./dev-session.sh customer restaurant   # backend + only these apps
+./dev-session.sh --web admin           # ...and open their web versions in the browser
 ```
+
+Each app's pane title shows its web address (`http://localhost:<port>`); without `--web`, open it yourself or
+press `w` in the pane. `./dev-session.sh --help` lists the options.
 
 | App | Metro port |
 | --- | --- |
@@ -55,7 +59,8 @@ npm run web          # dev server; or press w in a running `npx expo start`
 npm run build:web    # static site in dist/
 ```
 
-With `./dev-session.sh`, each app's web version is at `http://localhost:<its Metro port>` (8081–8084).
+With `./dev-session.sh`, each app's web version is at `http://localhost:<its Metro port>` (8081–8084); `--web`
+opens them in the browser.
 
 What differs in the browser:
 

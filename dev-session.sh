@@ -4,8 +4,12 @@
 #
 #   ./dev-session.sh                       # backend + all four apps
 #   ./dev-session.sh customer restaurant   # backend + just these apps
+#   ./dev-session.sh --web admin           # ...and open them in the browser
 #
 # Apps: customer, restaurant (partner), admin, delivery (rider)
+#
+# Each Expo server also serves its app's web version at http://localhost:<port>.
+# Without --web, open that address or press w in the app's pane.
 
 set -euo pipefail
 
@@ -30,6 +34,11 @@ log() {
     echo "[mealdirect] $1"
 }
 
+usage() {
+    # The comment block at the top of this file
+    awk 'NR > 2 && /^#/ { sub(/^# ?/, ""); print; next } NR > 2 { exit }' "${BASH_SOURCE[0]}"
+}
+
 # Attach, or switch when already inside tmux (attaching there would nest sessions)
 attach() {
     if [ -n "${TMUX:-}" ]; then
@@ -38,21 +47,34 @@ attach() {
     exec tmux attach-session -t "$SESSION"
 }
 
-# If session exists → attach
+# Options and which apps to start
+WEB=0
+APPS=()
+for arg in "$@"; do
+    case "$arg" in
+        -w|--web) WEB=1 ;;
+        -h|--help) usage; exit 0 ;;
+        -*) echo "Unknown option: $arg (try --help)" >&2; exit 1 ;;
+        *)
+            if [ -z "${PORTS[$arg]:-}" ]; then
+                echo "Unknown app: $arg (choose from: ${ALL_APPS[*]})" >&2
+                exit 1
+            fi
+            APPS+=("$arg")
+            ;;
+    esac
+done
+[ ${#APPS[@]} -eq 0 ] && APPS=("${ALL_APPS[@]}")
+
+# --web: each Expo server opens its app in the browser once it's ready
+EXPO_FLAGS=""
+[ "$WEB" -eq 1 ] && EXPO_FLAGS=" --web"
+
+# If session exists → attach (options only apply to a new session)
 if tmux has-session -t "$SESSION" 2>/dev/null; then
     log "Session exists. Attaching..."
     attach
 fi
-
-# Which apps to start
-APPS=("$@")
-[ ${#APPS[@]} -eq 0 ] && APPS=("${ALL_APPS[@]}")
-for app in "${APPS[@]}"; do
-    if [ -z "${PORTS[$app]:-}" ]; then
-        echo "Unknown app: $app (choose from: ${ALL_APPS[*]})" >&2
-        exit 1
-    fi
-done
 
 # The dev database runs in Docker; start it if it's stopped
 if command -v docker >/dev/null 2>&1 && docker container inspect "$DB_CONTAINER" >/dev/null 2>&1; then
@@ -84,8 +106,9 @@ for app in "${APPS[@]}"; do
         PANE_APP=$(tmux split-window -v -P -F '#{pane_id}' -t "$PANE_PREV" -c "$MOBILE/$app")
     fi
     log "$app pane: $PANE_APP (port ${PORTS[$app]})"
-    tmux select-pane -t "$PANE_APP" -T "$app"
-    tmux send-keys -t "$PANE_APP" "npx expo start --port ${PORTS[$app]}" C-m
+    # The pane title shows where the web version is
+    tmux select-pane -t "$PANE_APP" -T "$app: http://localhost:${PORTS[$app]}"
+    tmux send-keys -t "$PANE_APP" "npx expo start --port ${PORTS[$app]}$EXPO_FLAGS" C-m
     PANE_PREV=$PANE_APP
 done
 
@@ -119,6 +142,11 @@ tmux send-keys -t "$PANE_Z3" "git status -sb" C-m
 # Back to servers window, backend pane
 tmux select-window -t "$SESSION:servers"
 tmux select-pane -t "$PANE_API"
+
+log "Web versions (open once Metro is ready, or press w in an app's pane):"
+for app in "${APPS[@]}"; do
+    log "  $app: http://localhost:${PORTS[$app]}"
+done
 
 log "Setup complete. Attaching..."
 attach

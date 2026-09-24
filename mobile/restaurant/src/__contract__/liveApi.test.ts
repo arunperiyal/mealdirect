@@ -50,7 +50,7 @@ jest.mock('@mealdirect/shared', () => {
 });
 
 /* eslint-disable import/first */
-import { localDateString } from '@mealdirect/shared';
+import { addDays, localDateString } from '@mealdirect/shared';
 import { api } from '@/api';
 import { makeStore } from '@/store';
 import { register } from '@/store/authSlice';
@@ -209,6 +209,27 @@ describeLive('restaurant app ↔ live backend', () => {
     await call(d(e.removeMenuItem.initiate({ menuId, itemId: extraId })));
     menu = await call(d(e.getMenu.initiate(menuId, { forceRefetch: true })));
     expect(menu.items.map((i) => i.id)).toEqual(itemIds);
+  });
+
+  test('My dishes: import from menus, add one, and build a menu from the list', async () => {
+    const imported = await call(d(e.importDishes.initiate(restaurantId)));
+    expect(imported.dishes.map((dish) => dish.name).sort()).toEqual(['Curd Rice', 'South Indian Meals']);
+
+    const payasam = await call(d(e.createDish.initiate({ restaurantId, name: 'Payasam', price: 40, maxPerDay: 2 })));
+    const dup = await d(e.createDish.initiate({ restaurantId, name: 'payasam', price: 10 }));
+    expect('error' in dup && dup.error).toMatchObject({ status: 409, code: 'DISH_EXISTS' });
+
+    const tomorrow = localDateString(addDays(new Date(), 1));
+    const menu = await call(d(e.createMenu.initiate({ restaurantId, date: tomorrow })));
+    const meals = imported.dishes.find((dish) => dish.name === 'South Indian Meals')!;
+    const built = await call(d(e.addDishesToMenu.initiate({ menuId: menu.id, dishIds: [meals.id, payasam.id] })));
+    expect(built.items.map((i) => [i.dishId, i.name, i.price, i.maxPerDay ?? null])).toEqual([
+      [meals.id, 'South Indian Meals', 120, null],
+      [payasam.id, 'Payasam', 40, 2],
+    ]);
+
+    const twice = await d(e.addDishesToMenu.initiate({ menuId: menu.id, dishIds: [payasam.id] }));
+    expect('error' in twice && twice.error).toMatchObject({ status: 409, code: 'DISH_ALREADY_ON_MENU' });
   });
 
   test('dish limits: a customer can’t order more than the restaurant allows', async () => {

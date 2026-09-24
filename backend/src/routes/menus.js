@@ -271,8 +271,14 @@ router.post(
   [
     param('id').isUUID(),
     body('items').isArray({ min: 1 }),
-    body('items.*.name').isString().trim().notEmpty().withMessage('Each item needs a name'),
-    body('items.*.price').isFloat({ min: 0 }).withMessage('Each item needs a price of 0 or more'),
+    // Each item is a dish from the restaurant's list ({ dishId, price? }) or a one-off { name, price, ... }
+    body('items.*').custom((item) => {
+      if (item && typeof item === 'object' && (item.dishId || (item.name && item.price !== undefined))) return true;
+      throw new Error('Each item needs a dishId, or a name and price');
+    }),
+    body('items.*.dishId').optional().isUUID(),
+    body('items.*.name').optional().isString().trim().notEmpty().withMessage('Each item needs a name'),
+    body('items.*.price').optional().isFloat({ min: 0 }).withMessage('Each item needs a price of 0 or more'),
     body('items.*.description').optional().isString().trim(),
     body('items.*.available').optional().isBoolean(),
     // Optional limits per customer; null or missing means no limit

@@ -133,6 +133,13 @@ All responses are JSON: `{ "success": true, "data": ... }` or
   approval), `202` when sent for review. `GET /api/restaurants/my-restaurants` includes `changeRequests.payout`.
 - `PUT /api/restaurants/admin/:id/approve`, `PUT /api/restaurants/admin/:id/reject`: admin review
 
+### My dishes (restaurant owners)
+- `GET /api/dishes?restaurantId=` (`&archived=true` for removed ones), `POST /api/dishes`, `PUT /api/dishes/:id`
+- `DELETE /api/dishes/:id` removes a dish from the list (hidden, not deleted); `POST /api/dishes/:id/restore`
+- `POST /api/dishes/import` `{ restaurantId }`: add the dishes already on the restaurant's menus
+- Menus take dishes from the list: `POST /api/menus/:id/items` with `{ items: [{ dishId, price? }] }`. The menu keeps
+  its own copy, so later edits to the dish don't change it.
+
 ### Menus
 - `GET /api/menus?restaurantId=&date=` (or `from`/`to`), `GET /api/menus/:id`
 - `POST /api/menus`, `PUT /api/menus/:id`, `POST /api/menus/:id/publish`, `POST /api/menus/:id/close`

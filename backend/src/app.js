@@ -56,6 +56,7 @@ app.get('/api/config', (req, res) => {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/restaurants', require('./routes/restaurants'));
 app.use('/api/menus', require('./routes/menus'));
+app.use('/api/dishes', require('./routes/dishes'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/admin', require('./routes/admin'));

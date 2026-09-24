@@ -45,7 +45,7 @@ const Menu = sequelize.define(
       type: DataTypes.JSON,
       defaultValue: [],
       allowNull: false,
-      comment: 'Array of { id, name, description, price, imageUrl, available, maxPerOrder, maxPerDay }',
+      comment: 'Array of { id, dishId, name, description, price, imageUrl, available, maxPerOrder, maxPerDay }',
     },
     deliverySlotIds: {
       type: DataTypes.JSON,

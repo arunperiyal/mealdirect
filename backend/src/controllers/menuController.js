@@ -1,5 +1,6 @@
 const { Menu, DeliverySlot, Restaurant } = require('../models');
 const { assertLimitsConsistent } = require('../lib/itemLimits');
+const { menuItemsFromDishes } = require('./dishController');
 const { v4: uuidv4 } = require('uuid');
 
 const throwError = (code, message, statusCode = 400) => {
@@ -201,15 +202,31 @@ const addMenuItems = async (menuId, userId, items) => {
       throwError('VALIDATION_ERROR', 'Items array is required and must not be empty');
     }
 
+    // Items are either dishes from the restaurant's list ({ dishId, price? }) or
+    // one-off dishes typed in for this menu only
+    const fromList = items.filter((item) => item.dishId);
+    const copies = fromList.length ? await menuItemsFromDishes(menu.restaurantId, fromList) : [];
+    const onMenu = new Set((menu.items || []).map((i) => i.dishId).filter(Boolean));
+    for (const copy of copies) {
+      if (onMenu.has(copy.dishId)) throwError('DISH_ALREADY_ON_MENU', `${copy.name} is already on this menu`, 409);
+      onMenu.add(copy.dishId);
+    }
+
+    let copyIndex = 0;
     const newItems = items.map((item) => ({
-      id: item.id || uuidv4(),
-      name: item.name,
-      description: item.description || '',
-      price: parseFloat(item.price),
+      id: uuidv4(),
+      ...(item.dishId
+        ? copies[copyIndex++]
+        : {
+            dishId: null,
+            name: item.name,
+            description: item.description || '',
+            price: parseFloat(item.price),
+            available: item.available !== false,
+            maxPerOrder: item.maxPerOrder ?? null,
+            maxPerDay: item.maxPerDay ?? null,
+          }),
       imageUrl: item.imageUrl || '',
-      available: item.available !== false,
-      maxPerOrder: item.maxPerOrder ?? null,
-      maxPerDay: item.maxPerDay ?? null,
     }));
     newItems.forEach(assertLimitsConsistent);
 

@@ -10,6 +10,7 @@ import {
   ErrorState,
   font,
   formatTime,
+  LinkRow,
   LoadingState,
   localDateString,
   radius,
@@ -57,6 +58,13 @@ export default function MenusScreen() {
         stickySectionHeadersEnabled={false}
         refreshControl={
           <RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={colors.brand} />
+        }
+        ListHeaderComponent={
+          <LinkRow
+            title="My dishes"
+            detail="Add dishes once, then pick them for each menu"
+            onPress={() => router.push('/dishes')}
+          />
         }
         renderSectionHeader={({ section }) => <Text style={[font.heading, styles.section]}>{section.title}</Text>}
         renderSectionFooter={({ section }) =>

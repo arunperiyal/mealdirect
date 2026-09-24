@@ -7,6 +7,7 @@ import {
   type Order,
   type ChangeResult,
   type Collection,
+  type Dish,
   type KitchenDay,
   type OwnedRestaurant,
   type PayoutDetails,
@@ -52,6 +53,9 @@ export interface BulkInput {
 export type ItemInput = Pick<MenuItem, 'name' | 'price'> &
   Partial<Pick<MenuItem, 'description' | 'available' | 'maxPerOrder' | 'maxPerDay'>>;
 
+export type DishInput = Pick<MenuItem, 'name' | 'price'> &
+  Partial<Pick<MenuItem, 'description' | 'maxPerOrder' | 'maxPerDay'>>;
+
 export interface SlotInput {
   startTime: string; // HH:mm
   endTime: string;
@@ -61,7 +65,7 @@ export interface SlotInput {
 export const serverApi = createApi({
   reducerPath: 'serverApi',
   baseQuery: createAxiosBaseQuery(api),
-  tagTypes: ['Restaurant', 'Order', 'Menu', 'Slot'],
+  tagTypes: ['Restaurant', 'Order', 'Menu', 'Slot', 'Dish'],
   endpoints: (build) => ({
     // Restaurants
     getMyRestaurants: build.query<OwnedRestaurant[], void>({
@@ -198,6 +202,44 @@ export const serverApi = createApi({
       ],
     }),
 
+    // My dishes: the restaurant's own list, to build menus from
+    getDishes: build.query<Dish[], { restaurantId: string; archived?: boolean }>({
+      query: ({ restaurantId, archived }) => ({ url: '/dishes', params: { restaurantId, ...(archived ? { archived } : {}) } }),
+      providesTags: ['Dish'],
+    }),
+    createDish: build.mutation<Dish, { restaurantId: string } & DishInput>({
+      query: (data) => ({ url: '/dishes', method: 'POST', data }),
+      invalidatesTags: ['Dish'],
+    }),
+    updateDish: build.mutation<Dish, { id: string } & Partial<DishInput>>({
+      query: ({ id, ...data }) => ({ url: `/dishes/${id}`, method: 'PUT', data }),
+      invalidatesTags: ['Dish'],
+    }),
+    removeDish: build.mutation<Dish, string>({
+      query: (id) => ({ url: `/dishes/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Dish'],
+    }),
+    restoreDish: build.mutation<Dish, string>({
+      query: (id) => ({ url: `/dishes/${id}/restore`, method: 'POST' }),
+      invalidatesTags: ['Dish'],
+    }),
+    importDishes: build.mutation<{ imported: number; dishes: Dish[] }, string>({
+      query: (restaurantId) => ({ url: '/dishes/import', method: 'POST', data: { restaurantId } }),
+      invalidatesTags: ['Dish'],
+    }),
+    // Put dishes from the list on a menu; each gets its own copy there
+    addDishesToMenu: build.mutation<Menu, { menuId: string; dishIds: string[] }>({
+      query: ({ menuId, dishIds }) => ({
+        url: `/menus/${menuId}/items`,
+        method: 'POST',
+        data: { items: dishIds.map((dishId) => ({ dishId })) },
+      }),
+      invalidatesTags: (_m, _e, { menuId }) => [
+        { type: 'Menu', id: menuId },
+        { type: 'Menu', id: 'LIST' },
+      ],
+    }),
+
     // Delivery slots
     getMenuSlots: build.query<DeliverySlot[], string>({
       query: (menuId) => ({ url: `/menus/${menuId}/slots` }),
@@ -240,6 +282,13 @@ export const {
   useAddMenuItemMutation,
   useUpdateMenuItemMutation,
   useRemoveMenuItemMutation,
+  useGetDishesQuery,
+  useCreateDishMutation,
+  useUpdateDishMutation,
+  useRemoveDishMutation,
+  useRestoreDishMutation,
+  useImportDishesMutation,
+  useAddDishesToMenuMutation,
   useGetMenuSlotsQuery,
   useAddSlotMutation,
   useUpdateSlotMutation,

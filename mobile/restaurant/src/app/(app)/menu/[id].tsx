@@ -10,10 +10,8 @@ import {
   errorMessage,
   ErrorState,
   font,
-  formatINR,
   formatTime,
   LoadingState,
-  MAX_ITEM_QUANTITY,
   SheetForm,
   spacing,
   TextField,
@@ -23,9 +21,12 @@ import {
 } from '@mealdirect/shared';
 import { dayLabel, isBefore, isValidTime, toHHmm } from '@/lib/time';
 import { useRestaurant } from '@/lib/useRestaurant';
-import { limitValue, validateLimit, validateMoney } from '@/lib/validation';
+import { DishFields } from '@/components/DishFields';
+import { checkDishDraft, dishDraft, dishSummary, emptyDishDraft, type DishDraft, type DishErrors } from '@/lib/dishForm';
 import {
-  useAddMenuItemMutation,
+  useAddDishesToMenuMutation,
+  useCreateDishMutation,
+  useGetDishesQuery,
   useAddSlotMutation,
   useDeleteSlotMutation,
   useGetMenuQuery,
@@ -36,26 +37,9 @@ import {
   useUpdateSlotMutation,
 } from '@/store/serverApi';
 
-type ItemDraft = {
-  id?: string;
-  name: string;
-  description: string;
-  price: string;
-  available: boolean;
-  maxPerOrder: string; // blank = no limit
-  maxPerDay: string;
-};
+// A dish on this menu, being edited (id set) or created (no id)
+type ItemDraft = DishDraft & { id?: string; available: boolean };
 
-// "₹200 · max 2 per order · 3 a day per person"
-const dishSummary = (item: MenuItem) =>
-  [
-    formatINR(item.price),
-    item.maxPerOrder != null && `max ${item.maxPerOrder} per order`,
-    item.maxPerDay != null && `${item.maxPerDay} a day per person`,
-    !item.available && 'sold out',
-  ]
-    .filter(Boolean)
-    .join(' · ');
 type SlotDraft = { id?: string; startTime: string; endTime: string; maxOrders: string; currentOrders: number };
 
 export default function MenuScreen() {
@@ -73,6 +57,7 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
   const [updateItem] = useUpdateMenuItemMutation();
   const [error, setError] = useState<string | null>(null);
   const [item, setItem] = useState<ItemDraft | null>(null);
+  const [picking, setPicking] = useState(false);
   const [slot, setSlot] = useState<SlotDraft | null>(null);
 
   const soldOut = menu.items.filter((i) => !i.available).length;
@@ -163,17 +148,7 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
                 accessibilityRole="button"
                 accessibilityLabel={`Edit ${menuItem.name}`}
                 style={styles.itemText}
-                onPress={() =>
-                  setItem({
-                    id: menuItem.id,
-                    name: menuItem.name,
-                    description: menuItem.description ?? '',
-                    price: String(menuItem.price),
-                    available: menuItem.available,
-                    maxPerOrder: menuItem.maxPerOrder != null ? String(menuItem.maxPerOrder) : '',
-                    maxPerDay: menuItem.maxPerDay != null ? String(menuItem.maxPerDay) : '',
-                  })
-                }
+                onPress={() => setItem({ id: menuItem.id, ...dishDraft(menuItem), available: menuItem.available })}
               >
                 <Text style={[font.body, !menuItem.available && styles.soldOut]}>{menuItem.name}</Text>
                 <Text style={font.caption}>{dishSummary(menuItem)}</Text>
@@ -186,14 +161,7 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
               />
             </View>
           ))}
-          <Button
-            title="Add dish"
-            variant="secondary"
-            onPress={() =>
-              setItem({ name: '', description: '', price: '', available: true, maxPerOrder: '', maxPerDay: '' })
-            }
-            style={styles.gap}
-          />
+          <Button title="Add dishes" variant="secondary" onPress={() => setPicking(true)} style={styles.gap} />
         </Card>
 
         {restaurant.deliveryEnabled ? (
@@ -205,7 +173,18 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
         )}
       </ScrollView>
 
-      {item && <ItemSheet menuId={menu.id} draft={item} onClose={() => setItem(null)} />}
+      {picking && (
+        <PickDishesSheet
+          menu={menu}
+          restaurantId={restaurant.id}
+          onClose={() => setPicking(false)}
+          onNewDish={() => {
+            setPicking(false);
+            setItem({ ...emptyDishDraft, available: true });
+          }}
+        />
+      )}
+      {item && <ItemSheet menu={menu} restaurantId={restaurant.id} draft={item} onClose={() => setItem(null)} />}
       {slot && <SlotSheet menuId={menu.id} draft={slot} onClose={() => setSlot(null)} />}
     </>
   );
@@ -254,47 +233,39 @@ function SlotsCard({ menuId, onEdit }: { menuId: string; onEdit: (draft: SlotDra
   );
 }
 
-function ItemSheet({ menuId, draft, onClose }: { menuId: string; draft: ItemDraft; onClose: () => void }) {
+// Edit a dish on this menu (this menu only), or create a new dish: it's saved to
+// My dishes and added to this menu
+function ItemSheet({
+  menu,
+  restaurantId,
+  draft,
+  onClose,
+}: {
+  menu: Menu;
+  restaurantId: string;
+  draft: ItemDraft;
+  onClose: () => void;
+}) {
   const [form, setForm] = useState(draft);
-  const [errors, setErrors] = useState<{
-    name?: string | null;
-    price?: string | null;
-    maxPerOrder?: string | null;
-    maxPerDay?: string | null;
-  }>({});
+  const [errors, setErrors] = useState<DishErrors>({});
   const [error, setError] = useState<string | null>(null);
-  const [addItem, adding] = useAddMenuItemMutation();
+  const [createDish, creating] = useCreateDishMutation();
+  const [addDishes, adding] = useAddDishesToMenuMutation();
   const [updateItem, updating] = useUpdateMenuItemMutation();
   const [removeItem] = useRemoveMenuItemMutation();
 
   const submit = async () => {
-    const next = {
-      name: form.name.trim() ? null : 'Enter a name',
-      price: !form.price.trim() ? 'Enter a price' : validateMoney(form.price, 'Price'),
-      maxPerOrder: validateLimit(form.maxPerOrder, MAX_ITEM_QUANTITY),
-      maxPerDay: validateLimit(form.maxPerDay, 100),
-    };
-    const perOrder = limitValue(form.maxPerOrder);
-    const perDay = limitValue(form.maxPerDay);
-    if (!next.maxPerOrder && !next.maxPerDay && perOrder != null && perDay != null && perOrder > perDay) {
-      next.maxPerOrder = 'Can’t be more than the limit per day';
-    }
+    const { errors: next, values } = checkDishDraft(form);
     setErrors(next);
-    if (Object.values(next).some(Boolean)) return;
-
-    const values = {
-      name: form.name.trim(),
-      description: form.description.trim(),
-      price: Number(form.price),
-      available: form.available,
-      // null clears a limit
-      maxPerOrder: perOrder,
-      maxPerDay: perDay,
-    };
+    if (!values) return;
     setError(null);
     try {
-      if (form.id) await updateItem({ menuId, itemId: form.id, changes: values }).unwrap();
-      else await addItem({ menuId, item: values }).unwrap();
+      if (form.id) {
+        await updateItem({ menuId: menu.id, itemId: form.id, changes: { ...values, available: form.available } }).unwrap();
+      } else {
+        const dish = await createDish({ restaurantId, ...values }).unwrap();
+        await addDishes({ menuId: menu.id, dishIds: [dish.id] }).unwrap();
+      }
       onClose();
     } catch (e) {
       setError(errorMessage(e));
@@ -303,14 +274,14 @@ function ItemSheet({ menuId, draft, onClose }: { menuId: string; draft: ItemDraf
 
   const remove = () =>
     confirmAction({
-      title: `Remove ${draft.name}?`,
-      message: 'Orders already placed keep this dish.',
+      title: `Remove ${draft.name} from this menu?`,
+      message: 'Orders already placed keep this dish. It stays in My dishes.',
       confirmText: 'Remove',
       cancelText: 'Keep',
       destructive: true,
       onConfirm: async () => {
         try {
-          await removeItem({ menuId, itemId: draft.id! }).unwrap();
+          await removeItem({ menuId: menu.id, itemId: draft.id! }).unwrap();
           onClose();
         } catch (e) {
           setError(errorMessage(e));
@@ -321,64 +292,113 @@ function ItemSheet({ menuId, draft, onClose }: { menuId: string; draft: ItemDraf
   return (
     <SheetForm
       visible
-      title={form.id ? 'Edit dish' : 'Add dish'}
+      title={form.id ? 'Edit dish on this menu' : 'New dish'}
       onClose={onClose}
       onSubmit={submit}
-      submitTitle={form.id ? 'Save dish' : 'Add dish'}
-      submitting={adding.isLoading || updating.isLoading}
+      submitTitle={form.id ? 'Save dish' : 'Save and add to menu'}
+      submitting={creating.isLoading || adding.isLoading || updating.isLoading}
       error={error}
-      destructiveTitle={form.id ? 'Remove dish' : undefined}
+      destructiveTitle={form.id ? 'Remove from menu' : undefined}
       onDestructive={form.id ? remove : undefined}
     >
-      <TextField label="Name" value={form.name} onChangeText={(name) => setForm({ ...form, name })} error={errors.name} />
-      <TextField
-        label="Price (₹)"
-        value={form.price}
-        onChangeText={(price) => setForm({ ...form, price })}
-        error={errors.price}
-        keyboardType="decimal-pad"
-        placeholder="120"
-      />
-      <TextField
-        label="Description (optional)"
-        value={form.description}
-        onChangeText={(description) => setForm({ ...form, description })}
-        placeholder="Rice, sambar, rasam, 2 curries"
-        multiline
-      />
-      <Text style={[font.caption, styles.limitHint]}>
-        Limits per customer, optional. Useful for dishes you make in small batches.
+      <Text style={[font.caption, styles.hintBelowTitle]}>
+        {form.id
+          ? 'Changes apply to this menu only. Change the dish in My dishes for future menus.'
+          : 'It’s saved to My dishes too, so you can add it to other menus.'}
       </Text>
-      <View style={styles.row}>
-        <View style={styles.half}>
-          <TextField
-            label="Max per order"
-            value={form.maxPerOrder}
-            onChangeText={(maxPerOrder) => setForm({ ...form, maxPerOrder })}
-            error={errors.maxPerOrder}
-            keyboardType="number-pad"
-            placeholder="No limit"
+      <DishFields draft={form} errors={errors} onChange={(d) => setForm({ ...form, ...d })} />
+      {form.id && (
+        <View style={styles.switchRow}>
+          <Text style={font.body}>Available</Text>
+          <Switch
+            value={form.available}
+            onValueChange={(available) => setForm({ ...form, available })}
+            trackColor={{ true: colors.success, false: colors.border }}
           />
         </View>
-        <View style={styles.half}>
-          <TextField
-            label="Max per day"
-            value={form.maxPerDay}
-            onChangeText={(maxPerDay) => setForm({ ...form, maxPerDay })}
-            error={errors.maxPerDay}
-            keyboardType="number-pad"
-            placeholder="No limit"
-          />
-        </View>
-      </View>
-      <View style={styles.switchRow}>
-        <Text style={font.body}>Available</Text>
-        <Switch
-          value={form.available}
-          onValueChange={(available) => setForm({ ...form, available })}
-          trackColor={{ true: colors.success, false: colors.border }}
-        />
-      </View>
+      )}
+    </SheetForm>
+  );
+}
+
+// Tick dishes from My dishes to put on this menu
+function PickDishesSheet({
+  menu,
+  restaurantId,
+  onClose,
+  onNewDish,
+}: {
+  menu: Menu;
+  restaurantId: string;
+  onClose: () => void;
+  onNewDish: () => void;
+}) {
+  const { data: dishes, isLoading } = useGetDishesQuery({ restaurantId });
+  const [addDishes, { isLoading: adding }] = useAddDishesToMenuMutation();
+  const [chosen, setChosen] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const onMenu = new Set(menu.items.map((i) => i.dishId).filter(Boolean));
+  const available = (dishes ?? []).filter((d) => !onMenu.has(d.id));
+  const toggle = (id: string) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
+
+  const submit = async () => {
+    if (chosen.length === 0) {
+      setError('Tick the dishes to add.');
+      return;
+    }
+    setError(null);
+    try {
+      await addDishes({ menuId: menu.id, dishIds: chosen }).unwrap();
+      onClose();
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  };
+
+  return (
+    <SheetForm
+      visible
+      title="Add dishes"
+      onClose={onClose}
+      onSubmit={submit}
+      submitTitle={chosen.length ? `Add ${chosen.length} ${chosen.length === 1 ? 'dish' : 'dishes'}` : 'Add dishes'}
+      submitting={adding}
+      error={error}
+      destructiveTitle="New dish"
+      onDestructive={onNewDish}
+    >
+      {isLoading ? (
+        <Text style={font.caption}>Loading your dishes…</Text>
+      ) : available.length === 0 ? (
+        <Text style={font.caption}>
+          {dishes?.length
+            ? 'All your dishes are on this menu. Add a new one below.'
+            : 'You have no dishes yet. Add one below; it’s saved for future menus too.'}
+        </Text>
+      ) : (
+        available.map((dish) => {
+          const selected = chosen.includes(dish.id);
+          return (
+            <Pressable
+              key={dish.id}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: selected }}
+              accessibilityLabel={dish.name}
+              onPress={() => toggle(dish.id)}
+              style={styles.pickRow}
+            >
+              <View style={[styles.check, selected && styles.checked]}>
+                {selected && <Text style={styles.tick}>✓</Text>}
+              </View>
+              <View style={styles.itemText}>
+                <Text style={font.body}>{dish.name}</Text>
+                <Text style={font.caption}>{dishSummary(dish)}</Text>
+              </View>
+            </Pressable>
+          );
+        })
+      )}
     </SheetForm>
   );
 }
@@ -507,5 +527,23 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   row: { flexDirection: 'row', gap: spacing.md },
   half: { flex: 1 },
-  limitHint: { marginBottom: spacing.sm },
+  pickRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    minHeight: 52,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  check: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checked: { backgroundColor: colors.brand, borderColor: colors.brand },
+  tick: { color: '#fff', fontWeight: '800', fontSize: 14 },
 });

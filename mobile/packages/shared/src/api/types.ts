@@ -50,8 +50,23 @@ export interface OwnedRestaurant extends Restaurant {
   autoReadyMinutes: number | null; // before a delivery slot starts; null = off
 }
 
+// A dish in a restaurant's own list ("My dishes"), to pick from when building a menu
+export interface Dish {
+  id: string;
+  restaurantId: string;
+  name: string;
+  description: string;
+  price: number | string; // DECIMAL: Postgres sends a string
+  maxPerOrder: number | null;
+  maxPerDay: number | null;
+  archived: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface MenuItem {
   id: string;
+  dishId?: string | null; // the dish in "My dishes" this was copied from, if any
   name: string;
   description?: string | null;
   price: number;

@@ -6,6 +6,7 @@ export * as session from './api/tokens';
 export * from './api/types';
 
 // Helpers
+export * from './lib/apiUrl';
 export * from './lib/confirm';
 export * from './lib/cutoff';
 export * from './lib/dates';

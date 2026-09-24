@@ -8,19 +8,17 @@ today's or tomorrow's menu, pay on delivery (cash, or UPI to the restaurant), an
 ```bash
 cd mobile && npm install    # installs every app in the workspace
 cd customer
-cp .env.example .env        # then set EXPO_PUBLIC_API_URL
 npx expo start              # press a (Android) or i (iOS), or scan with Expo Go
 ```
 
 Shared code (API client, session, helpers, theme, common components) lives in `mobile/packages/shared`.
 
-`EXPO_PUBLIC_API_URL` is the backend's base URL without `/api`:
+In development the apps find the backend themselves: port 3000 on the computer they were loaded from (the Expo
+dev server's host in Expo Go, the page's host in a browser, `10.0.2.2` or `localhost` in an emulator). So there's
+nothing to configure, and they keep working when your network address changes.
 
-| Where the app runs | Value |
-| --- | --- |
-| Android emulator | `http://10.0.2.2:3000` |
-| iOS simulator | `http://localhost:3000` |
-| Physical phone | `http://<your computer's LAN IP>:3000` |
+To use a different backend, set `EXPO_PUBLIC_API_URL` (base URL without `/api`) in the app's `.env`; see
+`.env.example`. EAS builds always set it.
 
 The backend must be running (`cd backend && npm run dev`, or `./dev-session.sh` from the repo root).
 

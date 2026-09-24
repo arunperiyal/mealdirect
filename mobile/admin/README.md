@@ -8,7 +8,6 @@ It runs in Expo Go.
 ```bash
 cd mobile && npm install    # once, installs every app in the workspace
 cd admin
-cp .env.example .env        # set EXPO_PUBLIC_API_URL, same values as the other apps
 npx expo start --port 8083  # a different port if the other apps are running
 ```
 

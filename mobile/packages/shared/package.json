@@ -12,6 +12,7 @@
   "peerDependencies": {
     "@reduxjs/toolkit": "*",
     "axios": "*",
+    "expo-constants": "*",
     "expo-secure-store": "*",
     "react": "*",
     "react-native": "*",

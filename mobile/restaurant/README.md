@@ -7,7 +7,6 @@ Expo (SDK 57) app for restaurant owners. It runs in Expo Go, so no custom build 
 ```bash
 cd mobile && npm install    # once, installs every app in the workspace
 cd restaurant
-cp .env.example .env        # set EXPO_PUBLIC_API_URL, same values as the customer app
 npx expo start
 ```
 

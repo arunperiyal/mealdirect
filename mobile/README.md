@@ -71,8 +71,8 @@ What differs in the browser:
 - **Layout**: each app sits in a centered column on wide screens (customer 720px, partner 900, rider 600,
   admin 1200). Sheets keep to 640px.
 - **Online payment** loads Razorpay Checkout into the page (`RazorpayCheckout.web.tsx`) instead of a WebView.
-- **API address**: `EXPO_PUBLIC_API_URL` as for the apps, and the backend must allow the site in `CORS_ORIGINS`
-  (development allows any origin).
+- **API address**: in development, port 3000 on the page's host; for a deployed site, set `EXPO_PUBLIC_API_URL`
+  when building. The backend must allow the site in `CORS_ORIGINS` (development allows any origin).
 
 The build is a single-page app: the web server must answer unknown paths with `index.html`.
 

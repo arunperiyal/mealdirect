@@ -28,7 +28,6 @@ docker compose up -d postgres   # see backend/README.md to reach it from the hos
 # Apps
 cd ../mobile
 npm install                     # every app in the workspace
-cp customer/.env.example customer/.env   # likewise for each app you run; set EXPO_PUBLIC_API_URL
 ```
 
 Then start everything in one tmux session:

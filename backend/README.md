@@ -165,6 +165,9 @@ All responses are JSON: `{ "success": true, "data": ... }` or
 - `GET /api/admin/riders`, `PUT /api/admin/riders/:id/approve`, `PUT /api/admin/riders/:id/suspend`
 - `GET /api/admin/riders/:id/cash`, `POST /api/admin/riders/:id/settlements`
 - `POST /api/admin/orders/:id/resolve-payment`
+- `GET /api/admin/users?search=&role=`: customers, restaurant partners and riders (search by name, email or phone);
+  `PUT /api/admin/users/:id/email` changes the email a user signs in with (`409 EMAIL_EXISTS` if taken; not for
+  MealDirect staff accounts). Their password and current sessions are unchanged.
 - `GET /api/admin/change-requests?status=pending`: detail changes with the current values;
   `POST /api/admin/change-requests/:id/approve` (optional `note`), `POST /api/admin/change-requests/:id/reject`
   (`note` required)

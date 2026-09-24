@@ -88,6 +88,40 @@ router.get(
 );
 
 /**
+ * GET /api/admin/users?search=&role=
+ * Customers, restaurant partners and riders, newest first
+ */
+router.get(
+  '/users',
+  [
+    query('search').optional().isString().trim(),
+    query('role').optional().isIn(['customer', 'restaurant_admin', 'delivery_partner']),
+    query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+    query('offset').optional().isInt({ min: 0 }).toInt(),
+  ],
+  handle(async (req, res) => {
+    const result = await adminController.listUsers(req.query);
+    res.json({ success: true, data: result.rows, meta: { total: result.count } });
+  })
+);
+
+/**
+ * PUT /api/admin/users/:id/email   Body: { email }
+ * Change the email a user signs in with (not for MealDirect staff accounts)
+ */
+router.put(
+  '/users/:id/email',
+  [
+    param('id').isUUID(),
+    // The same normalization as sign-up and sign-in, so they can sign in with it
+    body('email').trim().isEmail().withMessage('Enter a valid email').normalizeEmail(),
+  ],
+  handle(async (req, res) => {
+    res.json({ success: true, data: await adminController.changeUserEmail(req.params.id, req.body.email) });
+  })
+);
+
+/**
  * PUT /api/admin/riders/:id/approve | suspend
  */
 for (const [action, status] of [

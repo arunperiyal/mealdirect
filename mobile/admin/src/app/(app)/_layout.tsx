@@ -16,6 +16,7 @@ export default function AppLayout() {
       <Stack.Screen name="order/[id]" options={{ title: 'Order' }} />
       <Stack.Screen name="rider/[id]" options={{ title: 'Rider cash' }} />
       <Stack.Screen name="changes" options={{ title: 'Changes to review' }} />
+      <Stack.Screen name="users" options={{ title: 'Users' }} />
     </Stack>
   );
 }

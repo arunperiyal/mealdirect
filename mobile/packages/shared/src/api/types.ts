@@ -139,6 +139,19 @@ export interface RiderProfile {
   changeRequests: OpenChangeRequests;
 }
 
+// GET /api/admin/users: customers, restaurant partners and riders
+export type ManagedRole = Exclude<Role, 'system_admin'>;
+export interface AdminUser {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  role: ManagedRole;
+  riderStatus: RiderStatus | null;
+  createdAt: string;
+}
+
 // GET /api/admin/change-requests
 export interface AdminChangeRequest extends ChangeRequest {
   subjectType: 'restaurant' | 'rider';

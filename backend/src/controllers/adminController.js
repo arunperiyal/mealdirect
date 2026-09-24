@@ -1,4 +1,4 @@
-const { Op } = require('sequelize');
+const { Op, fn, col, where } = require('sequelize');
 const { Order, Restaurant, Settlement, User } = require('../models');
 const { riderCash, round2 } = require('./collectionController');
 const { ORDER_DETAILS } = require('./orderController');
@@ -310,7 +310,69 @@ const resolvePayment = async (orderId, adminId, { outcome, method, note }) => {
   }
 };
 
+// ===== Users =====
+
+// What admins see of an account; never the password hash
+const USER_FIELDS = ['id', 'email', 'firstName', 'lastName', 'phone', 'role', 'riderStatus', 'createdAt'];
+
+// Customers, restaurant partners and riders. MealDirect staff accounts are managed on the server.
+const MANAGED_ROLES = ['customer', 'restaurant_admin', 'delivery_partner'];
+
+// Case-insensitive match on name, email or phone, on Postgres and SQLite
+const userSearchWhere = (search) => {
+  const term = `%${String(search).toLowerCase()}%`;
+  return {
+    [Op.or]: ['email', 'first_name', 'last_name', 'phone'].map((column) =>
+      where(fn('lower', col(column)), { [Op.like]: term })
+    ),
+  };
+};
+
+const listUsers = async ({ search, role, limit = 50, offset = 0 }) => {
+  try {
+    const conditions = { role: role ? role : { [Op.in]: MANAGED_ROLES } };
+    const { count, rows } = await User.findAndCountAll({
+      where: search ? { ...conditions, ...userSearchWhere(search) } : conditions,
+      attributes: USER_FIELDS,
+      order: [['createdAt', 'DESC']],
+      limit: Math.min(limit, 100),
+      offset,
+    });
+    return { count, rows };
+  } catch (error) {
+    throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
+  }
+};
+
+// The user keeps their password and stays signed in; they sign in with the new email from now on
+const changeUserEmail = async (userId, email) => {
+  try {
+    const user = await User.findByPk(userId);
+    if (!user) throwError('NOT_FOUND', 'User not found', 404);
+    if (!MANAGED_ROLES.includes(user.role)) {
+      throwError('FORBIDDEN', 'MealDirect staff accounts are changed on the server, not here', 403);
+    }
+    if (user.email === email) throwError('NO_CHANGES', 'That is already their email', 400);
+
+    const taken = await User.findOne({ where: { email }, attributes: ['id'], paranoid: false });
+    if (taken) throwError('EMAIL_EXISTS', 'Another account already uses this email', 409);
+
+    user.email = email;
+    await user.save();
+    return Object.fromEntries(USER_FIELDS.map((f) => [f, user[f]]));
+  } catch (error) {
+    if (error.code) throw error;
+    // Two changes to the same new email at once: the unique index catches the second
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      throw { code: 'EMAIL_EXISTS', message: 'Another account already uses this email', statusCode: 409 };
+    }
+    throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
+  }
+};
+
 module.exports = {
+  listUsers,
+  changeUserEmail,
   listRestaurants,
   getRestaurant,
   getAnalytics,

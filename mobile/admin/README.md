@@ -29,7 +29,7 @@ npm run create-admin -- --email you@example.com --first-name Asha --last-name Ra
 | Changes to review | Changes to payout or personal details from approved restaurants and riders, oldest first, each showing the current and new values (account numbers masked). **Approve** puts the new details in use; **Reject** needs a note, which the restaurant or rider sees. Their current details stay in use until then. |
 | Orders (payments) | The **Not paid** filter lists every order a rider or restaurant reported as unpaid. Resolve one as **Mark paid** (cash or UPI) or **Write off**, with a required note. Either way the customer can order again. |
 | Orders | The latest 100 orders across all restaurants: active / completed / cancelled. Each order shows the restaurant, customer, delivery partner, items, payment and timeline, and can be cancelled with a reason. |
-| Account | Who's signed in, sign out |
+| Account | Who's signed in, sign out, and **Users**: find a customer, partner or rider by name, email or phone, and change the email they sign in with (their password stays, and they stay signed in) |
 
 Charts follow the project's dataviz rules: a single series per chart (no dual axes), one validated blue for data
 (the brand red would read as "bad" on a sales chart), tap a column to read its value, and every number is also in
@@ -43,7 +43,7 @@ volumes. Move it to SQL `GROUP BY` when order counts grow.
 - Suspending a live restaurant (the backend has no endpoint for it)
 - Comparing with the previous period
 - Refunds (cancelling a paid online order still needs a manual refund in Razorpay)
-- Managing users (customers and partners)
+- Other user management (suspending customers, editing names or phones); only the email can be changed
 
 ## Checks
 

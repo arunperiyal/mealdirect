@@ -2,6 +2,8 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import {
   createAxiosBaseQuery,
   type AdminChangeRequest,
+  type AdminUser,
+  type ManagedRole,
   type AdminRestaurant,
   type AdminRider,
   type RiderCash,
@@ -17,7 +19,7 @@ import { api } from '@/api';
 export const serverApi = createApi({
   reducerPath: 'serverApi',
   baseQuery: createAxiosBaseQuery(api),
-  tagTypes: ['Restaurant', 'Order', 'Analytics', 'Rider', 'Cash', 'Change'],
+  tagTypes: ['Restaurant', 'Order', 'Analytics', 'Rider', 'Cash', 'Change', 'User'],
   endpoints: (build) => ({
     getAnalytics: build.query<Analytics, { days: number; tzOffset: number }>({
       query: (params) => ({ url: '/admin/analytics', params }),
@@ -108,6 +110,19 @@ export const serverApi = createApi({
       // Approving changes the restaurant's or rider's saved details
       invalidatesTags: ['Change', 'Restaurant', 'Rider', 'Cash'],
     }),
+    // Customers, restaurant partners and riders
+    getUsers: build.query<AdminUser[], { search?: string; role?: ManagedRole }>({
+      query: ({ search, role }) => ({
+        url: '/admin/users',
+        params: { limit: 50, ...(search ? { search } : {}), ...(role ? { role } : {}) },
+      }),
+      providesTags: ['User'],
+    }),
+    changeUserEmail: build.mutation<AdminUser, { id: string; email: string }>({
+      query: ({ id, email }) => ({ url: `/admin/users/${id}/email`, method: 'PUT', data: { email } }),
+      // Owner and rider emails also show on restaurant and rider screens
+      invalidatesTags: ['User', 'Restaurant', 'Rider', 'Cash'],
+    }),
     cancelOrder: build.mutation<Order, { id: string; reason: string }>({
       query: ({ id, reason }) => ({ url: `/orders/${id}/cancel`, method: 'POST', data: { reason } }),
       invalidatesTags: ['Order', 'Analytics'],
@@ -131,4 +146,6 @@ export const {
   useCancelOrderMutation,
   useGetChangeRequestsQuery,
   useReviewChangeMutation,
+  useGetUsersQuery,
+  useChangeUserEmailMutation,
 } = serverApi;

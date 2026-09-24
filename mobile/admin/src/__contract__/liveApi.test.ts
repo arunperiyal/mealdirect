@@ -172,6 +172,23 @@ describeLive('admin app ↔ live backend', () => {
     expect(detail.restaurant.upiId).toBe('newkitchen@oksbi');
   });
 
+  test('finds the partner and changes the email they sign in with', async () => {
+    const [owner] = await call(d(e.getUsers.initiate({ search: `owner.${unique}` }, { forceRefetch: true })));
+    expect(owner).toMatchObject({ role: 'restaurant_admin', email: `owner.${unique}@contract.test` });
+
+    const changed = await call(d(e.changeUserEmail.initiate({ id: owner.id, email: `Kitchen.Owner.${unique}@Contract.test` })));
+    expect(changed.email).toBe(`kitchen.owner.${unique}@contract.test`);
+
+    const login = await http.post('/auth/login', { email: `kitchen.owner.${unique}@contract.test`, password: 'Password123!' });
+    expect(login.status).toBe(200);
+    const old = await http.post(
+      '/auth/login',
+      { email: `owner.${unique}@contract.test`, password: 'Password123!' },
+      { validateStatus: () => true }
+    );
+    expect(old.status).toBe(401);
+  });
+
   test('analytics count the restaurant’s sales today, excluding cancelled orders', async () => {
     const today = new Date(Date.now() + tzOffset * 60000).toISOString().slice(0, 10);
     const menu = await http.post('/menus', { restaurantId, date: today }, ownerAuth);

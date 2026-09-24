@@ -81,6 +81,7 @@ backups.
 | `BUSINESS_UTC_OFFSET_MINUTES` | The business day for cash settlement, order cutoffs and auto-ready (330 = India) |
 | `AUTO_READY_JOB` | `false` stops the job that marks orders ready before their delivery time |
 | `TRUST_PROXY` | Number of reverse proxies in front of the API, so rate limits see the real client IP |
+| `CORS_ORIGINS` | Production only: comma-separated addresses of the web apps allowed to call the API from a browser (development allows any) |
 
 ## How orders work
 

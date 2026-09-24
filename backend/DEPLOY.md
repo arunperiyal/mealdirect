@@ -110,5 +110,12 @@ Restore with `pg_restore -U mealdirect -d mealdirect --clean <file>` inside the 
 | Container | Node 22, production dependencies only, runs as a non-root user, health check |
 | HTTPS | nginx with Let's Encrypt, HSTS |
 
+### Web apps
+
+The apps also build as static websites (`npm run build:web` in each app folder, with `EXPO_PUBLIC_API_URL` set to
+the API's `https://` address). Host each on its own address, since browser sign-in is stored per origin, and
+answer unknown paths with `index.html` (in nginx: `try_files $uri /index.html;`). List those addresses in
+`CORS_ORIGINS`. Where to host them hasn't been decided yet.
+
 Still to do before real customers: monitoring and alerts, off-server backups, and automating refunds for
 cancelled paid orders (they're manual for now).

@@ -53,8 +53,8 @@ const checkProductionConfig = (env = process.env) => {
   if (env.ONLINE_PAYMENTS_ENABLED === 'true' && !(keyId && keySecret)) {
     errors.push('ONLINE_PAYMENTS_ENABLED is true but the Razorpay keys are not set');
   }
-  if (!env.MEALDIRECT_UPI_ID) {
-    warnings.push("MEALDIRECT_UPI_ID is not set: riders can't show a UPI QR, so customers can only pay cash");
+  if (!env.CORS_ORIGINS && !env.FRONTEND_URL) {
+    warnings.push("CORS_ORIGINS is not set: the web apps can't call the API from a browser (the phone apps are fine)");
   }
 
   return { errors, warnings };

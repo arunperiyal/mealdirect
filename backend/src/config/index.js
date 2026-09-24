@@ -78,14 +78,18 @@ module.exports = {
     trustProxy: parseInt(process.env.TRUST_PROXY || '0', 10)
   },
 
-  // CORS
+  // CORS: which web pages may call the API from a browser (the phone apps aren't
+  // affected). Development allows any origin, since Expo serves each web app on its
+  // own port. Production allows only CORS_ORIGINS, a comma-separated list of the web
+  // apps' addresses. Sign-in uses a bearer token, not cookies, so no credentials.
   cors: {
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      process.env.FRONTEND_URL
-    ],
-    credentials: true
+    origin: (process.env.NODE_ENV || 'development') === 'production'
+      ? (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '')
+          .split(',')
+          .map((o) => o.trim().replace(/\/+$/, ''))
+          .filter(Boolean)
+      : true,
+    credentials: false
   },
 
   // Logging

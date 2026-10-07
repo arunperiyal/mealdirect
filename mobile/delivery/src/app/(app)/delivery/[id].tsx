@@ -19,6 +19,7 @@ import {
   paymentLabel,
   shortId,
   spacing,
+  useBottomSpace,
   type Collection,
   type Order,
 } from '@mealdirect/shared';
@@ -47,6 +48,7 @@ export default function DeliveryScreen() {
 }
 
 function Details({ order, refreshing, onRefresh }: { order: Order; refreshing: boolean; onRefresh: () => void }) {
+  const bottomSpace = useBottomSpace(spacing.xl * 2);
   const me = useAppSelector((s) => s.auth.user?.id);
   const [act, { isLoading }] = useActMutation();
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +102,7 @@ function Details({ order, refreshing, onRefresh }: { order: Order; refreshing: b
 
   return (
     <ScrollView
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingBottom: bottomSpace }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
     >
       <View style={styles.header}>

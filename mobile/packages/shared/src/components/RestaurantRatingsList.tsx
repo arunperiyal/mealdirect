@@ -4,6 +4,7 @@ import { formatDateTime } from '../lib/dates';
 import { colors, font, radius, spacing } from '../theme';
 import { EmptyState } from './States';
 import { Stars } from './Stars';
+import { useBottomSpace } from '../lib/useBottomSpace';
 
 interface Props {
   ratings: RestaurantRatings;
@@ -13,11 +14,12 @@ interface Props {
 
 // A restaurant's food ratings: the average, how many of each star, and recent comments
 export function RestaurantRatingsList({ ratings, refreshing, onRefresh }: Props) {
+  const bottomSpace = useBottomSpace();
   return (
     <FlatList
       data={ratings.recent}
       keyExtractor={(r) => r.id}
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, { paddingBottom: bottomSpace }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
       ListHeaderComponent={<Summary ratings={ratings} />}
       ListEmptyComponent={<EmptyState title={ratings.count ? 'No comments yet' : 'No ratings yet'} />}

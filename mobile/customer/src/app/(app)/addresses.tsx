@@ -13,6 +13,7 @@ import {
   SheetForm,
   spacing,
   TextField,
+  useBottomSpace,
   type SavedAddress,
 } from '@mealdirect/shared';
 import {
@@ -26,6 +27,7 @@ const MAX_ADDRESSES = 10;
 
 // Addresses to pick at checkout instead of typing them again
 export default function AddressesScreen() {
+  const bottomSpace = useBottomSpace(spacing.lg);
   const { data = [], error, isLoading, isFetching, refetch } = useGetAddressesQuery();
   // null: closed; 'new': adding one
   const [editing, setEditing] = useState<SavedAddress | 'new' | null>(null);
@@ -38,7 +40,7 @@ export default function AddressesScreen() {
       <FlatList
         data={data}
         keyExtractor={(a) => a.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: bottomSpace }]}
         refreshControl={<RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={colors.brand} />}
         ListEmptyComponent={<EmptyState title="No saved addresses" message="Save one here or when you check out." />}
         renderItem={({ item }) => (

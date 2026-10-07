@@ -11,19 +11,21 @@ import {
   font,
   formatDateTime,
   formatINR,
-  maskAccount,
   LoadingState,
+  maskAccount,
   SheetForm,
   spacing,
   Stars,
   StatTile,
   TextField,
+  useBottomSpace,
 } from '@mealdirect/shared';
 import { useAddSettlementMutation, useGetRiderCashQuery } from '@/store/serverApi';
 
 type Kind = 'payment' | 'write_off';
 
 export default function RiderCashScreen() {
+  const bottomSpace = useBottomSpace(spacing.xl * 2);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data, error, isLoading, isFetching, refetch } = useGetRiderCashQuery(id);
   const [addSettlement, { isLoading: saving }] = useAddSettlementMutation();
@@ -69,7 +71,7 @@ export default function RiderCashScreen() {
     <>
       <Stack.Screen options={{ title: name }} />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: bottomSpace }]}
         refreshControl={<RefreshControl refreshing={isFetching} onRefresh={refetch} tintColor={colors.brand} />}
       >
         {done && <Banner tone="success" message={done} />}

@@ -15,7 +15,6 @@ import {
   formatTime,
   isActive,
   LoadingState,
-  type Order,
   OrderRatingView,
   PriceSummary,
   SheetForm,
@@ -23,6 +22,8 @@ import {
   StatusPill,
   StatusTimeline,
   TextField,
+  useBottomSpace,
+  type Order,
 } from '@mealdirect/shared';
 import { ORDER_POLL_MS } from '@/config';
 import {
@@ -65,6 +66,7 @@ export default function OrderScreen() {
 }
 
 function OrderDetails({ order, refreshing, onRefresh }: { order: Order; refreshing: boolean; onRefresh: () => void }) {
+  const bottomSpace = useBottomSpace(spacing.xl * 2);
   const [advanceOrder, { isLoading: advancing }] = useAdvanceOrderMutation();
   const [cancelOrder, { isLoading: cancelling }] = useCancelOrderMutation();
   const [recordPayment, { isLoading: recording }] = useRecordPaymentMutation();
@@ -117,7 +119,7 @@ function OrderDetails({ order, refreshing, onRefresh }: { order: Order; refreshi
   return (
     <>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: bottomSpace }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
       >
         <View style={styles.header}>

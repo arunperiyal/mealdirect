@@ -15,6 +15,7 @@ import {
   SheetForm,
   spacing,
   TextField,
+  useBottomSpace,
   type DeliverySlot,
   type Menu,
   type MenuItem,
@@ -55,6 +56,7 @@ export default function MenuScreen() {
 }
 
 function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: boolean; onRefresh: () => void }) {
+  const bottomSpace = useBottomSpace(spacing.xl * 2);
   const restaurant = useRestaurant();
   const [setMenuStatus, { isLoading: changingStatus }] = useSetMenuStatusMutation();
   const [deleteMenu, { isLoading: deleting }] = useDeleteMenuMutation();
@@ -123,7 +125,7 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
     <>
       <Stack.Screen options={{ title: `${menu.name} · ${dayLabel(menu.date)}` }} />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: bottomSpace }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
       >
         {error && <Banner tone="error" message={error} />}

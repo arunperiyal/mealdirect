@@ -24,6 +24,7 @@ import {
   spacing,
   STATUS_LABELS,
   StatusTimeline,
+  useBottomSpace,
   type Order,
 } from '@mealdirect/shared';
 import { API_URL, ORDER_POLL_MS } from '@/config';
@@ -79,6 +80,7 @@ function OrderDetails({
   refreshing: boolean;
   onRefresh: () => void;
 }) {
+  const bottomSpace = useBottomSpace(spacing.xl * 2);
   const user = useAppSelector((s) => s.auth.user);
   const { data: restaurant } = useGetRestaurantQuery(order.restaurantId);
   const payment = useOrderPayment(order.id);
@@ -135,7 +137,7 @@ function OrderDetails({
   return (
     <>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: bottomSpace }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
       >
         <View style={styles.header}>

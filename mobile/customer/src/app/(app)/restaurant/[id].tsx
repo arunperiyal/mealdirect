@@ -20,6 +20,7 @@ import {
   radius,
   spacing,
   Stars,
+  useBottomSpace,
   type Menu,
   type MenuItem,
   type Restaurant,
@@ -27,7 +28,7 @@ import {
 import { CartBar } from '@/components/CartBar';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { addItem, decrementItem, selectQuantity } from '@/store/cartSlice';
+import { addItem, decrementItem, selectCartCount, selectQuantity } from '@/store/cartSlice';
 import { useGetMyOrdersQuery, useGetPublishedMenusQuery, useGetRestaurantQuery } from '@/store/serverApi';
 
 const DAYS = [
@@ -37,6 +38,9 @@ const DAYS = [
 
 export default function RestaurantScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  // The cart bar, when showing, already keeps clear of the system navigation
+  const cartCount = useAppSelector(selectCartCount);
+  const bottomSpace = useBottomSpace();
   const [dayIndex, setDayIndex] = useState(0);
   const date = useMemo(() => localDateString(addDays(new Date(), DAYS[dayIndex].offset)), [dayIndex]);
 
@@ -69,7 +73,7 @@ export default function RestaurantScreen() {
       <SectionList
         sections={sections}
         keyExtractor={(item, index) => `${item.id}-${index}`}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: cartCount ? spacing.lg : bottomSpace }]}
         stickySectionHeadersEnabled={false}
         ListHeaderComponent={<Header restaurant={restaurant} dayIndex={dayIndex} onSelectDay={setDayIndex} />}
         renderSectionHeader={({ section }) => <MenuHeader menu={section.menu} showName={menus.length > 1} />}

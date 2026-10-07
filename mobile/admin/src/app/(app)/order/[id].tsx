@@ -5,6 +5,7 @@ import {
   Banner,
   Button,
   Card,
+  Chip,
   colors,
   customerName,
   errorMessage,
@@ -25,8 +26,8 @@ import {
   StatusPill,
   StatusTimeline,
   TextField,
+  useBottomSpace,
   type Order,
-  Chip,
 } from '@mealdirect/shared';
 import { useCancelOrderMutation, useGetOrderQuery, useResolvePaymentMutation } from '@/store/serverApi';
 
@@ -40,6 +41,7 @@ export default function OrderScreen() {
 }
 
 function OrderDetails({ order, refreshing, onRefresh }: { order: Order; refreshing: boolean; onRefresh: () => void }) {
+  const bottomSpace = useBottomSpace(spacing.xl * 2);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -91,7 +93,7 @@ function OrderDetails({ order, refreshing, onRefresh }: { order: Order; refreshi
   return (
     <>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: bottomSpace }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
       >
         <View style={styles.header}>

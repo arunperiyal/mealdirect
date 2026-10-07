@@ -15,6 +15,7 @@ import {
   SheetForm,
   spacing,
   TextField,
+  useBottomSpace,
   type AdminChangeRequest,
 } from '@mealdirect/shared';
 import { useGetChangeRequestsQuery, useReviewChangeMutation } from '@/store/serverApi';
@@ -36,6 +37,7 @@ const shown = (field: string, value: string | null | undefined) =>
   (field === 'bankAccountNumber' ? maskAccount(value) : value) || '—';
 
 export default function ChangesScreen() {
+  const bottomSpace = useBottomSpace(spacing.lg);
   const { data, error, isLoading, isFetching, refetch } = useGetChangeRequestsQuery();
   const [review, { isLoading: saving }] = useReviewChangeMutation();
   const [rejecting, setRejecting] = useState<AdminChangeRequest | null>(null);
@@ -75,7 +77,7 @@ export default function ChangesScreen() {
       <FlatList
         data={data ?? []}
         keyExtractor={(r) => r.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: bottomSpace }]}
         refreshControl={<RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={colors.brand} />}
         ListHeaderComponent={
           <>

@@ -14,6 +14,7 @@ import {
   radius,
   SheetForm,
   spacing,
+  useBottomSpace,
   type Dish,
 } from '@mealdirect/shared';
 import { DishFields } from '@/components/DishFields';
@@ -30,6 +31,8 @@ import {
 
 // The restaurant's own dish list: add a dish once, then pick it when building each day's menu
 export default function DishesScreen() {
+  // The floating Add button sits above the system navigation; the list scrolls clear of it
+  const bottomSpace = useBottomSpace();
   const restaurant = useRestaurant();
   const [showRemoved, setShowRemoved] = useState(false);
   const { data, error, isLoading, isFetching, refetch } = useGetDishesQuery({
@@ -62,7 +65,7 @@ export default function DishesScreen() {
       <FlatList
         data={data ?? []}
         keyExtractor={(d) => d.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: bottomSpace + 84 }]}
         refreshControl={<RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={colors.brand} />}
         ListHeaderComponent={
           <View style={styles.header}>
@@ -108,7 +111,7 @@ export default function DishesScreen() {
         )}
       />
       {!showRemoved && (
-        <View style={styles.footer}>
+        <View style={[styles.footer, { bottom: bottomSpace }]}>
           <Button
             title="Add dish"
             onPress={() => {
@@ -227,11 +230,11 @@ function DishSheet({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  list: { padding: spacing.lg, paddingBottom: 100, flexGrow: 1 },
+  list: { padding: spacing.lg, flexGrow: 1 },
   header: { gap: spacing.md, marginBottom: spacing.md },
   chips: { flexDirection: 'row', gap: spacing.sm },
   empty: { gap: spacing.md },
   row: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm, gap: 4 },
-  footer: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: spacing.lg },
+  footer: { position: 'absolute', left: spacing.lg, right: spacing.lg },
   gap: { marginTop: spacing.sm },
 });

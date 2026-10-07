@@ -15,6 +15,7 @@ import {
   SheetForm,
   spacing,
   TextField,
+  useBottomSpace,
   useDebounced,
   type AutoAcceptRule,
   type Restaurant,
@@ -35,6 +36,7 @@ const windowLabel = (r: Pick<AutoAcceptRule, 'startTime' | 'endTime'>) => `${for
 
 // Standing orders: a restaurant's deliveries due in a time window come to this rider
 export default function AutoAcceptScreen() {
+  const bottomSpace = useBottomSpace(spacing.lg);
   const { data = [], error, isLoading, isFetching, refetch } = useGetRulesQuery();
   const [adding, setAdding] = useState(false);
   const [update] = useUpdateRuleMutation();
@@ -58,7 +60,7 @@ export default function AutoAcceptScreen() {
       <FlatList
         data={data}
         keyExtractor={(r) => r.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: bottomSpace }]}
         refreshControl={<RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={colors.brand} />}
         ListHeaderComponent={
           <View style={styles.intro}>

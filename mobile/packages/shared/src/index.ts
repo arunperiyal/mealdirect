@@ -18,6 +18,7 @@ export * from './lib/payout';
 export * from './lib/statements';
 export * from './lib/pickPhoto';
 export * from './lib/upi';
+export * from './lib/useBottomSpace';
 export * from './lib/useDebounced';
 export * from './lib/validation';
 

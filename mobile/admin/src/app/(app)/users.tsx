@@ -15,6 +15,7 @@ import {
   SheetForm,
   spacing,
   TextField,
+  useBottomSpace,
   useDebounced,
   validateEmail,
   type AdminUser,
@@ -44,6 +45,7 @@ const fullName = (u: Pick<AdminUser, 'firstName' | 'lastName'>) =>
   [u.firstName, u.lastName].filter(Boolean).join(' ') || 'No name';
 
 export default function UsersScreen() {
+  const bottomSpace = useBottomSpace(spacing.lg);
   const [role, setRole] = useState<ManagedRole | undefined>(undefined);
   const [deleted, setDeleted] = useState(false);
   const [search, setSearch] = useState('');
@@ -90,7 +92,7 @@ export default function UsersScreen() {
         <FlatList
           data={data ?? []}
           keyExtractor={(u) => u.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: bottomSpace }]}
           style={isFetching ? styles.dimmed : undefined}
           refreshControl={<RefreshControl refreshing={isFetching && !isLoading} onRefresh={refetch} tintColor={colors.brand} />}
           keyboardDismissMode="on-drag"

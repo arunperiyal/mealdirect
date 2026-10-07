@@ -12,12 +12,13 @@ import {
   formatDateTime,
   formatINR,
   isPayoutComplete,
-  maskAccount,
   LoadingState,
+  maskAccount,
   SheetForm,
   spacing,
   StatTile,
   TextField,
+  useBottomSpace,
   type AdminRestaurantDetail,
 } from '@mealdirect/shared';
 import { ReviewPill } from '@/components/ReviewPill';
@@ -43,6 +44,7 @@ function Details({
   refreshing: boolean;
   onRefresh: () => void;
 }) {
+  const bottomSpace = useBottomSpace(spacing.xl * 2);
   const [decision, setDecision] = useState<Decision | null>(null);
   const [notes, setNotes] = useState('');
   const [sheetError, setSheetError] = useState<string | null>(null);
@@ -79,7 +81,7 @@ function Details({
     <>
       <Stack.Screen options={{ title: restaurant.name }} />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: bottomSpace }]}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
       >
         <View style={styles.header}>

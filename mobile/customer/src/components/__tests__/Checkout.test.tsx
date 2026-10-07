@@ -26,7 +26,13 @@ jest.mock('@/store/serverApi', () => ({
   ...jest.requireActual('@/store/serverApi'),
   useGetRestaurantQuery: () => ({ data: mockRestaurant, isLoading: false }),
   useGetConfigQuery: () => ({ data: { onlinePayments: false } }),
-  useGetAddressesQuery: () => ({ data: [{ id: 'a1', label: 'Home', address: '1 Home Street', lastUsedAt: null, createdAt: '' }], isLoading: false }),
+  useGetAddressesQuery: () => ({
+    data: [
+      { id: 'a1', label: 'Home', address: '1 Home Street', lastUsedAt: null, createdAt: '' },
+      { id: 'a2', label: 'Work', address: '2 Office Road', lastUsedAt: null, createdAt: '' },
+    ],
+    isLoading: false,
+  }),
   useAddAddressMutation: () => [() => ({ unwrap: async () => ({}) })],
   useGetMenuSlotsQuery: (menuId: string) => ({ data: mockSlots[menuId], isFetching: false }),
   useCreateOrderMutation: () => [(arg: unknown) => ({ unwrap: () => mockCreate(arg) })],
@@ -93,4 +99,21 @@ describe('Checkout with several menus', () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
+  test('each menu can go to its own address', async () => {
+    mockCreate.mockImplementation(async (arg: { menuId: string }) => ({ id: `order-${arg.menuId}` }));
+    await renderCheckout();
+    await fireEvent(screen.getByLabelText('Same address for all menus'), 'valueChange', false);
+    expect(screen.getByText('Choose an address for each menu below.')).toBeTruthy();
+
+    // One picker per menu, lunch first: send lunch to work
+    await fireEvent.press(screen.getAllByLabelText('Work, 2 Office Road')[0]);
+    await fireEvent.press(screen.getByText('12:00 PM – 12:30 PM'));
+    await fireEvent.press(screen.getByText('7:00 PM – 7:30 PM'));
+    await fireEvent.press(screen.getByText(/^Place 2 orders/));
+
+    expect(mockCreate.mock.calls.map(([o]) => [o.menuId, o.deliveryAddress])).toEqual([
+      ['m1', '2 Office Road'],
+      ['m2', '1 Home Street'],
+    ]);
+  });
 });

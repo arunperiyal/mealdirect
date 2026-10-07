@@ -81,9 +81,11 @@ A dish can have limits set by the restaurant, shown under its price ("Max 2 per 
 The quantity buttons stop at the limit, counting what the customer already ordered from that menu, and a dish
 whose daily limit is used up shows **Limit reached**. The backend checks the same limits.
 
-A restaurant can have several menus a day (lunch, dinner...); its page shows a tab for each. The cart can hold
-dishes from any of one restaurant's menus, today's and tomorrow's. Checkout places one order per menu, each with
-its own delivery time and bill; a menu that can't be ordered (e.g. it just closed) stays in the cart. Adding a
+A restaurant can have several menus a day (lunch, dinner...); its page lists them one after another, each with
+its name and ordering times. The cart can hold dishes from any of one restaurant's menus, today's and tomorrow's.
+Checkout places one order per menu, each with its own delivery time and bill. The menus go to the same address
+unless **Same address for all menus** is switched off, which gives each its own (lunch to the office, dinner
+home). A menu that can't be ordered (e.g. it just closed) stays in the cart. Adding a
 dish from another restaurant asks before replacing the cart.
 
 ## Checks

@@ -82,15 +82,17 @@ describe('RestaurantScreen with several menus a day', () => {
     mockOrders = [];
   });
 
-  test('a tab per menu; dishes from both go in the same cart', async () => {
+  test('the menus follow one another on the page; dishes from both go in the same cart', async () => {
     const store = makeStore();
     await renderScreen(store);
+    expect(screen.getByText('Lunch')).toBeTruthy();
+    expect(screen.getByText('Dinner')).toBeTruthy();
     expect(screen.getByText('Biryani')).toBeTruthy();
-    await fireEvent.press(screen.getAllByText('Add')[0]); // Biryani, from lunch
+    expect(screen.getByText('Chapati')).toBeTruthy();
 
-    await fireEvent.press(screen.getByText('Dinner'));
-    expect(screen.queryByText('Biryani')).toBeNull();
-    await fireEvent.press(screen.getByText('Add')); // Chapati, from dinner
+    const adds = screen.getAllByText('Add'); // Biryani, Meals (lunch), Chapati (dinner)
+    await fireEvent.press(adds[0]);
+    await fireEvent.press(adds[adds.length - 1]);
 
     expect(store.getState().cart.menus.map((m) => [m.menuName, m.lines[0].name])).toEqual([
       ['Lunch', 'Biryani'],
@@ -98,7 +100,7 @@ describe('RestaurantScreen with several menus a day', () => {
     ]);
   });
 
-  test('with one menu there are no tabs', async () => {
+  test("with one menu, the menu's name isn't shown", async () => {
     mockMenus = [mockMenu];
     await renderScreen();
     expect(screen.queryByText('Lunch')).toBeNull();

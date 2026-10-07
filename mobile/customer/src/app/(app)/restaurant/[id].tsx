@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import {
   addDays,
@@ -44,15 +44,14 @@ export default function RestaurantScreen() {
   const menusQuery = useGetPublishedMenusQuery({ restaurantId: id, date });
   const restaurant = restaurantQuery.data;
   const menus = useMemo(() => menusQuery.data ?? [], [menusQuery.data]);
-  // Several menus a day (Lunch, Dinner...): the one picked, else the first still taking orders
-  const [menuId, setMenuId] = useState<string | null>(null);
-  const menu =
-    menus.find((m) => m.id === menuId) ??
-    menus.find((m) => orderingState(m, localDateString(new Date())).open) ??
-    menus[0];
-  // What this customer already ordered from the menu counts toward daily limits
+  // What this customer already ordered from each menu counts toward its daily limits
   const { data: myOrders } = useGetMyOrdersQuery();
-  const ordered = useMemo(() => (menu ? orderedFromMenu(myOrders ?? [], menu.id) : new Map<string, number>()), [myOrders, menu]);
+  const ordered = useMemo(
+    () => new Map(menus.map((m) => [m.id, orderedFromMenu(myOrders ?? [], m.id)])),
+    [myOrders, menus]
+  );
+  // Several menus a day (Lunch, Dinner...) follow one another down the page
+  const sections = useMemo(() => menus.map((menu) => ({ menu, data: menu.items })), [menus]);
 
   if (restaurantQuery.isLoading) return <LoadingState />;
   if (!restaurant) {
@@ -67,28 +66,21 @@ export default function RestaurantScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: restaurant.name }} />
-      <FlatList
-        data={menu?.items ?? []}
-        keyExtractor={(item) => item.id}
+      <SectionList
+        sections={sections}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         contentContainerStyle={styles.list}
-        ListHeaderComponent={
-          <Header
+        stickySectionHeadersEnabled={false}
+        ListHeaderComponent={<Header restaurant={restaurant} dayIndex={dayIndex} onSelectDay={setDayIndex} />}
+        renderSectionHeader={({ section }) => <MenuHeader menu={section.menu} showName={menus.length > 1} />}
+        renderItem={({ item, section }) => (
+          <MenuItemRow
+            item={item}
+            menu={section.menu}
             restaurant={restaurant}
-            menus={menus}
-            menu={menu}
-            onSelectMenu={setMenuId}
-            dayIndex={dayIndex}
-            onSelectDay={(i) => {
-              setDayIndex(i);
-              setMenuId(null);
-            }}
+            orderedBefore={ordered.get(section.menu.id)?.get(item.id) ?? 0}
           />
-        }
-        renderItem={({ item }) =>
-          menu ? (
-            <MenuItemRow item={item} menu={menu} restaurant={restaurant} orderedBefore={ordered.get(item.id) ?? 0} />
-          ) : null
-        }
+        )}
         ListEmptyComponent={
           menusQuery.isFetching ? (
             <LoadingState />
@@ -113,16 +105,10 @@ export default function RestaurantScreen() {
 
 function Header({
   restaurant,
-  menus,
-  menu,
-  onSelectMenu,
   dayIndex,
   onSelectDay,
 }: {
   restaurant: Restaurant;
-  menus: Menu[];
-  menu: Menu | undefined;
-  onSelectMenu: (id: string) => void;
   dayIndex: number;
   onSelectDay: (i: number) => void;
 }) {
@@ -156,20 +142,16 @@ function Header({
         ))}
       </View>
 
-      {menus.length > 1 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.menuTabs}
-          accessibilityRole="tablist"
-        >
-          {menus.map((m) => (
-            <Chip key={m.id} label={m.name} selected={m.id === menu?.id} onPress={() => onSelectMenu(m.id)} />
-          ))}
-        </ScrollView>
-      )}
+    </View>
+  );
+}
 
-      {menu ? <CutoffNote menu={menu} /> : null}
+// The start of each menu: its name when the day has several, and when ordering closes
+function MenuHeader({ menu, showName }: { menu: Menu; showName: boolean }) {
+  return (
+    <View style={styles.menuHeader} accessibilityRole="header">
+      {showName && <Text style={font.title}>{menu.name}</Text>}
+      <CutoffNote menu={menu} />
     </View>
   );
 }
@@ -260,7 +242,7 @@ const styles = StyleSheet.create({
   header: { gap: spacing.xs, marginBottom: spacing.md },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
   days: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  menuTabs: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  menuHeader: { marginTop: spacing.md, marginBottom: spacing.sm, gap: spacing.xs },
   window: { marginTop: spacing.sm },
   item: {
     flexDirection: 'row',

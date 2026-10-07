@@ -5,6 +5,7 @@ const userController = require('../controllers/userController');
 const accountController = require('../controllers/accountController');
 const avatarController = require('../controllers/avatarController');
 const passwordResetController = require('../controllers/passwordResetController');
+const emailVerificationController = require('../controllers/emailVerificationController');
 const User = require('../models/User');
 const { issuedBeforePasswordChange, verifyToken } = require('../middleware/auth');
 const { authLimiter } = require('../middleware/rateLimit');
@@ -277,6 +278,37 @@ const validated = (req, res) => {
   res.status(400).json({ success: false, code: 'VALIDATION_ERROR', message: errors.array()[0].msg, errors: errors.array() });
   return false;
 };
+
+/**
+ * POST /api/auth/verify-email   Body: { code }
+ * Confirms the signed-in account's email with the 6-digit code sent at sign-up
+ * (15 minutes, 5 tries). data: { user } with isVerified true.
+ * POST /api/auth/verify-email/resend: a new code (409 RESEND_TOO_SOON within a minute).
+ */
+router.post(
+  '/verify-email',
+  authLimiter,
+  verifyToken,
+  [body('code').trim().matches(/^\d{6}$/).withMessage('Enter the 6-digit code from the email')],
+  async (req, res) => {
+    if (!validated(req, res)) return;
+    try {
+      const user = await emailVerificationController.verify(req.user.id, req.body.code);
+      res.json({ success: true, data: { user: user.toJSON() } });
+    } catch (error) {
+      sendError(res, error);
+    }
+  }
+);
+
+router.post('/verify-email/resend', authLimiter, verifyToken, async (req, res) => {
+  try {
+    await emailVerificationController.resend(req.user.id);
+    res.json({ success: true, message: 'A new code is on its way' });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
 
 /**
  * POST /api/auth/password-reset/request   Body: { email }

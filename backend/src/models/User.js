@@ -105,6 +105,17 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    // Email verification: the 6-digit code is hashed into verificationToken; when it
+    // was sent and how many wrong tries it has had. See emailVerificationController.
+    verificationSentAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    verificationAttempts: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
     lastLoginAt: {
       type: DataTypes.DATE,
       allowNull: true,

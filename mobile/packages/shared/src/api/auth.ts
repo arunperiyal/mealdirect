@@ -30,6 +30,13 @@ export const createAuthApi = (client: AxiosInstance) => ({
 
   removeAvatar: async (): Promise<User> => (await client.delete('/auth/me/avatar')).data.data.user,
 
+  // Sign-up: confirm the email with the 6-digit code it was sent. Returns the verified user.
+  verifyEmail: async (code: string): Promise<User> =>
+    (await client.post('/auth/verify-email', { code })).data.data.user,
+  resendVerification: async () => {
+    await client.post('/auth/verify-email/resend');
+  },
+
   // Forgot password: email a 6-digit code, then set a new password with it
   requestPasswordReset: async (email: string) => {
     await client.post('/auth/password-reset/request', { email });

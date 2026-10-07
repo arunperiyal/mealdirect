@@ -122,6 +122,18 @@ const STEPS = [
             ADD COLUMN IF NOT EXISTS "password_reset_sent_at" TIMESTAMP WITH TIME ZONE,
             ADD COLUMN IF NOT EXISTS "password_reset_attempts" INTEGER NOT NULL DEFAULT 0`,
   },
+  {
+    name: 'Email verification: users code columns',
+    sql: `ALTER TABLE "users"
+            ADD COLUMN IF NOT EXISTS "verification_sent_at" TIMESTAMP WITH TIME ZONE,
+            ADD COLUMN IF NOT EXISTS "verification_attempts" INTEGER NOT NULL DEFAULT 0`,
+  },
+  {
+    // Accounts from before email verification aren't asked for a code. Bounded by date,
+    // so running this again never verifies a newer account.
+    name: 'Email verification: earlier accounts count as verified',
+    sql: `UPDATE "users" SET "is_verified" = true WHERE "is_verified" = false AND "created_at" < '2026-10-09'`,
+  },
 ];
 
 const upgradeDatabase = async (sequelize, log = () => {}) => {

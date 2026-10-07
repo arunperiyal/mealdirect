@@ -83,6 +83,7 @@ backups.
 | `AUTO_ASSIGN_JOB` | `false` stops the job that gives waiting orders to riders' auto-accept rules (accepting orders still does it at once) |
 | `TRUST_PROXY` | Number of reverse proxies in front of the API, so rate limits see the real client IP |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Email for password reset codes, through any SMTP server. Without it (or with the example values), development prints emails to the API log and production can't send them. |
+| `REQUIRE_EMAIL_VERIFICATION` | `false` lets new accounts use the API without confirming their email (on by default) |
 | `CORS_ORIGINS` | Production only: comma-separated addresses of the web apps allowed to call the API from a browser (development allows any) |
 
 ## How orders work
@@ -160,6 +161,10 @@ All responses are JSON: `{ "success": true, "data": ... }` or
   phone number)
 - `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`
 - `DELETE /api/auth/me` `{ password }`: delete your own account (see [Deleted accounts](#deleted-accounts))
+- Email verification: sign-up emails a 6-digit code (15 minutes, 5 tries). Until it's entered with
+  `POST /api/auth/verify-email` `{ code }`, every endpoint outside `/api/auth` answers `403 EMAIL_NOT_VERIFIED`;
+  `POST /api/auth/verify-email/resend` sends a new code (`409 RESEND_TOO_SOON` within a minute). Accounts from before
+  verification, and admins made with `npm run create-admin`, count as verified. Users carry `isVerified`.
 - Forgot password: `POST /api/auth/password-reset/request` `{ email }` emails a 6-digit code (always `200`, so it
   doesn't reveal who has an account; one email a minute). `POST /api/auth/password-reset/confirm`
   `{ email, code, password }` sets the new password: a code works once, for 15 minutes and 5 tries

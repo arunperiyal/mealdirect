@@ -9,6 +9,8 @@ import { bootstrapSession, refreshProfile } from '@/store/authSlice';
 function RootNavigator() {
   const dispatch = useAppDispatch();
   const status = useAppSelector((s) => s.auth.status);
+  // A new account confirms its email before the app opens (older cached profiles have no flag)
+  const unverified = useAppSelector((s) => s.auth.user?.isVerified === false);
 
   useEffect(() => {
     dispatch(bootstrapSession())
@@ -22,11 +24,15 @@ function RootNavigator() {
   if (status === 'loading') return <LoadingState />;
 
   const signedIn = status === 'signedIn';
+  const verified = signedIn && !unverified;
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Protected guard={signedIn}>
+      <Stack.Protected guard={verified}>
         <Stack.Screen name="(app)" />
+      </Stack.Protected>
+      <Stack.Protected guard={signedIn && unverified}>
+        <Stack.Screen name="verify-email" />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="sign-in" />

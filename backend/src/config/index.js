@@ -79,6 +79,12 @@ module.exports = {
   businessUtcOffsetMinutes: parseInt(process.env.BUSINESS_UTC_OFFSET_MINUTES || '330', 10),
 
   // Security
+  // New accounts confirm their email with a 6-digit code before using the API.
+  // REQUIRE_EMAIL_VERIFICATION=false switches it off (the tests do).
+  emailVerification: {
+    required: process.env.REQUIRE_EMAIL_VERIFICATION !== 'false',
+  },
+
   security: {
     bcryptRounds: 12,
     sessionTimeout: 24 * 60 * 60 * 1000, // 24 hours

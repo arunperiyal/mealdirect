@@ -2,6 +2,10 @@ const jwt = require('jsonwebtoken');
 const config = require('../config');
 const User = require('../models/User');
 
+// Until a new account confirms its email, only these work: signing in and out, the
+// verification itself, and deleting the account
+const OPEN_BEFORE_VERIFICATION = '/api/auth/';
+
 // Tokens carry their issue time in whole seconds; a second's grace keeps the token
 // from a sign-in made right after the change working
 const issuedBeforePasswordChange = (decoded, user) =>
@@ -42,7 +46,7 @@ const verifyToken = async (req, res, next) => {
   // A deleted account is signed out everywhere at once, not when its tokens expire,
   // and so is every session from before a password change
   try {
-    const user = await User.findByPk(decoded.id, { attributes: ['id', 'passwordChangedAt'] });
+    const user = await User.findByPk(decoded.id, { attributes: ['id', 'passwordChangedAt', 'isVerified'] });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -55,6 +59,13 @@ const verifyToken = async (req, res, next) => {
         success: false,
         message: 'Your password was changed. Please sign in again.',
         code: 'PASSWORD_CHANGED'
+      });
+    }
+    if (config.emailVerification.required && !user.isVerified && !req.originalUrl.startsWith(OPEN_BEFORE_VERIFICATION)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Confirm your email with the code we sent to use MealDirect',
+        code: 'EMAIL_NOT_VERIFIED'
       });
     }
   } catch (error) {

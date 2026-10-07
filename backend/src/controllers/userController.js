@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const config = require('../config');
+const { sendFirstCode } = require('./emailVerificationController');
 const validator = require('validator');
 
 // Roles anyone can sign up for. Restaurant admins still need a system admin to
@@ -88,7 +90,10 @@ async function registerUser(userData) {
     phone: phone || null,
     role,
     ...(role === 'delivery_partner' && { riderStatus: 'pending' }),
+    // With verification off, accounts count as verified, so switching it on later locks nobody out
+    isVerified: !config.emailVerification.required,
   });
+  if (config.emailVerification.required) await sendFirstCode(user);
 
   // Generate tokens
   const { accessToken, refreshToken } = user.generateTokens();
@@ -257,6 +262,8 @@ async function createSystemAdmin({ email, password, firstName, lastName }) {
     firstName,
     lastName,
     role: 'system_admin',
+    // Made on the server by someone who controls the address
+    isVerified: true,
   });
 
   return user.toJSON();

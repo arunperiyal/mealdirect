@@ -49,6 +49,13 @@ code), `main` (`nvim`), and `zsh` (shells in `backend/`, `mobile/` and the repo 
 Keep every app on the same Expo SDK and the same `react` / `react-native` versions. A second copy of React in the
 workspace causes runtime errors. After adding a dependency, check with `npm ls react react-native`.
 
+## Email verification
+
+A new account confirms its email before the app opens: after signing up, the **Verify your email** screen asks for
+the 6-digit code that was emailed (15 minutes, 5 tries; **Send a new code** once a minute). Signing in again before
+then returns to that screen. The screen is `VerifyEmail` in the shared package; each app's root layout shows it
+while `user.isVerified` is `false`. Accounts from before verification aren't asked.
+
 ## Forgotten passwords
 
 Every app's sign-in has **Forgot password?**: the user enters their email, gets a 6-digit code by email (valid for

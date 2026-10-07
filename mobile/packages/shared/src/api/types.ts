@@ -13,6 +13,8 @@ export interface User {
   role: Role;
   riderStatus?: RiderStatus; // delivery partners only
   avatarUrl?: string | null; // relative to the API's address
+  // false until a new account enters the code emailed at sign-up
+  isVerified?: boolean;
 }
 
 export interface Restaurant {

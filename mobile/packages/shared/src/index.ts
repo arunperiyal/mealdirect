@@ -32,6 +32,7 @@ export { ChangeRequestNotice } from './components/ChangeRequestNotice';
 export { Chip } from './components/Chip';
 export { DeleteAccount } from './components/DeleteAccount';
 export { ForgotPassword } from './components/ForgotPassword';
+export { VerifyEmail } from './components/VerifyEmail';
 export { OrderRatingView } from './components/OrderRatingView';
 export { PayoutFields } from './components/PayoutFields';
 export { PriceSummary } from './components/PriceSummary';

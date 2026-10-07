@@ -7,6 +7,8 @@ process.env.RAZORPAY_KEY_SECRET = 'test_key_secret';
 process.env.RAZORPAY_WEBHOOK_SECRET = 'test_webhook_secret';
 // Online payment is on hold in the product, but its tests keep it switched on
 process.env.ONLINE_PAYMENTS_ENABLED = process.env.ONLINE_PAYMENTS_ENABLED ?? 'true';
+// Suites sign up and act at once; emailVerification.test.js switches this on
+process.env.REQUIRE_EMAIL_VERIFICATION = process.env.REQUIRE_EMAIL_VERIFICATION ?? 'false';
 
 // Clear require cache for modules that might have been loaded with wrong env vars
 const modulesToClear = [

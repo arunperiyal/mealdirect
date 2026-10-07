@@ -80,6 +80,7 @@ backups.
 | `ONLINE_PAYMENTS_ENABLED`, `RAZORPAY_*` | Online payment. Off for now: customers pay on delivery. |
 | `BUSINESS_UTC_OFFSET_MINUTES` | The business day for cash settlement, order cutoffs and auto-ready (330 = India) |
 | `AUTO_READY_JOB` | `false` stops the job that marks orders ready before their delivery time |
+| `AUTO_ASSIGN_JOB` | `false` stops the job that gives waiting orders to riders' auto-accept rules (accepting orders still does it at once) |
 | `TRUST_PROXY` | Number of reverse proxies in front of the API, so rate limits see the real client IP |
 | `CORS_ORIGINS` | Production only: comma-separated addresses of the web apps allowed to call the API from a browser (development allows any) |
 
@@ -104,6 +105,12 @@ backups.
 - **Order handling settings** (per restaurant, off by default): auto-accept pay-on-delivery orders, and mark
   accepted delivery orders ready a set number of minutes before their delivery time.
 - **Riders** claim orders from a shared queue. On Postgres, two riders can't claim the same order.
+- **Auto-accept rules:** a rider can take a restaurant's deliveries due between two times (e.g. 12:00–14:00, by
+  the delivery time's start, any day) without claiming each one. When the restaurant accepts an order, it goes to
+  a matching rider at once; a job retries every minute for orders still waiting. With several matching riders,
+  the one with the fewest active deliveries gets it (ties: the older rule). The usual limits apply (3 active
+  deliveries, no overdue cash), orders without a delivery time match no rule, and an order a rider gives back
+  never returns to them through a rule. A window can't cross midnight: use two rules.
 - **Payout details:** a restaurant must add its UPI ID and bank account (`upiId`, `bankAccountName`,
   `bankAccountNumber`, `bankIFSC`) before an admin can approve it. Riders can add theirs for tips and earnings, and
   edit their name and phone. Until approval, changes apply at once; after, each change is a `ChangeRequest` that
@@ -191,6 +198,8 @@ All responses are JSON: `{ "success": true, "data": ... }` or
 - `GET /api/delivery/orders`, `GET /api/delivery/orders/:id`: the rider's orders
 - `POST /api/delivery/orders/:id/` + `claim`, `release`, `pick-up`, `deliver` (with the payment collected)
 - `GET /api/delivery/balance`: cash held and whether settlement is due
+- `GET/POST /api/delivery/rules`, `PUT/DELETE /api/delivery/rules/:id`: auto-accept rules
+  `{ restaurantId, startTime, endTime, enabled }`, see below
 - `GET /api/delivery/ratings`: the rider's delivery ratings, average and recent (customers stay anonymous)
 
 ### Saved addresses (customers)

@@ -122,7 +122,7 @@ const bulkAdvance = wrap(async (userId, { menuId, group, action }) => {
     await order.save();
     updated += 1;
   }
-  return { updated, skipped };
+  return { updated, skipped, restaurantId: menu.restaurantId };
 });
 
 /**

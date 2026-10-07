@@ -81,6 +81,12 @@ const Order = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    // Riders who gave this order back. Their auto-accept rules don't take it again.
+    releasedRiderIds: {
+      type: DataTypes.JSON,
+      allowNull: false,
+      defaultValue: [],
+    },
     deliveryAddress: {
       type: DataTypes.TEXT,
       allowNull: true,

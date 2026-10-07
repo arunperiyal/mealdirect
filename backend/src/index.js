@@ -4,6 +4,7 @@ const sequelize = require('./config/database');
 const { checkProductionConfig } = require('./config/validate');
 const { upgradeDatabase } = require('./db/upgrade');
 const { startAutoReadyJob } = require('./jobs/autoReady');
+const { startAutoAssignJob } = require('./jobs/autoAssign');
 
 const PORT = config.port;
 
@@ -36,6 +37,8 @@ const startServer = async () => {
 
     // Marks accepted delivery orders ready before their slot, for restaurants that turned it on
     const autoReady = startAutoReadyJob();
+    // Gives waiting orders to riders' auto-accept rules
+    const autoAssign = startAutoAssignJob();
 
     // Start Express server
     const server = app.listen(PORT, () => {
@@ -48,6 +51,7 @@ const startServer = async () => {
     process.on('SIGTERM', () => {
       console.info('SIGTERM signal received: closing HTTP server');
       if (autoReady) clearInterval(autoReady);
+      if (autoAssign) clearInterval(autoAssign);
       server.close(async () => {
         console.info('HTTP server closed');
         await sequelize.close();

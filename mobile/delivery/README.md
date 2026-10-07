@@ -56,6 +56,10 @@ and shows the admin's note if it's turned down. Email can't be changed.
   that one was rated.
 - **Delivery statement**: the orders you delivered over a period as a CSV file, with how each was paid and the
   cash you collected.
+- **Auto-accept**: take a restaurant's deliveries due in a time window, e.g. Annapurna Mess 12:00–14:00, without
+  accepting each one. They're yours as soon as the restaurant accepts them and show under **Deliveries**. Rules
+  can be paused. The usual limits still apply (3 at a time, no overdue cash); with two riders on the same order,
+  the one with fewer deliveries gets it, and an order you give back doesn't come back.
 
 Riders can delete their account from **Account** (or while waiting for approval), once they've delivered or
 released their orders and settled their cash.

@@ -3,6 +3,7 @@ const { body, param, validationResult } = require('express-validator');
 const router = express.Router();
 const deliveryController = require('../controllers/deliveryController');
 const ratingController = require('../controllers/ratingController');
+const autoAcceptController = require('../controllers/autoAcceptController');
 const { verifyToken, authorize } = require('../middleware/auth');
 
 const fail = (res, error) =>
@@ -38,6 +39,29 @@ const orderId = [param('id').isUUID()];
 
 /** GET /api/delivery/ratings: the rider's delivery ratings, average and recent */
 router.get('/ratings', handle((req) => ratingController.riderRatings(req.user.id)));
+
+/**
+ * Auto-accept rules: take a restaurant's deliveries due between two times (HH:mm, business
+ * timezone, start included, end not) without claiming them by hand.
+ * GET /api/delivery/rules
+ * POST /api/delivery/rules          Body: { restaurantId, startTime, endTime } (up to 10)
+ * PUT /api/delivery/rules/:id       Body: { startTime?, endTime?, enabled? }
+ * DELETE /api/delivery/rules/:id
+ * Saving a rule takes matching orders already waiting.
+ */
+const hhmm = (field) => body(field).matches(/^([01]\d|2[0-3]):[0-5]\d$/).withMessage('Use a time like 12:30');
+router.get('/rules', handle((req) => autoAcceptController.listRules(req.user.id)));
+router.post(
+  '/rules',
+  [body('restaurantId').isUUID(), hhmm('startTime'), hhmm('endTime')],
+  handle((req) => autoAcceptController.createRule(req.user.id, req.body))
+);
+router.put(
+  '/rules/:id',
+  [param('id').isUUID(), hhmm('startTime').optional(), hhmm('endTime').optional(), body('enabled').optional().isBoolean()],
+  handle((req) => autoAcceptController.updateRule(req.params.id, req.user.id, req.body))
+);
+router.delete('/rules/:id', orderId, handle((req) => autoAcceptController.deleteRule(req.params.id, req.user.id)));
 
 /** GET /api/delivery/available: unclaimed delivery orders */
 router.get('/available', handle(() => deliveryController.listAvailable()));

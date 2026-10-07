@@ -1,10 +1,12 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import {
   createAxiosBaseQuery,
+  type AutoAcceptRule,
   type ChangeResult,
   type Collection,
   type Order,
   type PayoutDetails,
+  type Restaurant,
   type RiderCash,
   type RiderProfile,
   type RiderRatings,
@@ -16,7 +18,7 @@ export type DeliveryAction = 'claim' | 'release' | 'pick-up' | 'deliver';
 export const serverApi = createApi({
   reducerPath: 'serverApi',
   baseQuery: createAxiosBaseQuery(api),
-  tagTypes: ['Queue', 'Mine', 'Order', 'Balance', 'Profile', 'Ratings'],
+  tagTypes: ['Queue', 'Mine', 'Order', 'Balance', 'Profile', 'Ratings', 'Rule'],
   endpoints: (build) => ({
     // How customers rated your deliveries
     getRatings: build.query<RiderRatings, void>({
@@ -40,6 +42,32 @@ export const serverApi = createApi({
     updatePayout: build.mutation<ChangeResult & { profile: RiderProfile }, PayoutDetails>({
       query: (data) => ({ url: '/profile/payout', method: 'PUT', data }),
       invalidatesTags: ['Profile'],
+    }),
+    // Auto-accept rules. Saving one takes matching orders already waiting, so the queue and
+    // the rider's deliveries change too.
+    getRules: build.query<AutoAcceptRule[], void>({
+      query: () => ({ url: '/delivery/rules' }),
+      providesTags: ['Rule'],
+    }),
+    addRule: build.mutation<AutoAcceptRule, { restaurantId: string; startTime: string; endTime: string }>({
+      query: (data) => ({ url: '/delivery/rules', method: 'POST', data }),
+      invalidatesTags: ['Rule', 'Queue', 'Mine'],
+    }),
+    updateRule: build.mutation<AutoAcceptRule, { id: string; startTime?: string; endTime?: string; enabled?: boolean }>({
+      query: ({ id, ...data }) => ({ url: `/delivery/rules/${id}`, method: 'PUT', data }),
+      invalidatesTags: ['Rule', 'Queue', 'Mine'],
+    }),
+    deleteRule: build.mutation<void, string>({
+      query: (id) => ({ url: `/delivery/rules/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Rule'],
+    }),
+    // Restaurants that deliver, to set a rule for
+    searchRestaurants: build.query<Restaurant[], string>({
+      query: (search) => ({
+        url: '/restaurants',
+        params: { isApproved: true, limit: 20, ...(search ? { search } : {}) },
+      }),
+      transformResponse: (restaurants: Restaurant[]) => restaurants.filter((r) => r.deliveryEnabled),
     }),
     // Unclaimed delivery orders from every restaurant
     getAvailable: build.query<Order[], void>({
@@ -73,6 +101,11 @@ export const serverApi = createApi({
 });
 
 export const {
+  useGetRulesQuery,
+  useAddRuleMutation,
+  useUpdateRuleMutation,
+  useDeleteRuleMutation,
+  useSearchRestaurantsQuery,
   useGetRatingsQuery,
   useGetProfileQuery,
   useUpdatePersonalMutation,

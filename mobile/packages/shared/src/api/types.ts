@@ -292,6 +292,18 @@ export interface RiderRatings extends RatingSummary {
   recent: { id: string; orderId: string; rating: number; comment: string | null; createdAt: string }[];
 }
 
+// A rider's auto-accept rule (GET /delivery/rules): the restaurant's deliveries due between
+// startTime and endTime (HH:mm, start included, end not) go to the rider without claiming
+export interface AutoAcceptRule {
+  id: string;
+  restaurantId: string;
+  restaurant: { id: string; name: string; city: string | null } | null;
+  startTime: string;
+  endTime: string;
+  enabled: boolean;
+  createdAt: string;
+}
+
 // A customer's saved delivery address (GET /addresses), most recently used first
 export interface SavedAddress {
   id: string;

@@ -11,6 +11,7 @@ const Dish = require('./Dish');
 const Avatar = require('./Avatar');
 const Rating = require('./Rating');
 const Address = require('./Address');
+const AutoAcceptRule = require('./AutoAcceptRule');
 
 // Define associations
 User.hasMany(Restaurant, { foreignKey: 'ownerId', as: 'restaurants' });
@@ -58,6 +59,9 @@ Dish.belongsTo(Restaurant, { foreignKey: 'restaurantId', as: 'restaurant' });
 User.hasOne(Avatar, { foreignKey: 'userId', as: 'avatar' });
 User.hasMany(Address, { foreignKey: 'userId', as: 'addresses' });
 
+AutoAcceptRule.belongsTo(Restaurant, { foreignKey: 'restaurantId', as: 'restaurant' });
+AutoAcceptRule.belongsTo(User, { foreignKey: 'riderId', as: 'rider' });
+
 Order.hasOne(Rating, { foreignKey: 'orderId', as: 'rating' });
 Rating.belongsTo(Order, { foreignKey: 'orderId', as: 'order' });
 Rating.belongsTo(User, { foreignKey: 'customerId', as: 'customer' });
@@ -79,4 +83,5 @@ module.exports = {
   Avatar,
   Rating,
   Address,
+  AutoAcceptRule,
 };

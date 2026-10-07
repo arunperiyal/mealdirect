@@ -93,6 +93,11 @@ const STEPS = [
     name: 'Profile pictures: users.avatar_updated_at',
     sql: `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "avatar_updated_at" TIMESTAMP WITH TIME ZONE`,
   },
+  {
+    // The AutoAcceptRules table itself is new, so sync creates it
+    name: 'Rider auto-accept: Orders.released_rider_ids',
+    sql: `ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "released_rider_ids" JSON NOT NULL DEFAULT '[]'`,
+  },
 ];
 
 const upgradeDatabase = async (sequelize, log = () => {}) => {

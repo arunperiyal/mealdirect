@@ -5,6 +5,11 @@ const orderController = require('../controllers/orderController');
 const kitchenController = require('../controllers/kitchenController');
 const ratingController = require('../controllers/ratingController');
 const addressController = require('../controllers/addressController');
+const { runAutoAssign } = require('../controllers/autoAcceptController');
+
+// After a restaurant accepts orders, riders' auto-accept rules take theirs at once.
+// Best effort: the background job tries again if this fails.
+const assignRiders = (restaurantId) => runAutoAssign({ restaurantId }).catch(() => 0);
 const { verifyToken, authorize } = require('../middleware/auth');
 const { MAX_QUANTITY } = require('../lib/itemLimits');
 
@@ -43,6 +48,7 @@ router.post(
       const order = await orderController.createOrder(req.user.id, req.body);
       // Best effort: a failure here mustn't look like the order failed
       await addressController.markUsed(req.user.id, order.deliveryAddress).catch(() => {});
+      if (order.status === 'confirmed' && (await assignRiders(order.restaurantId))) await order.reload();
 
       res.status(201).json({
         success: true,
@@ -108,7 +114,8 @@ router.post(
       if (!errors.isEmpty()) {
         return res.status(400).json({ success: false, code: 'VALIDATION_ERROR', errors: errors.array() });
       }
-      const data = await kitchenController.bulkAdvance(req.user.id, req.body);
+      const { restaurantId, ...data } = await kitchenController.bulkAdvance(req.user.id, req.body);
+      if (req.body.action === 'accept' && data.updated) await assignRiders(restaurantId);
       res.json({ success: true, data });
     } catch (error) {
       res.status(error.statusCode || 500).json({
@@ -322,6 +329,7 @@ router.post(
       }
 
       const order = await orderController.confirmOrder(req.params.id, req.user.id);
+      if (await assignRiders(order.restaurantId)) await order.reload();
 
       res.json({
         success: true,

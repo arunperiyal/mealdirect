@@ -140,6 +140,8 @@ const release = wrap(async (orderId, riderId) => {
   }
   order.riderId = null;
   order.claimedAt = null;
+  // So their auto-accept rules don't hand it straight back
+  order.releasedRiderIds = [...new Set([...(order.releasedRiderIds || []), riderId])];
   await order.save();
   return Order.findByPk(orderId, { include: DELIVERY_DETAILS });
 });
@@ -172,4 +174,17 @@ const deliver = wrap(async (orderId, riderId, { collection, note } = {}) => {
 // 8. This rider's cash position with MealDirect
 const balance = wrap(async (riderId) => riderCash(riderId));
 
-module.exports = { assertApprovedRider, listAvailable, listMine, getOrder, claim, release, pickUp, deliver, balance, MAX_ACTIVE };
+module.exports = {
+  assertApprovedRider,
+  listAvailable,
+  listMine,
+  getOrder,
+  claim,
+  release,
+  pickUp,
+  deliver,
+  balance,
+  MAX_ACTIVE,
+  CLAIMABLE_STATUSES,
+  ACTIVE_STATUSES,
+};

@@ -19,7 +19,7 @@ import { authApi } from '@/api';
 import { API_URL } from '@/config';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { logout, signOutLocally, userUpdated } from '@/store/authSlice';
-import { useGetProfileQuery, useGetRatingsQuery } from '@/store/serverApi';
+import { useGetProfileQuery, useGetRatingsQuery, useGetRulesQuery } from '@/store/serverApi';
 
 // "Change waiting for review" etc., else the saved value
 const withStatus = (request: ChangeRequest | null | undefined, saved: string) =>
@@ -35,6 +35,8 @@ export default function AccountScreen() {
   // Details change only after an admin approves, so refetch when the screen opens
   const { data: profile, isFetching, refetch } = useGetProfileQuery(undefined, { refetchOnMountOrArgChange: true });
   const { data: ratings } = useGetRatingsQuery(undefined, { refetchOnMountOrArgChange: true });
+  const { data: rules = [] } = useGetRulesQuery();
+  const activeRules = rules.filter((r) => r.enabled).length;
   const [signingOut, setSigningOut] = useState(false);
   const me = profile ?? user;
 
@@ -78,6 +80,11 @@ export default function AccountScreen() {
           title="Payout details"
           detail={withStatus(profile?.changeRequests.payout, payout || 'Add your UPI ID and bank account')}
           onPress={() => router.push('/profile/payout')}
+        />
+        <LinkRow
+          title="Auto-accept"
+          detail={activeRules ? `${activeRules} rule${activeRules === 1 ? '' : 's'} on` : 'Take a restaurant’s deliveries automatically'}
+          onPress={() => router.push('/auto-accept')}
         />
         <LinkRow title="Delivery statement" detail="Download your deliveries as a CSV file" onPress={() => router.push('/statement')} />
       </Card>

@@ -42,6 +42,13 @@
           "microphonePermission": false
         }
       ]
-    ]
+    ],
+    "owner": "mealdirect",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3bc43e6f-fc54-4f0a-9df6-09cebf0e957b"
+      }
+    }
   }
 }

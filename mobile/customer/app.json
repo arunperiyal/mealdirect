@@ -42,6 +42,13 @@
         }
       ]
     ],
-    "scheme": "mealdirect"
+    "scheme": "mealdirect",
+    "owner": "mealdirect",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "21fb4117-08da-49e5-b65f-eb2ec72fc0d0"
+      }
+    }
   }
 }

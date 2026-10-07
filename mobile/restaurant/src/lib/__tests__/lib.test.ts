@@ -2,7 +2,7 @@ import type { Order } from '@mealdirect/shared';
 import { canRecordPayment, canRestaurantCancel, customerName, nextStep, paymentLabel } from '../orderActions';
 import { bulkResultMessage, countsSummary, groupTitle, kitchenCounts } from '../kitchen';
 import { summarizeToday } from '../today';
-import { dayLabel, isBefore, isValidTime, toHHmm } from '../time';
+import { closesAfterOpens, dayLabel, isBefore, isValidTime, orderingWindowLabel, shiftDate, toHHmm } from '../time';
 import { limitValue, validateLimit, validateMoney, validatePhone } from '../validation';
 
 const order = (overrides: Partial<Order> = {}): Order =>
@@ -173,5 +173,24 @@ describe('dish limits', () => {
     expect(validateLimit('21', 20)).toBeTruthy();
     expect(limitValue(' ')).toBeNull();
     expect(limitValue('4')).toBe(4);
+  });
+});
+
+describe('ordering window', () => {
+  test('overnight windows open the day before', () => {
+    expect(closesAfterOpens('20:00', -1, '06:00', 0)).toBe(true);
+    expect(closesAfterOpens('20:00', 0, '06:00', 0)).toBe(false);
+    expect(closesAfterOpens('08:00', -1, '22:00', -1)).toBe(true);
+    expect(closesAfterOpens('10:00', 0, '10:00', 0)).toBe(false);
+    expect(shiftDate('2026-03-01', -1)).toBe('2026-02-28');
+  });
+
+  test('labels say when a time is the day before', () => {
+    const base = { orderingStartTime: '20:00:00', orderingEndTime: '06:00:00' };
+    expect(orderingWindowLabel({ ...base, orderingOpensDay: -1, orderingClosesDay: 0 })).toBe('8:00 PM the day before – 6:00 AM');
+    expect(orderingWindowLabel({ orderingStartTime: '08:00', orderingEndTime: '11:30', orderingOpensDay: 0, orderingClosesDay: 0 })).toBe(
+      '8:00 AM – 11:30 AM'
+    );
+    expect(orderingWindowLabel({ orderingStartTime: null, orderingEndTime: null })).toBeNull();
   });
 });

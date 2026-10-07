@@ -72,8 +72,9 @@ restaurant's average shows on its page; tap it for the star breakdown and recent
 4. The order screen checks for status changes every 5 seconds until the order is delivered,
    picked up or cancelled.
 
-The restaurant screen shows when ordering closes for the day ("Order by 11:30 AM today"). After that time, or for a
-past day, dishes show **Closed** and the backend refuses the order.
+The restaurant screen shows when ordering closes ("Order by 11:30 AM today", "Order by 6:00 AM tomorrow" for an
+overnight window). Before ordering opens it says when ("Orders open at 8:00 PM today") and dishes show **Opens
+later**; after it closes, or for a past day, dishes show **Closed**. The backend refuses orders outside the window.
 
 A dish can have limits set by the restaurant, shown under its price ("Max 2 per order · Max 3 per person a day").
 The quantity buttons stop at the limit, counting what the customer already ordered from that menu, and a dish

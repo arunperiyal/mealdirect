@@ -102,6 +102,13 @@ const STEPS = [
     name: 'Rider auto-accept: users.auto_accept_limit',
     sql: `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "auto_accept_limit" INTEGER`,
   },
+  {
+    // Existing menus keep null: their opening time isn't enforced, as before
+    name: 'Overnight ordering: Menus ordering days',
+    sql: `ALTER TABLE "Menus"
+            ADD COLUMN IF NOT EXISTS "ordering_opens_day" INTEGER,
+            ADD COLUMN IF NOT EXISTS "ordering_closes_day" INTEGER`,
+  },
 ];
 
 const upgradeDatabase = async (sequelize, log = () => {}) => {

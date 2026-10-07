@@ -133,18 +133,42 @@ describe('Order automation', () => {
 
   describe('order cutoff', () => {
     test('orders close at the ordering end time on the menu day', async () => {
-      const closed = await publishMenu(restaurant.id, dateOffset(0), { orderingStartTime: '00:00', orderingEndTime: '00:00' });
+      const closed = await publishMenu(restaurant.id, dateOffset(0), {
+        orderingStartTime: '00:00',
+        orderingOpensDay: -1,
+        orderingEndTime: '00:00',
+      });
       const res = await order(restaurant.id, closed);
       expect(res.status).toBe(409);
       expect(res.body).toMatchObject({ code: 'ORDERING_CLOSED', message: 'Orders for this menu closed at 00:00' });
     });
 
-    test('menus for past days are closed; tomorrow can be ordered today', async () => {
+    test('menus for past days are closed; tomorrow can be ordered today unless ordering opens later', async () => {
       const past = await publishMenu(restaurant.id, dateOffset(-1));
       expect((await order(restaurant.id, past)).body.code).toBe('ORDERING_CLOSED');
 
-      const tomorrow = await publishMenu(restaurant.id, dateOffset(1), { orderingStartTime: '07:00', orderingEndTime: '10:00' });
+      const tomorrow = await publishMenu(restaurant.id, dateOffset(1), { orderingEndTime: '10:00' });
       expect((await order(restaurant.id, tomorrow)).status).toBe(201);
+
+      const opensTomorrow = await publishMenu(restaurant.id, dateOffset(1), { orderingStartTime: '07:00', orderingEndTime: '10:00' });
+      const early = await order(restaurant.id, opensTomorrow);
+      expect(early.body).toMatchObject({ code: 'ORDERING_NOT_OPEN', message: `Orders for this menu open at 07:00 on ${dateOffset(1)}` });
+    });
+
+    test('ordering can run overnight: opens the day before, closes on the menu day', async () => {
+      const overnight = await publishMenu(restaurant.id, dateOffset(1), {
+        orderingStartTime: '00:00',
+        orderingOpensDay: -1,
+        orderingEndTime: '23:59',
+      });
+      expect((await order(restaurant.id, overnight)).status).toBe(201);
+
+      const res = await request(app)
+        .post('/api/menus')
+        .set(ownerHeaders)
+        .send({ restaurantId: restaurant.id, date: dateOffset(2), orderingStartTime: '20:00', orderingEndTime: '06:00' });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe('INVALID_ORDERING_WINDOW');
     });
   });
 

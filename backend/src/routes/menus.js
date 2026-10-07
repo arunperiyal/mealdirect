@@ -20,6 +20,9 @@ router.post(
     body('date').isISO8601().toDate(),
     body('orderingStartTime').optional().isTime({ hourFormat: 'hour24' }),
     body('orderingEndTime').optional().isTime({ hourFormat: 'hour24' }),
+    // 0: the menu's day, -1: the day before (overnight ordering)
+    body('orderingOpensDay').optional().isIn([-1, 0]).toInt(),
+    body('orderingClosesDay').optional().isIn([-1, 0]).toInt(),
   ],
   async (req, res) => {
     try {
@@ -154,6 +157,9 @@ router.put(
     body('date').optional().isISO8601(),
     body('orderingStartTime').optional().isTime({ hourFormat: 'hour24' }),
     body('orderingEndTime').optional().isTime({ hourFormat: 'hour24' }),
+    // 0: the menu's day, -1: the day before (overnight ordering)
+    body('orderingOpensDay').optional().isIn([-1, 0]).toInt(),
+    body('orderingClosesDay').optional().isIn([-1, 0]).toInt(),
   ],
   async (req, res) => {
     try {

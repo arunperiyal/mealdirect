@@ -37,6 +37,18 @@ const Menu = sequelize.define(
       type: DataTypes.TIME,
       allowNull: true,
     },
+    // Which day each end of the ordering window falls on: 0 the menu's day, -1 the day
+    // before (overnight ordering). See lib/ordering.js.
+    orderingOpensDay: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: { isIn: { args: [[-1, 0]], msg: 'Ordering opens on the menu day or the day before' } },
+    },
+    orderingClosesDay: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: { isIn: { args: [[-1, 0]], msg: 'Ordering closes on the menu day or the day before' } },
+    },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,

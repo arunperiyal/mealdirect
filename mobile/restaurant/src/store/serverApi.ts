@@ -169,7 +169,14 @@ export const serverApi = createApi({
     }),
     createMenu: build.mutation<
       Menu,
-      { restaurantId: string; date: string; orderingStartTime?: string; orderingEndTime?: string }
+      {
+        restaurantId: string;
+        date: string;
+        orderingStartTime?: string;
+        orderingEndTime?: string;
+        orderingOpensDay?: number;
+        orderingClosesDay?: number;
+      }
     >({
       query: (data) => ({ url: '/menus', method: 'POST', data }),
       invalidatesTags: [{ type: 'Menu', id: 'LIST' }],

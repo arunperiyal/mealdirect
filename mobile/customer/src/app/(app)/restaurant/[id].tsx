@@ -168,6 +168,7 @@ function MenuItemRow({
   const quantity =
     cart.menuId === menu.id ? cart.lines.find((l) => l.menuItemId === item.id)?.quantity ?? 0 : 0;
   const allowance = dishAllowance(item, orderedBefore);
+  const ordering = orderingState(menu, localDateString(new Date()));
 
   const add = () => {
     const payload = {
@@ -208,8 +209,8 @@ function MenuItemRow({
       </View>
       {!item.available ? (
         <Text style={styles.soldOut}>Sold out</Text>
-      ) : !orderingState(menu, localDateString(new Date())).open ? (
-        <Text style={styles.soldOut}>Closed</Text>
+      ) : !ordering.open ? (
+        <Text style={styles.soldOut}>{ordering.opensLater ? 'Opens later' : 'Closed'}</Text>
       ) : quantity === 0 && allowance.max === 0 ? (
         <Text style={styles.soldOut}>Limit reached</Text>
       ) : quantity > 0 ? (

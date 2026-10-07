@@ -19,7 +19,7 @@ import {
   type Menu,
   type MenuItem,
 } from '@mealdirect/shared';
-import { dayLabel, isBefore, isValidTime, toHHmm } from '@/lib/time';
+import { dayLabel, isBefore, isValidTime, orderingWindowLabel, toHHmm } from '@/lib/time';
 import { useRestaurant } from '@/lib/useRestaurant';
 import { DishFields } from '@/components/DishFields';
 import { checkDishDraft, dishDraft, dishSummary, emptyDishDraft, type DishDraft, type DishErrors } from '@/lib/dishForm';
@@ -121,10 +121,8 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
                 ? `Customers can order now.${soldOut ? ` ${soldOut} sold out.` : ''} Switch dishes off when they run out.`
                 : 'This menu no longer takes orders.'}
           </Text>
-          {menu.orderingStartTime && menu.orderingEndTime ? (
-            <Text style={[font.caption, styles.gap]}>
-              Ordering window {formatTime(menu.orderingStartTime)}–{formatTime(menu.orderingEndTime)}
-            </Text>
+          {orderingWindowLabel(menu) ? (
+            <Text style={[font.caption, styles.gap]}>Ordering window {orderingWindowLabel(menu)}</Text>
           ) : null}
           {menu.status === 'draft' && (
             <Button

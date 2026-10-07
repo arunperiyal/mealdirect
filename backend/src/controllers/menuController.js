@@ -1,5 +1,6 @@
 const { Menu, DeliverySlot, Restaurant } = require('../models');
 const { assertLimitsConsistent } = require('../lib/itemLimits');
+const { checkOrderingWindow } = require('../lib/ordering');
 const { menuItemsFromDishes } = require('./dishController');
 const { v4: uuidv4 } = require('uuid');
 
@@ -43,6 +44,7 @@ const createMenu = async (restaurantId, userId, data) => {
       date,
       orderingStartTime,
       orderingEndTime,
+      ...checkOrderingWindow(data),
       status: 'draft',
       items: [],
       deliverySlots: [],
@@ -85,11 +87,14 @@ const updateMenu = async (menuId, userId, data) => {
       throwError('INVALID_STATUS', 'Can only edit draft menus');
     }
 
-    const { date, orderingStartTime, orderingEndTime } = data;
+    const { date, orderingStartTime, orderingEndTime, orderingOpensDay, orderingClosesDay } = data;
 
     if (date) menu.date = date;
     if (orderingStartTime) menu.orderingStartTime = orderingStartTime;
     if (orderingEndTime) menu.orderingEndTime = orderingEndTime;
+    if (orderingOpensDay !== undefined) menu.orderingOpensDay = orderingOpensDay;
+    if (orderingClosesDay !== undefined) menu.orderingClosesDay = orderingClosesDay;
+    Object.assign(menu, checkOrderingWindow(menu));
 
     await menu.save();
     return menu;

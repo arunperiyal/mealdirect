@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { addDays, Chip, errorMessage, font, FormScreen, localDateString, spacing, TextField } from '@mealdirect/shared';
-import { dayLabel, isBefore, isValidTime } from '@/lib/time';
+import { closesAfterOpens, dayLabel, dayPhrase, isValidTime, shiftDate, type OrderingDay } from '@/lib/time';
 import { useRestaurant } from '@/lib/useRestaurant';
 import { useCreateMenuMutation, useGetMenusQuery } from '@/store/serverApi';
 
@@ -29,6 +29,9 @@ export default function NewMenuScreen() {
   const chosen = date ?? firstFree;
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
+  // Each time is on the menu's day or the day before, so ordering can run overnight
+  const [opensDay, setOpensDay] = useState<OrderingDay>(0);
+  const [closesDay, setClosesDay] = useState<OrderingDay>(0);
   const [errors, setErrors] = useState<{ start?: string | null; end?: string | null }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [createMenu, { isLoading }] = useCreateMenuMutation();
@@ -39,8 +42,8 @@ export default function NewMenuScreen() {
       end:
         end && !isValidTime(end)
           ? 'Use 24-hour time, like 21:30'
-          : start && end && !isBefore(start, end)
-            ? 'Must be after the start time'
+          : start && end && isValidTime(start) && !closesAfterOpens(start.trim(), opensDay, end.trim(), closesDay)
+            ? 'Must be after it opens. For overnight ordering, open it the day before.'
             : null,
     };
     if (!next.end && Boolean(start) !== Boolean(end)) next.end = 'Set both times, or leave both empty';
@@ -56,7 +59,14 @@ export default function NewMenuScreen() {
       const menu = await createMenu({
         restaurantId: restaurant.id,
         date: chosen,
-        ...(start && end ? { orderingStartTime: start.trim(), orderingEndTime: end.trim() } : {}),
+        ...(start && end
+          ? {
+              orderingStartTime: start.trim(),
+              orderingOpensDay: opensDay,
+              orderingEndTime: end.trim(),
+              orderingClosesDay: closesDay,
+            }
+          : {}),
       }).unwrap();
       router.replace({ pathname: '/menu/[id]', params: { id: menu.id } });
     } catch (e) {
@@ -79,34 +89,86 @@ export default function NewMenuScreen() {
         ))}
       </View>
 
-      <Text style={[font.heading, styles.label]}>Ordering window (optional)</Text>
-      <Text style={[font.caption, styles.hint]}>When customers can place orders for this menu. 24-hour time.</Text>
-      <View style={styles.row}>
-        <View style={styles.half}>
-          <TextField
-            label="Opens"
-            value={start}
-            onChangeText={setStart}
-            error={errors.start}
-            placeholder="08:00"
-            keyboardType="numbers-and-punctuation"
-            maxLength={5}
-          />
-        </View>
-        <View style={styles.half}>
-          <TextField
-            label="Closes"
-            value={end}
-            onChangeText={setEnd}
-            error={errors.end}
-            placeholder="11:30"
-            keyboardType="numbers-and-punctuation"
-            maxLength={5}
-          />
-        </View>
-      </View>
+      <Text style={[font.heading, styles.label]}>When can customers order? (optional)</Text>
+      <Text style={[font.caption, styles.hint]}>
+        24-hour times. Ordering can run overnight: open it the day before, e.g. from 20:00 the day before until
+        06:00. Leave both empty to take orders any time before the day ends.
+      </Text>
+      <WindowEnd
+        label="Opens"
+        placeholder="20:00"
+        value={start}
+        onChangeText={setStart}
+        error={errors.start}
+        day={opensDay}
+        onDay={setOpensDay}
+        menuDate={chosen}
+      />
+      <WindowEnd
+        label="Closes"
+        placeholder="11:30"
+        value={end}
+        onChangeText={setEnd}
+        error={errors.end}
+        day={closesDay}
+        onDay={setClosesDay}
+        menuDate={chosen}
+      />
+      {isValidTime(start) && isValidTime(end) && closesAfterOpens(start.trim(), opensDay, end.trim(), closesDay) ? (
+        <Text style={[font.body, styles.summary]}>
+          Orders open {dayPhrase(shiftDate(chosen, opensDay))} at {start.trim()} and close{' '}
+          {dayPhrase(shiftDate(chosen, closesDay))} at {end.trim()}.
+        </Text>
+      ) : null}
       <Text style={font.caption}>You’ll add dishes next. Customers see the menu once you publish it.</Text>
     </FormScreen>
+  );
+}
+
+// A time, and whether it's on the menu's day or the day before
+function WindowEnd({
+  label,
+  placeholder,
+  value,
+  onChangeText,
+  error,
+  day,
+  onDay,
+  menuDate,
+}: {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  error?: string | null;
+  day: OrderingDay;
+  onDay: (d: OrderingDay) => void;
+  menuDate: string;
+}) {
+  return (
+    <View style={styles.row}>
+      <View style={styles.time}>
+        <TextField
+          label={label}
+          value={value}
+          onChangeText={onChangeText}
+          error={error}
+          placeholder={placeholder}
+          keyboardType="numbers-and-punctuation"
+          maxLength={5}
+        />
+      </View>
+      <View style={styles.days} accessibilityRole="radiogroup" accessibilityLabel={`${label} on`}>
+        {([-1, 0] as const).map((d) => (
+          <Chip
+            key={d}
+            label={`${dayLabel(shiftDate(menuDate, d))}${d === -1 ? ' (day before)' : ''}`}
+            selected={day === d}
+            onPress={() => onDay(d)}
+          />
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -114,6 +176,8 @@ const styles = StyleSheet.create({
   label: { marginBottom: spacing.sm },
   hint: { marginTop: -spacing.xs, marginBottom: spacing.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xl },
-  row: { flexDirection: 'row', gap: spacing.md },
-  half: { flex: 1 },
+  row: { flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' },
+  time: { width: 110 },
+  days: { flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingTop: 26 },
+  summary: { marginBottom: spacing.md },
 });

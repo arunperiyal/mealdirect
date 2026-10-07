@@ -9,7 +9,6 @@ import {
   errorMessage,
   ErrorState,
   font,
-  formatTime,
   LinkRow,
   LoadingState,
   localDateString,
@@ -17,7 +16,7 @@ import {
   spacing,
   type Menu,
 } from '@mealdirect/shared';
-import { dayLabel } from '@/lib/time';
+import { dayLabel, orderingWindowLabel } from '@/lib/time';
 import { useRestaurant } from '@/lib/useRestaurant';
 import { useGetMenusQuery } from '@/store/serverApi';
 
@@ -97,9 +96,7 @@ function MenuRow({ menu }: { menu: Menu }) {
       <Text style={font.caption}>
         {menu.items.length} {menu.items.length === 1 ? 'dish' : 'dishes'}
         {soldOut > 0 ? ` · ${soldOut} sold out` : ''}
-        {menu.orderingStartTime && menu.orderingEndTime
-          ? ` · orders ${formatTime(menu.orderingStartTime)}–${formatTime(menu.orderingEndTime)}`
-          : ''}
+        {orderingWindowLabel(menu) ? ` · orders ${orderingWindowLabel(menu)}` : ''}
       </Text>
     </Pressable>
   );

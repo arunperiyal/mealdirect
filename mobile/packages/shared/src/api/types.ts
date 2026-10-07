@@ -86,6 +86,10 @@ export interface Menu {
   date: string; // YYYY-MM-DD
   orderingStartTime: string | null;
   orderingEndTime: string | null;
+  // The day each ordering time falls on: 0 the menu's day, -1 the day before (overnight
+  // ordering). orderingOpensDay null: the opening time isn't enforced (older menus).
+  orderingOpensDay?: number | null;
+  orderingClosesDay?: number | null;
   items: MenuItem[];
   status: MenuStatus;
 }

@@ -87,7 +87,11 @@ backups.
 ## How orders work
 
 - **Menus** are per day. A restaurant adds dishes and delivery times (each with an order limit), then publishes.
-  Orders close at the menu's ordering end time on the menu's day (`409 ORDERING_CLOSED`).
+  Orders are taken between the menu's ordering times (`409 ORDERING_NOT_OPEN` before, `ORDERING_CLOSED` after).
+  Each time falls on the menu's day or the day before (`orderingOpensDay` / `orderingClosesDay`: `0` or `-1`), so
+  ordering can run overnight, e.g. from 20:00 the day before to 06:00. Without an opening time, a menu takes orders
+  any day ahead; without a closing time, until its day ends. Menus made before overnight ordering don't enforce
+  their opening time.
 - **Dish limits:** each order line is a whole quantity from 1 to 20. A restaurant can also limit a dish per order
   (`maxPerOrder`, up to 20) and per customer per day (`maxPerDay`, counting that customer's orders from the same
   menu that aren't cancelled). Over a limit, orders get `409 ITEM_LIMIT_PER_ORDER` or `ITEM_LIMIT_PER_DAY`.

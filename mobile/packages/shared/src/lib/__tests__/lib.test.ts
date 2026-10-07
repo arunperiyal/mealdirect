@@ -125,9 +125,27 @@ describe('orderingState', () => {
   });
 
   test('earlier days are open; past days are closed; no cutoff means open', () => {
-    expect(orderingState(menu, '2026-09-22', at(20))).toEqual({ open: true, label: 'Order by 11:30 AM' });
+    expect(orderingState(menu, '2026-09-22', new Date(2026, 8, 22, 20))).toEqual({ open: true, label: 'Order by 11:30 AM tomorrow' });
     expect(orderingState(menu, '2026-09-24', at(8)).open).toBe(false);
     expect(orderingState({ date: '2026-09-23', orderingEndTime: null }, '2026-09-23', at(23))).toEqual({ open: true, label: null });
+  });
+
+  test('overnight: opens 8 PM the day before, closes 6 AM on the menu day', () => {
+    const overnight = { date: '2026-09-23', orderingStartTime: '20:00:00', orderingOpensDay: -1, orderingEndTime: '06:00:00', orderingClosesDay: 0 };
+    const evening = (h: number) => new Date(2026, 8, 22, h);
+    expect(orderingState(overnight, '2026-09-22', evening(19))).toEqual({ open: false, opensLater: true, label: 'Orders open at 8:00 PM today' });
+    expect(orderingState(overnight, '2026-09-22', evening(21))).toEqual({ open: true, label: 'Order by 6:00 AM tomorrow' });
+    expect(orderingState(overnight, '2026-09-23', at(5))).toEqual({ open: true, label: 'Order by 6:00 AM today' });
+    expect(orderingState(overnight, '2026-09-23', at(6)).open).toBe(false);
+  });
+
+  test('closing the day before; older menus ignore the opening time', () => {
+    const nightBefore = { date: '2026-09-23', orderingStartTime: '08:00', orderingOpensDay: -1, orderingEndTime: '22:00', orderingClosesDay: -1 };
+    expect(orderingState(nightBefore, '2026-09-22', new Date(2026, 8, 22, 21))).toEqual({ open: true, label: 'Order by 10:00 PM today' });
+    expect(orderingState(nightBefore, '2026-09-22', new Date(2026, 8, 22, 22))).toEqual({ open: false, label: 'Orders closed at 10:00 PM' });
+
+    const older = { date: '2026-09-23', orderingStartTime: '07:00', orderingOpensDay: null, orderingEndTime: '10:00' };
+    expect(orderingState(older, '2026-09-22', new Date(2026, 8, 22, 12)).open).toBe(true);
   });
 });
 

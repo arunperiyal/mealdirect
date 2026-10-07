@@ -1,3 +1,4 @@
+import { Alert } from 'react-native';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import type { Menu, OwnedRestaurant } from '@mealdirect/shared';
@@ -27,6 +28,7 @@ const mockMenu = {
 const mockUpdate = jest.fn();
 const mockAdd = jest.fn();
 const mockCreateDish = jest.fn();
+const mockDeleteMenu = jest.fn();
 let mockDishes: unknown[] = [];
 
 jest.mock('@/store/serverApi', () => ({
@@ -42,6 +44,7 @@ jest.mock('@/store/serverApi', () => ({
   useAddSlotMutation: () => [jest.fn(), { isLoading: false }],
   useUpdateSlotMutation: () => [jest.fn(), { isLoading: false }],
   useDeleteSlotMutation: () => [jest.fn(), { isLoading: false }],
+  useDeleteMenuMutation: () => [(arg: unknown) => ({ unwrap: () => mockDeleteMenu(arg) }), { isLoading: false }],
 }));
 
 const renderScreen = async () =>
@@ -113,5 +116,27 @@ describe('Dish limits (partner)', () => {
     await fireEvent.press(screen.getByText('Add 2 dishes'));
     expect(mockAdd).toHaveBeenCalledWith({ menuId: 'm1', dishIds: ['d1', 'd2'] });
     mockDishes = [];
+  });
+});
+
+describe('Deleting a draft menu', () => {
+  const { router } = jest.requireMock('expo-router') as { router: { back: jest.Mock } };
+
+  test('a draft can be deleted after confirming', async () => {
+    mockDeleteMenu.mockReset().mockResolvedValue(undefined);
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => buttons?.at(-1)?.onPress?.());
+    await renderScreen();
+    await fireEvent.press(screen.getByText('Delete draft'));
+    expect(mockDeleteMenu).toHaveBeenCalledWith('m1');
+    expect(router.back).toHaveBeenCalled();
+    alert.mockRestore();
+  });
+
+  test('a published menu has no delete button', async () => {
+    (mockMenu as { status: string }).status = 'published';
+    await renderScreen();
+    expect(screen.queryByText('Delete draft')).toBeNull();
+    expect(screen.getByText('Stop taking orders')).toBeTruthy();
+    (mockMenu as { status: string }).status = 'draft';
   });
 });

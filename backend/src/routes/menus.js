@@ -386,6 +386,27 @@ router.put(
 );
 
 /**
+ * DELETE /api/menus/:id
+ * Delete a draft menu and its delivery times (owner only); 409 once published
+ */
+router.delete('/:id', verifyToken, authorize(['restaurant_admin']), [param('id').isUUID()], async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, code: 'VALIDATION_ERROR', errors: errors.array() });
+  }
+  try {
+    await menuController.deleteMenu(req.params.id, req.user.id);
+    res.json({ success: true, message: 'Menu deleted' });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || 'INTERNAL_ERROR',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * DELETE /api/menus/:id/items/:itemId
  * Remove an item from a menu (owner only)
  */

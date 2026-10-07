@@ -187,6 +187,11 @@ export const serverApi = createApi({
       query: ({ id, ...data }) => ({ url: `/menus/${id}`, method: 'PUT', data }),
       invalidatesTags: (_m, _e, { id }) => [{ type: 'Menu', id }],
     }),
+    // Drafts only: customers never saw them, so there are no orders
+    deleteMenu: build.mutation<void, string>({
+      query: (id) => ({ url: `/menus/${id}`, method: 'DELETE' }),
+      invalidatesTags: [{ type: 'Menu', id: 'LIST' }],
+    }),
     setMenuStatus: build.mutation<Menu, { id: string; action: 'publish' | 'close' }>({
       query: ({ id, action }) => ({ url: `/menus/${id}/${action}`, method: 'POST' }),
       invalidatesTags: (_m, _e, { id }) => [
@@ -294,6 +299,7 @@ export const {
   useGetMenuQuery,
   useCreateMenuMutation,
   useUpdateMenuMutation,
+  useDeleteMenuMutation,
   useSetMenuStatusMutation,
   useAddMenuItemMutation,
   useUpdateMenuItemMutation,

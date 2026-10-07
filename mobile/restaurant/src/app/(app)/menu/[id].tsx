@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import {
   Banner,
   Button,
@@ -29,6 +29,7 @@ import {
   useCreateDishMutation,
   useGetDishesQuery,
   useAddSlotMutation,
+  useDeleteMenuMutation,
   useDeleteSlotMutation,
   useGetMenuQuery,
   useGetMenuSlotsQuery,
@@ -56,6 +57,7 @@ export default function MenuScreen() {
 function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: boolean; onRefresh: () => void }) {
   const restaurant = useRestaurant();
   const [setMenuStatus, { isLoading: changingStatus }] = useSetMenuStatusMutation();
+  const [deleteMenu, { isLoading: deleting }] = useDeleteMenuMutation();
   const [updateItem] = useUpdateMenuItemMutation();
   const [error, setError] = useState<string | null>(null);
   const [item, setItem] = useState<ItemDraft | null>(null);
@@ -85,6 +87,23 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
         setError(null);
         try {
           await setMenuStatus({ id: menu.id, action: 'close' }).unwrap();
+        } catch (e) {
+          setError(errorMessage(e));
+        }
+      },
+    });
+
+  const confirmDelete = () =>
+    confirmAction({
+      title: `Delete ${menu.name}?`,
+      message: 'This draft and its dishes and delivery times are removed. Customers never saw it.',
+      confirmText: 'Delete draft',
+      destructive: true,
+      onConfirm: async () => {
+        setError(null);
+        try {
+          await deleteMenu(menu.id).unwrap();
+          router.back();
         } catch (e) {
           setError(errorMessage(e));
         }
@@ -143,6 +162,9 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
               loading={changingStatus}
               style={styles.gap}
             />
+          )}
+          {menu.status === 'draft' && (
+            <Button title="Delete draft" variant="danger" onPress={confirmDelete} loading={deleting} style={styles.gap} />
           )}
           {menu.status === 'published' && (
             <Button title="Stop taking orders" variant="danger" onPress={close} loading={changingStatus} style={styles.gap} />

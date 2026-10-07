@@ -89,4 +89,21 @@ describe('Several menus a day', () => {
     expect((await request(app).put(`/api/menus/${plain.id}`).set(ownerHeaders).send({ name: '' })).status).toBe(400);
   });
 
+  test('a draft menu can be deleted with its delivery times; a published one cannot', async () => {
+    const draft = (await request(app).post('/api/menus').set(ownerHeaders).send({ restaurantId: restaurant.id, name: 'Snacks', date: today() })).body.data;
+    await request(app).post(`/api/menus/${draft.id}/slots`).set(ownerHeaders).send({ startTime: '16:00', endTime: '16:30', maxOrders: 5 });
+
+    const otherOwner = await registerAndLogin(app, 'sm-other@test.com', 'restaurant_admin');
+    expect((await request(app).delete(`/api/menus/${draft.id}`).set(getAuthHeaders(otherOwner.tokens))).status).toBe(403);
+    expect((await request(app).delete(`/api/menus/${draft.id}`).set(customerHeaders)).status).toBe(403);
+
+    expect((await request(app).delete(`/api/menus/${draft.id}`).set(ownerHeaders)).status).toBe(200);
+    expect((await request(app).get(`/api/menus/${draft.id}`)).status).toBe(404);
+    expect(await models.DeliverySlot.count({ where: { menuId: draft.id }, paranoid: false })).toBe(0);
+
+    const published = await menuWith({ name: 'Supper' }, 'Kanji');
+    const res = await request(app).delete(`/api/menus/${published.id}`).set(ownerHeaders);
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('INVALID_STATUS');
+  });
 });

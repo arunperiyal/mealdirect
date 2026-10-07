@@ -186,6 +186,7 @@ All responses are JSON: `{ "success": true, "data": ... }` or
 ### Menus
 - `GET /api/menus?restaurantId=&date=` (or `from`/`to`), `GET /api/menus/:id`
 - `POST /api/menus`, `PUT /api/menus/:id`, `POST /api/menus/:id/publish`, `POST /api/menus/:id/close`
+- `DELETE /api/menus/:id`: a draft menu, with its delivery times (`409 INVALID_STATUS` once published: close it instead)
 - `POST /api/menus/:id/items`, `PUT /api/menus/:id/items/:itemId`, `DELETE /api/menus/:id/items/:itemId`
 - `GET /api/menus/:id/slots`, `POST /api/menus/:id/slots`, `PUT /api/menus/slots/:id`,
   `DELETE /api/menus/slots/:id`: delivery times

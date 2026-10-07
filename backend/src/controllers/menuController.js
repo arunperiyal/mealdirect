@@ -1,3 +1,4 @@
+const sequelize = require('../config/database');
 const { Menu, DeliverySlot, Restaurant } = require('../models');
 const { assertLimitsConsistent } = require('../lib/itemLimits');
 const { checkOrderingWindow } = require('../lib/ordering');
@@ -303,8 +304,27 @@ const removeMenuItem = async (menuId, userId, itemId) => {
   }
 };
 
+// Delete a draft menu with its delivery times. Customers never saw a draft, so it has
+// no orders; published menus are closed instead, keeping their orders' history.
+const deleteMenu = async (menuId, userId) => {
+  try {
+    const { menu } = await verifyMenuOwnership(menuId, userId);
+    if (menu.status !== 'draft') {
+      throwError('INVALID_STATUS', 'Only draft menus can be deleted. Stop taking orders instead.', 409);
+    }
+    await sequelize.transaction(async (transaction) => {
+      await DeliverySlot.destroy({ where: { menuId }, force: true, transaction });
+      await menu.destroy({ force: true, transaction });
+    });
+  } catch (error) {
+    if (error.code) throw error;
+    throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
+  }
+};
+
 module.exports = {
   createMenu,
+  deleteMenu,
   getMenu,
   updateMenu,
   publishMenu,

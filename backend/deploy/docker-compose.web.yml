@@ -1,0 +1,16 @@
+# Optional: the four web apps, served by the same nginx as the API, each on its own port
+# (sign-in is kept per address, so they can't share one). Use it with the main file:
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.web.yml --env-file .env.production up -d
+#
+# Put each app's static build in web/<app>/ first (see DEPLOY.md, "Web apps").
+services:
+  nginx:
+    ports:
+      - "${WEB_CUSTOMER_PORT:-8101}:8101"
+      - "${WEB_PARTNER_PORT:-8102}:8102"
+      - "${WEB_RIDER_PORT:-8103}:8103"
+      - "${WEB_ADMIN_PORT:-8104}:8104"
+    # nginx/conf.d/web.conf serves these ports; without this file they aren't published
+    volumes:
+      - ./web:/srv/web:ro

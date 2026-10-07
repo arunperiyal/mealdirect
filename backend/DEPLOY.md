@@ -79,6 +79,37 @@ All commands run on the server, in `backend/deploy/`.
 6. **Point the apps at the server.** Set `EXPO_PUBLIC_API_URL=https://api.yourdomain.com` for the app
    builds (see `mobile/README.md`).
 
+## Web apps
+
+The same nginx can serve the four web apps, each on its own port (sign-in is kept per address): 8101 customer,
+8102 partner, 8103 rider, 8104 admin. Build them on a machine with the repo's `mobile/` dependencies installed,
+pointing at the API's address, and copy the builds to `deploy/web/` on the server:
+
+```bash
+# On your machine, in mobile/
+for app in customer restaurant delivery admin; do
+  (cd $app && EXPO_PUBLIC_API_URL=https://api.yourdomain.com npx expo export --platform web --clear --output-dir dist)
+  rsync -a --delete $app/dist/ server:path/to/backend/deploy/web/$app/
+done
+```
+
+Then start nginx with the web ports, and allow the sites in `CORS_ORIGINS` (e.g.
+`https://app.yourdomain.com:8101,...`, or the addresses you serve them on):
+
+```bash
+docker compose -f docker-compose.prod.yml -f docker-compose.web.yml --env-file .env.production up -d
+```
+
+Rebuild and copy again after each app update. The ports can be changed with `WEB_CUSTOMER_PORT` etc. in
+`.env.production`.
+
+## On a private network, without a domain
+
+For testing on a local network or Tailscale, skip HTTPS (step 4) and use the server's address: the apps call
+`http://<server-ip>` (Expo Go: `EXPO_PUBLIC_API_URL`; web apps: build with it as above), and `CORS_ORIGINS` lists
+`http://<server-ip>:8101` to `:8104`. Logins travel unencrypted, and Android release builds refuse plain HTTP, so
+use a domain and HTTPS before real customers sign up.
+
 ## Updating
 
 ```bash

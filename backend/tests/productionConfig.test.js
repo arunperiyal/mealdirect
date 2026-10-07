@@ -29,6 +29,15 @@ describe('checkProductionConfig', () => {
     expect(reused.errors.join('\n')).toMatch(/must be different/);
   });
 
+  test("email: warns without an SMTP server, refuses the example account", () => {
+    expect(checkProductionConfig(good).warnings.join('\n')).toMatch(/password reset emails can't be sent/);
+    const example = checkProductionConfig({ ...good, SMTP_HOST: 'smtp.gmail.com', SMTP_USER: 'your-email@gmail.com', SMTP_PASSWORD: 'your-app-password' });
+    expect(example.errors.join('\n')).toMatch(/SMTP_USER \/ SMTP_PASSWORD are still the example values/);
+    const real = checkProductionConfig({ ...good, SMTP_HOST: 'smtp.zoho.in', SMTP_USER: 'orders@mealdirect.in', SMTP_PASSWORD: 'x', SMTP_FROM: 'MealDirect <orders@mealdirect.in>' });
+    expect(real.errors).toEqual([]);
+    expect(real.warnings.join('\n')).not.toMatch(/SMTP/);
+  });
+
   test('requires database credentials and rejects the compose default password', () => {
     const { errors } = checkProductionConfig({ ...good, DB_PASSWORD: 'secure_password' });
     expect(errors.join('\n')).toMatch(/DB_PASSWORD/);

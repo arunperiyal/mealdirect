@@ -49,6 +49,13 @@ code), `main` (`nvim`), and `zsh` (shells in `backend/`, `mobile/` and the repo 
 Keep every app on the same Expo SDK and the same `react` / `react-native` versions. A second copy of React in the
 workspace causes runtime errors. After adding a dependency, check with `npm ls react react-native`.
 
+## Forgotten passwords
+
+Every app's sign-in has **Forgot password?**: the user enters their email, gets a 6-digit code by email (valid for
+15 minutes), then enters it with a new password and is signed in. Their other sessions end. The screen is
+`ForgotPassword` in the shared package. The backend sends the email through the SMTP server in its `.env`; in
+development without one, the email (and code) is printed to the API log.
+
 ## Web versions
 
 Every app also runs in a browser (react-native-web), from the same code.

@@ -2,6 +2,11 @@ const jwt = require('jsonwebtoken');
 const config = require('../config');
 const User = require('../models/User');
 
+// Tokens carry their issue time in whole seconds; a second's grace keeps the token
+// from a sign-in made right after the change working
+const issuedBeforePasswordChange = (decoded, user) =>
+  Boolean(user.passwordChangedAt) && decoded.iat * 1000 < new Date(user.passwordChangedAt).getTime() - 1000;
+
 /**
  * Verify JWT token from Authorization header
  */
@@ -34,14 +39,22 @@ const verifyToken = async (req, res, next) => {
     });
   }
 
-  // A deleted account is signed out everywhere at once, not when its tokens expire
+  // A deleted account is signed out everywhere at once, not when its tokens expire,
+  // and so is every session from before a password change
   try {
-    const exists = await User.count({ where: { id: decoded.id } });
-    if (!exists) {
+    const user = await User.findByPk(decoded.id, { attributes: ['id', 'passwordChangedAt'] });
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: 'This account has been deleted',
         code: 'ACCOUNT_DELETED'
+      });
+    }
+    if (issuedBeforePasswordChange(decoded, user)) {
+      return res.status(401).json({
+        success: false,
+        message: 'Your password was changed. Please sign in again.',
+        code: 'PASSWORD_CHANGED'
       });
     }
   } catch (error) {
@@ -105,6 +118,7 @@ const authorize = (requiredRoles = []) => {
 };
 
 module.exports = {
+  issuedBeforePasswordChange,
   verifyToken,
   verifyRefreshToken,
   authorize

@@ -4,6 +4,9 @@ const path = require('path');
 // Load environment variables
 dotenv.config();
 
+// .env.example's placeholder account: copied as is, it's not a real mail server login
+const isExampleMail = (env) => env.SMTP_USER === 'your-email@gmail.com' || env.SMTP_PASSWORD === 'your-app-password';
+
 module.exports = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3000', 10),
@@ -37,6 +40,19 @@ module.exports = {
     expiresIn: process.env.JWT_EXPIRE || '7d',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRE || '30d'
+  },
+
+  // Email (password reset codes), over any SMTP server. Without one (or with the example
+  // values from .env.example), development prints emails to the log and production refuses
+  // to send.
+  mail: {
+    host: isExampleMail(process.env) ? undefined : process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    // true for port 465 (TLS from the start); 587 upgrades with STARTTLS
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD,
+    from: process.env.SMTP_FROM || 'MealDirect <no-reply@mealdirect.local>',
   },
 
   // API

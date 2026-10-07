@@ -4,8 +4,9 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const accountController = require('../controllers/accountController');
 const avatarController = require('../controllers/avatarController');
+const passwordResetController = require('../controllers/passwordResetController');
 const User = require('../models/User');
-const { verifyToken } = require('../middleware/auth');
+const { issuedBeforePasswordChange, verifyToken } = require('../middleware/auth');
 const { authLimiter } = require('../middleware/rateLimit');
 const { generateAccessToken } = require('../utils/tokenUtils');
 const jwt = require('jsonwebtoken');
@@ -166,13 +167,20 @@ router.post('/refresh', authLimiter, async (req, res) => {
       });
     }
 
-    // Get user. A deleted account gets no new tokens.
+    // Get user. A deleted account gets no new tokens, nor a session from before a password change.
     const user = await User.findByPk(decoded.id);
     if (!user) {
       return res.status(401).json({
         success: false,
         code: 'ACCOUNT_DELETED',
         message: 'This account has been deleted',
+      });
+    }
+    if (issuedBeforePasswordChange(decoded, user)) {
+      return res.status(401).json({
+        success: false,
+        code: 'PASSWORD_CHANGED',
+        message: 'Your password was changed. Please sign in again.',
       });
     }
 
@@ -262,6 +270,56 @@ const sendError = (res, error) =>
     code: error.code || 'INTERNAL_ERROR',
     message: error.message,
   });
+
+const validated = (req, res) => {
+  const errors = validationResult(req);
+  if (errors.isEmpty()) return true;
+  res.status(400).json({ success: false, code: 'VALIDATION_ERROR', message: errors.array()[0].msg, errors: errors.array() });
+  return false;
+};
+
+/**
+ * POST /api/auth/password-reset/request   Body: { email }
+ * Emails a 6-digit code (15 minutes, 5 tries). Always 200, whether or not the email has an
+ * account; asking again within a minute sends nothing new.
+ */
+router.post(
+  '/password-reset/request',
+  authLimiter,
+  [body('email').trim().isEmail().withMessage('Enter a valid email').normalizeEmail()],
+  async (req, res) => {
+    if (!validated(req, res)) return;
+    try {
+      await passwordResetController.requestReset(req.body.email);
+      res.json({ success: true, message: 'If this email has an account, a code is on its way' });
+    } catch (error) {
+      sendError(res, error);
+    }
+  }
+);
+
+/**
+ * POST /api/auth/password-reset/confirm   Body: { email, code, password }
+ * Sets the new password; the account's other sessions end. 400 INVALID_CODE, 429 TOO_MANY_ATTEMPTS.
+ */
+router.post(
+  '/password-reset/confirm',
+  authLimiter,
+  [
+    body('email').trim().isEmail().withMessage('Enter a valid email').normalizeEmail(),
+    body('code').trim().matches(/^\d{6}$/).withMessage('Enter the 6-digit code from the email'),
+    body('password').isString().isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+  ],
+  async (req, res) => {
+    if (!validated(req, res)) return;
+    try {
+      await passwordResetController.confirmReset(req.body);
+      res.json({ success: true, message: 'Password changed. Sign in with your new password.' });
+    } catch (error) {
+      sendError(res, error);
+    }
+  }
+);
 
 /**
  * PUT /api/auth/me/avatar   Body: { image } (base64 JPEG, PNG or WebP, up to 1 MB)

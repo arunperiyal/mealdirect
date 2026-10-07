@@ -66,6 +66,9 @@ export default function SignInScreen() {
         returnKeyType="go"
         onSubmitEditing={onSubmit}
       />
+      <Link href="/forgot-password" style={styles.forgot}>
+        Forgot password?
+      </Link>
       <Button title="Sign in" onPress={onSubmit} loading={submitting} style={styles.submit} />
       <Text style={styles.footer}>
         New to MealDirect?{' '}
@@ -78,6 +81,7 @@ export default function SignInScreen() {
 }
 
 const styles = StyleSheet.create({
+  forgot: { alignSelf: 'flex-end', color: colors.brand, fontWeight: '600', fontSize: 14, marginTop: -spacing.xs, marginBottom: spacing.sm },
   submit: { marginTop: spacing.sm },
   footer: { textAlign: 'center', marginTop: spacing.xl, color: colors.textMuted, fontSize: 15 },
   link: { color: colors.brand, fontWeight: '600' },

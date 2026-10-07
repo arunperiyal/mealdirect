@@ -52,7 +52,7 @@ released one.
 | `npm run lint` | ESLint |
 | `npm run upgrade-db` | Bring an existing Postgres database up to date |
 | `npm run create-admin` | Create a MealDirect staff account (system admins can't sign up) |
-| `npm run reset-password` | Set a new password for any account (there's no self-service reset yet) |
+| `npm run reset-password` | Set a new password for any account (users can also reset their own, see Auth) |
 
 Both account scripts read the password from the environment, so it never appears in your shell history:
 
@@ -82,6 +82,7 @@ backups.
 | `AUTO_READY_JOB` | `false` stops the job that marks orders ready before their delivery time |
 | `AUTO_ASSIGN_JOB` | `false` stops the job that gives waiting orders to riders' auto-accept rules (accepting orders still does it at once) |
 | `TRUST_PROXY` | Number of reverse proxies in front of the API, so rate limits see the real client IP |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Email for password reset codes, through any SMTP server. Without it (or with the example values), development prints emails to the API log and production can't send them. |
 | `CORS_ORIGINS` | Production only: comma-separated addresses of the web apps allowed to call the API from a browser (development allows any) |
 
 ## How orders work
@@ -159,6 +160,11 @@ All responses are JSON: `{ "success": true, "data": ... }` or
   phone number)
 - `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`
 - `DELETE /api/auth/me` `{ password }`: delete your own account (see [Deleted accounts](#deleted-accounts))
+- Forgot password: `POST /api/auth/password-reset/request` `{ email }` emails a 6-digit code (always `200`, so it
+  doesn't reveal who has an account; one email a minute). `POST /api/auth/password-reset/confirm`
+  `{ email, code, password }` sets the new password: a code works once, for 15 minutes and 5 tries
+  (`400 INVALID_CODE`, `429 TOO_MANY_ATTEMPTS`; admins need 12 characters). Changing a password, this way or with
+  `npm run reset-password`, ends the account's other sessions (`401 PASSWORD_CHANGED`).
 - `PUT /api/auth/me/avatar` `{ image }` (base64 JPEG, PNG or WebP, up to 1 MB), `DELETE /api/auth/me/avatar`: your
   profile picture. Users carry `avatarUrl` (relative to the API's address, or `null`), also on an order's
   `customer` and `rider`.

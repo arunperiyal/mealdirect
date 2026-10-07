@@ -31,6 +31,7 @@ export { Card } from './components/Card';
 export { ChangeRequestNotice } from './components/ChangeRequestNotice';
 export { Chip } from './components/Chip';
 export { DeleteAccount } from './components/DeleteAccount';
+export { ForgotPassword } from './components/ForgotPassword';
 export { OrderRatingView } from './components/OrderRatingView';
 export { PayoutFields } from './components/PayoutFields';
 export { PriceSummary } from './components/PriceSummary';

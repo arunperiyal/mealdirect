@@ -113,6 +113,15 @@ const STEPS = [
     name: 'Several menus a day: Menus.name',
     sql: `ALTER TABLE "Menus" ADD COLUMN IF NOT EXISTS "name" VARCHAR(60) NOT NULL DEFAULT 'Menu'`,
   },
+  {
+    name: 'Password reset: users reset and password-changed columns',
+    sql: `ALTER TABLE "users"
+            ADD COLUMN IF NOT EXISTS "password_changed_at" TIMESTAMP WITH TIME ZONE,
+            ADD COLUMN IF NOT EXISTS "password_reset_hash" VARCHAR(255),
+            ADD COLUMN IF NOT EXISTS "password_reset_expires_at" TIMESTAMP WITH TIME ZONE,
+            ADD COLUMN IF NOT EXISTS "password_reset_sent_at" TIMESTAMP WITH TIME ZONE,
+            ADD COLUMN IF NOT EXISTS "password_reset_attempts" INTEGER NOT NULL DEFAULT 0`,
+  },
 ];
 
 const upgradeDatabase = async (sequelize, log = () => {}) => {

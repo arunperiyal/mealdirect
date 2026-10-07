@@ -53,6 +53,13 @@ const checkProductionConfig = (env = process.env) => {
   if (env.ONLINE_PAYMENTS_ENABLED === 'true' && !(keyId && keySecret)) {
     errors.push('ONLINE_PAYMENTS_ENABLED is true but the Razorpay keys are not set');
   }
+  if (!env.SMTP_HOST) {
+    warnings.push("SMTP_HOST is not set: password reset emails can't be sent");
+  } else if (env.SMTP_USER === 'your-email@gmail.com' || env.SMTP_PASSWORD === 'your-app-password') {
+    errors.push('SMTP_USER / SMTP_PASSWORD are still the example values from this repo');
+  } else if (!env.SMTP_FROM) {
+    warnings.push('SMTP_FROM is not set: emails come from no-reply@mealdirect.local, which mail servers may reject');
+  }
   if (!env.CORS_ORIGINS && !env.FRONTEND_URL) {
     warnings.push("CORS_ORIGINS is not set: the web apps can't call the API from a browser (the phone apps are fine)");
   }

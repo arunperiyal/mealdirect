@@ -109,6 +109,31 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    // When the password last changed. Tokens issued before it no longer work, so a reset
+    // signs the account out everywhere else. See middleware/auth.js.
+    passwordChangedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    // Forgot password: the emailed 6-digit code (hashed), when it expires, when it was
+    // sent and how many wrong tries it has had. See passwordResetController.
+    passwordResetHash: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    passwordResetExpiresAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    passwordResetSentAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    passwordResetAttempts: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
     createdAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
@@ -235,6 +260,7 @@ User.beforeCreate(async (user) => {
 User.beforeUpdate(async (user) => {
   if (user.changed('passwordHash')) {
     user.passwordHash = await User.hashPassword(user.passwordHash);
+    user.passwordChangedAt = new Date();
   }
 });
 

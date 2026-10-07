@@ -58,8 +58,9 @@ and shows the admin's note if it's turned down. Email can't be changed.
   cash you collected.
 - **Auto-accept**: take a restaurant's deliveries due in a time window, e.g. Annapurna Mess 12:00–14:00, without
   accepting each one. They're yours as soon as the restaurant accepts them and show under **Deliveries**. Rules
-  can be paused. The usual limits still apply (3 at a time, no overdue cash); with two riders on the same order,
-  the one with fewer deliveries gets it, and an order you give back doesn't come back.
+  can be paused. Rules can give you up to 10 deliveries at a time; set your own limit (1 to 20) on the same
+  screen. Accepting by hand stays at 3, and nothing comes while you hold cash from an earlier day. With two riders
+  on the same order, the one with fewer deliveries gets it, and an order you give back doesn't come back.
 
 Riders can delete their account from **Account** (or while waiting for approval), once they've delivered or
 released their orders and settled their cash.

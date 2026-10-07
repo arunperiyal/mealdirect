@@ -98,6 +98,10 @@ const STEPS = [
     name: 'Rider auto-accept: Orders.released_rider_ids',
     sql: `ALTER TABLE "Orders" ADD COLUMN IF NOT EXISTS "released_rider_ids" JSON NOT NULL DEFAULT '[]'`,
   },
+  {
+    name: 'Rider auto-accept: users.auto_accept_limit',
+    sql: `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "auto_accept_limit" INTEGER`,
+  },
 ];
 
 const upgradeDatabase = async (sequelize, log = () => {}) => {

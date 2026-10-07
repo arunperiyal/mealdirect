@@ -1,13 +1,19 @@
 const { Op } = require('sequelize');
 const { AutoAcceptRule, DeliverySlot, Order, Restaurant, User } = require('../models');
 const { riderCash } = require('./collectionController');
-const { CLAIMABLE_STATUSES, ACTIVE_STATUSES, MAX_ACTIVE } = require('./deliveryController');
+const { CLAIMABLE_STATUSES, ACTIVE_STATUSES } = require('./deliveryController');
 
 const throwError = (code, message, statusCode = 400) => {
   throw { code, message, statusCode };
 };
 
 const MAX_RULES = 10;
+
+// Rules can fill a rider's bag beyond the 3 deliveries they may accept by hand (a mess
+// rider's lunch round), up to a limit each rider chooses
+const DEFAULT_AUTO_LIMIT = 10;
+const MAX_AUTO_LIMIT = 20;
+const autoLimit = (rider) => rider.autoAcceptLimit ?? DEFAULT_AUTO_LIMIT;
 
 const wrap = (fn) => async (...args) => {
   try {
@@ -55,7 +61,7 @@ const hhmm = (time) => String(time).slice(0, 5);
  * Give claimable delivery orders to riders whose rules cover the restaurant and the
  * order's delivery time. Among matching riders, the one with the fewest active
  * deliveries gets it (ties: the older rule). Riders still need to be approved, under
- * the active limit and without overdue cash, and don't get orders they gave back.
+ * their auto-accept limit and without overdue cash, and don't get orders they gave back.
  * Orders without a delivery time match no rule.
  *
  * restaurantId narrows the run to one restaurant (after it accepts orders).
@@ -64,7 +70,7 @@ const hhmm = (time) => String(time).slice(0, 5);
 const runAutoAssign = async ({ restaurantId } = {}) => {
   const rules = await AutoAcceptRule.findAll({
     where: { enabled: true, ...(restaurantId && { restaurantId }) },
-    include: [{ model: User, as: 'rider', attributes: ['id'], where: { riderStatus: 'approved' } }],
+    include: [{ model: User, as: 'rider', attributes: ['id', 'autoAcceptLimit'], where: { riderStatus: 'approved' } }],
     order: [['createdAt', 'ASC']],
   });
   if (!rules.length) return 0;
@@ -107,7 +113,7 @@ const runAutoAssign = async ({ restaurantId } = {}) => {
     let best = null;
     for (const rule of matching) {
       const state = await riderState(rule.riderId);
-      if (state.blocked || state.active >= MAX_ACTIVE) continue;
+      if (state.blocked || state.active >= autoLimit(rule.rider)) continue;
       // Rules are oldest first, so a strict < keeps the older rule on a tie
       if (!best || state.active < best.state.active) best = { rule, state };
     }
@@ -161,4 +167,30 @@ const deleteRule = wrap(async (id, riderId) => {
   await (await findMine(id, riderId)).destroy();
 });
 
-module.exports = { runAutoAssign, listRules, createRule, updateRule, deleteRule, MAX_RULES };
+// ===== The rider's limit =====
+
+const settingsView = (rider) => ({ limit: autoLimit(rider), maxLimit: MAX_AUTO_LIMIT, defaultLimit: DEFAULT_AUTO_LIMIT });
+
+const getSettings = wrap(async (riderId) => settingsView(await User.findByPk(riderId, { attributes: ['id', 'autoAcceptLimit'] })));
+
+const updateSettings = wrap(async (riderId, { limit }) => {
+  const rider = await User.findByPk(riderId, { attributes: ['id', 'autoAcceptLimit'] });
+  rider.autoAcceptLimit = limit;
+  await rider.save();
+  // A higher limit can take more of the orders already waiting
+  await runAutoAssign();
+  return settingsView(rider);
+});
+
+module.exports = {
+  runAutoAssign,
+  listRules,
+  createRule,
+  updateRule,
+  deleteRule,
+  getSettings,
+  updateSettings,
+  MAX_RULES,
+  DEFAULT_AUTO_LIMIT,
+  MAX_AUTO_LIMIT,
+};

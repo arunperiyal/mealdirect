@@ -108,8 +108,9 @@ backups.
 - **Auto-accept rules:** a rider can take a restaurant's deliveries due between two times (e.g. 12:00–14:00, by
   the delivery time's start, any day) without claiming each one. When the restaurant accepts an order, it goes to
   a matching rider at once; a job retries every minute for orders still waiting. With several matching riders,
-  the one with the fewest active deliveries gets it (ties: the older rule). The usual limits apply (3 active
-  deliveries, no overdue cash), orders without a delivery time match no rule, and an order a rider gives back
+  the one with the fewest active deliveries gets it (ties: the older rule). Rules give a rider up to their own
+  limit of active deliveries (default 10, at most 20; accepting by hand stays at 3), none while they hold
+  overdue cash. Orders without a delivery time match no rule, and an order a rider gives back
   never returns to them through a rule. A window can't cross midnight: use two rules.
 - **Payout details:** a restaurant must add its UPI ID and bank account (`upiId`, `bankAccountName`,
   `bankAccountNumber`, `bankIFSC`) before an admin can approve it. Riders can add theirs for tips and earnings, and
@@ -200,6 +201,7 @@ All responses are JSON: `{ "success": true, "data": ... }` or
 - `GET /api/delivery/balance`: cash held and whether settlement is due
 - `GET/POST /api/delivery/rules`, `PUT/DELETE /api/delivery/rules/:id`: auto-accept rules
   `{ restaurantId, startTime, endTime, enabled }`, see below
+- `GET/PUT /api/delivery/auto-accept` `{ limit }`: how many active deliveries rules may give the rider (1 to 20)
 - `GET /api/delivery/ratings`: the rider's delivery ratings, average and recent (customers stay anonymous)
 
 ### Saved addresses (customers)

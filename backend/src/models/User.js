@@ -83,6 +83,12 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    // Delivery partners only: how many active deliveries their auto-accept rules may give
+    // them; null means the default. See autoAcceptController.
+    autoAcceptLimit: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,

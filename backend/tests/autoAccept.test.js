@@ -141,20 +141,36 @@ describe('Rider auto-accept', () => {
     expect(await riderOf(order.id)).toBe(riders[other].id);
   });
 
-  test('riders still keep to the limit of active deliveries', async () => {
+  test("rules fill a rider's bag up to their own limit; accepting by hand stays at 3", async () => {
+    const limit = (rider, body) => request(app).put('/api/delivery/auto-accept').set(riders[rider].headers).send(body);
+    const settings = await request(app).get('/api/delivery/auto-accept').set(riders.bala.headers);
+    expect(settings.body.data).toEqual({ limit: 10, maxLimit: 20, defaultLimit: 10 });
+    expect((await limit('asha', { limit: 2 })).body.data.limit).toBe(2);
+    expect((await limit('asha', { limit: 21 })).status).toBe(400);
+    expect((await limit('asha', { limit: 0 })).status).toBe(400);
+
     const orders = [];
-    for (let i = 0; i < 7; i++) orders.push(await place(lunch.id));
+    for (let i = 0; i < 13; i++) orders.push(await place(lunch.id));
     // Accepting the whole lunch group at once
     const bulk = await request(app)
       .post('/api/orders/bulk')
       .set(ownerHeaders)
       .send({ menuId: menu.id, group: lunch.id, action: 'accept' });
-    expect(bulk.body.data.updated).toBe(7);
+    expect(bulk.body.data.updated).toBe(13);
 
     const owners = await Promise.all(orders.map((o) => riderOf(o.id)));
-    expect(owners.filter((r) => r === riders.asha.id)).toHaveLength(3);
-    expect(owners.filter((r) => r === riders.bala.id)).toHaveLength(3);
-    expect(owners.filter((r) => r === null)).toHaveLength(1);
+    expect(owners.filter((r) => r === riders.asha.id)).toHaveLength(2);
+    expect(owners.filter((r) => r === riders.bala.id)).toHaveLength(10);
+    const left = orders[owners.indexOf(null)];
+    expect(left).toBeDefined();
+
+    // Bala holds 10, past the 3 a rider may accept by hand
+    const claim = await request(app).post(`/api/delivery/orders/${left.id}/claim`).set(riders.bala.headers);
+    expect(claim.body.code).toBe('TOO_MANY_ACTIVE');
+
+    // Raising the limit takes the order still waiting
+    await limit('asha', { limit: 3 });
+    expect(await riderOf(left.id)).toBe(riders.asha.id);
   });
 
   test('checks the rule, whose it is, and that the rider is approved', async () => {

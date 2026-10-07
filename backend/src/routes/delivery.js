@@ -63,6 +63,18 @@ router.put(
 );
 router.delete('/rules/:id', orderId, handle((req) => autoAcceptController.deleteRule(req.params.id, req.user.id)));
 
+/**
+ * GET /api/delivery/auto-accept: { limit, maxLimit, defaultLimit }
+ * PUT /api/delivery/auto-accept   Body: { limit } (1 to 20)
+ * How many active deliveries rules may give the rider. Accepting by hand stays at 3.
+ */
+router.get('/auto-accept', handle((req) => autoAcceptController.getSettings(req.user.id)));
+router.put(
+  '/auto-accept',
+  [body('limit').isInt({ min: 1, max: autoAcceptController.MAX_AUTO_LIMIT }).toInt().withMessage('Choose from 1 to 20')],
+  handle((req) => autoAcceptController.updateSettings(req.user.id, req.body))
+);
+
 /** GET /api/delivery/available: unclaimed delivery orders */
 router.get('/available', handle(() => deliveryController.listAvailable()));
 

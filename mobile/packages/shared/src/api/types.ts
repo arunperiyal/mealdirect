@@ -304,6 +304,13 @@ export interface AutoAcceptRule {
   createdAt: string;
 }
 
+// GET /delivery/auto-accept: how many active deliveries rules may give the rider
+export interface AutoAcceptSettings {
+  limit: number;
+  maxLimit: number;
+  defaultLimit: number;
+}
+
 // A customer's saved delivery address (GET /addresses), most recently used first
 export interface SavedAddress {
   id: string;

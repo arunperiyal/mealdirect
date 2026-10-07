@@ -22,7 +22,9 @@ import {
 import {
   useAddRuleMutation,
   useDeleteRuleMutation,
+  useGetAutoAcceptSettingsQuery,
   useGetRulesQuery,
+  useSetAutoAcceptLimitMutation,
   useSearchRestaurantsQuery,
   useUpdateRuleMutation,
 } from '@/store/serverApi';
@@ -64,10 +66,10 @@ export default function AutoAcceptScreen() {
               Take a restaurant&apos;s deliveries due at the times you choose, without accepting each one. They come to
               you as soon as the restaurant accepts them, and show under Deliveries.
             </Text>
+            <LimitPicker onError={setActionError} />
             <Text style={font.caption}>
-              You still get at most 3 deliveries at a time, and none while you hold cash from an earlier day. If two
-              riders cover the same order, the one with fewer deliveries gets it. An order you give back won&apos;t come
-              back to you.
+              None come while you hold cash from an earlier day. If two riders cover the same order, the one with
+              fewer deliveries gets it. An order you give back won&apos;t come back to you.
             </Text>
             {actionError && <Banner tone="error" message={actionError} />}
           </View>
@@ -112,6 +114,49 @@ export default function AutoAcceptScreen() {
         }
       />
       {adding && <RuleSheet onClose={() => setAdding(false)} />}
+    </View>
+  );
+}
+
+// How many deliveries rules may give the rider at a time
+function LimitPicker({ onError }: { onError: (message: string | null) => void }) {
+  const { data } = useGetAutoAcceptSettingsQuery();
+  const [save, { isLoading }] = useSetAutoAcceptLimitMutation();
+  if (!data) return null;
+
+  const change = async (limit: number) => {
+    onError(null);
+    try {
+      await save(limit).unwrap();
+    } catch (e) {
+      onError(errorMessage(e));
+    }
+  };
+
+  return (
+    <View style={styles.limit}>
+      <View style={styles.flex}>
+        <Text style={font.heading}>Up to {data.limit} at a time</Text>
+        <Text style={font.caption}>Through these rules. You can accept 3 by hand.</Text>
+      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Fewer deliveries"
+        disabled={isLoading || data.limit <= 1}
+        onPress={() => change(data.limit - 1)}
+        style={[styles.step, data.limit <= 1 && styles.stepDisabled]}
+      >
+        <Text style={styles.stepText}>−</Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="More deliveries"
+        disabled={isLoading || data.limit >= data.maxLimit}
+        onPress={() => change(data.limit + 1)}
+        style={[styles.step, data.limit >= data.maxLimit && styles.stepDisabled]}
+      >
+        <Text style={styles.stepText}>+</Text>
+      </Pressable>
     </View>
   );
 }
@@ -195,6 +240,25 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   remove: { color: colors.danger, fontWeight: '500', marginTop: spacing.sm },
+  limit: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+  },
+  step: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.brand,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepDisabled: { borderColor: colors.border, opacity: 0.5 },
+  stepText: { color: colors.brand, fontSize: 22, fontWeight: '600' },
   label: { fontSize: 14, fontWeight: '500', color: colors.text, marginBottom: spacing.sm },
   gap: { marginTop: spacing.sm },
   search: {

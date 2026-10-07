@@ -2,6 +2,7 @@ import { createApi } from '@reduxjs/toolkit/query/react';
 import {
   createAxiosBaseQuery,
   type AutoAcceptRule,
+  type AutoAcceptSettings,
   type ChangeResult,
   type Collection,
   type Order,
@@ -18,7 +19,7 @@ export type DeliveryAction = 'claim' | 'release' | 'pick-up' | 'deliver';
 export const serverApi = createApi({
   reducerPath: 'serverApi',
   baseQuery: createAxiosBaseQuery(api),
-  tagTypes: ['Queue', 'Mine', 'Order', 'Balance', 'Profile', 'Ratings', 'Rule'],
+  tagTypes: ['Queue', 'Mine', 'Order', 'Balance', 'Profile', 'Ratings', 'Rule', 'AutoAcceptLimit'],
   endpoints: (build) => ({
     // How customers rated your deliveries
     getRatings: build.query<RiderRatings, void>({
@@ -60,6 +61,15 @@ export const serverApi = createApi({
     deleteRule: build.mutation<void, string>({
       query: (id) => ({ url: `/delivery/rules/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Rule'],
+    }),
+    // How many active deliveries rules may give the rider; raising it takes waiting orders
+    getAutoAcceptSettings: build.query<AutoAcceptSettings, void>({
+      query: () => ({ url: '/delivery/auto-accept' }),
+      providesTags: ['AutoAcceptLimit'],
+    }),
+    setAutoAcceptLimit: build.mutation<AutoAcceptSettings, number>({
+      query: (limit) => ({ url: '/delivery/auto-accept', method: 'PUT', data: { limit } }),
+      invalidatesTags: ['AutoAcceptLimit', 'Queue', 'Mine'],
     }),
     // Restaurants that deliver, to set a rule for
     searchRestaurants: build.query<Restaurant[], string>({
@@ -106,6 +116,8 @@ export const {
   useUpdateRuleMutation,
   useDeleteRuleMutation,
   useSearchRestaurantsQuery,
+  useGetAutoAcceptSettingsQuery,
+  useSetAutoAcceptLimitMutation,
   useGetRatingsQuery,
   useGetProfileQuery,
   useUpdatePersonalMutation,

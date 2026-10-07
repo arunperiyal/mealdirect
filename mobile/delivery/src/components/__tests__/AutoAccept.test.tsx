@@ -6,6 +6,7 @@ import AutoAcceptScreen from '@/app/(app)/auto-accept';
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 
 const mockAdd = jest.fn();
+const mockLimit = jest.fn();
 const mockUpdate = jest.fn();
 const mockRules: AutoAcceptRule[] = [
   {
@@ -25,6 +26,8 @@ jest.mock('@/store/serverApi', () => ({
   useAddRuleMutation: () => mutation(mockAdd)(),
   useUpdateRuleMutation: () => mutation(mockUpdate)(),
   useDeleteRuleMutation: () => mutation(jest.fn())(),
+  useGetAutoAcceptSettingsQuery: () => ({ data: { limit: 10, maxLimit: 20, defaultLimit: 10 } }),
+  useSetAutoAcceptLimitMutation: () => mutation(mockLimit)(),
   useSearchRestaurantsQuery: () => ({
     data: [{ id: 'rest2', name: 'Sai Tiffins', city: 'Pune', deliveryEnabled: true }],
     isFetching: false,
@@ -35,6 +38,16 @@ describe('AutoAcceptScreen', () => {
   beforeEach(() => {
     mockAdd.mockReset().mockResolvedValue({});
     mockUpdate.mockReset().mockResolvedValue({});
+    mockLimit.mockReset().mockResolvedValue({});
+  });
+
+  test('the rider sets how many deliveries rules may give them', async () => {
+    await render(<AutoAcceptScreen />);
+    expect(screen.getByText('Up to 10 at a time')).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText('More deliveries'));
+    expect(mockLimit).toHaveBeenCalledWith(11);
+    await fireEvent.press(screen.getByLabelText('Fewer deliveries'));
+    expect(mockLimit).toHaveBeenLastCalledWith(9);
   });
 
   test('lists rules and pauses one', async () => {

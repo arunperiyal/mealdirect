@@ -35,6 +35,12 @@ export const bootstrapSession = createAsyncThunk('auth/bootstrap', async () => {
 });
 
 // Refresh the cached profile in the background after startup
+// After the user changes their details here (e.g. their profile picture)
+export const userUpdated = createAsyncThunk('auth/userUpdated', async (user: User) => {
+  await session.saveUser(user);
+  return user;
+});
+
 export const refreshProfile = createAsyncThunk('auth/refreshProfile', async () => {
   const user = await authApi.me();
   await session.saveUser(user);
@@ -96,6 +102,9 @@ const authSlice = createSlice({
       })
       .addCase(bootstrapSession.rejected, (state) => {
         state.status = 'signedOut';
+      })
+      .addCase(userUpdated.fulfilled, (state, { payload }) => {
+        if (state.status === 'signedIn') state.user = payload;
       })
       .addCase(refreshProfile.fulfilled, (state, { payload }) => {
         if (state.status === 'signedIn') state.user = payload;

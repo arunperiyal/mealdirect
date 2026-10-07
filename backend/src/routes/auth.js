@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const router = express.Router();
 const userController = require('../controllers/userController');
 const accountController = require('../controllers/accountController');
+const avatarController = require('../controllers/avatarController');
 const User = require('../models/User');
 const { verifyToken } = require('../middleware/auth');
 const { authLimiter } = require('../middleware/rateLimit');
@@ -255,6 +256,45 @@ router.get('/me', verifyToken, async (req, res) => {
   }
 });
 
+const sendError = (res, error) =>
+  res.status(error.statusCode || 500).json({
+    success: false,
+    code: error.code || 'INTERNAL_ERROR',
+    message: error.message,
+  });
+
+/**
+ * PUT /api/auth/me/avatar   Body: { image } (base64 JPEG, PNG or WebP, up to 1 MB)
+ * DELETE /api/auth/me/avatar
+ * Set or remove your profile picture. data: { user } with the new avatarUrl.
+ */
+router.put(
+  '/me/avatar',
+  verifyToken,
+  [body('image').isString().notEmpty().withMessage('Choose a photo')],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, code: 'VALIDATION_ERROR', errors: errors.array() });
+    }
+    try {
+      const user = await avatarController.setAvatar(req.user.id, req.body.image);
+      res.json({ success: true, data: { user: user.toJSON() } });
+    } catch (error) {
+      sendError(res, error);
+    }
+  }
+);
+
+router.delete('/me/avatar', verifyToken, async (req, res) => {
+  try {
+    const user = await avatarController.removeAvatar(req.user.id);
+    res.json({ success: true, data: { user: user.toJSON() } });
+  } catch (error) {
+    sendError(res, error);
+  }
+});
+
 /**
  * DELETE /api/auth/me   Body: { password }
  * Delete your own account. It can't sign in afterwards; MealDirect support can restore it.
@@ -274,11 +314,7 @@ router.delete(
       await accountController.deleteOwnAccount(req.user.id, req.body.password);
       res.json({ success: true, message: 'Account deleted' });
     } catch (error) {
-      res.status(error.statusCode || 500).json({
-        success: false,
-        code: error.code || 'INTERNAL_ERROR',
-        message: error.message,
-      });
+      sendError(res, error);
     }
   }
 );

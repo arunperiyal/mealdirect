@@ -313,7 +313,7 @@ const resolvePayment = async (orderId, adminId, { outcome, method, note }) => {
 // ===== Users =====
 
 // What admins see of an account; never the password hash
-const USER_FIELDS = ['id', 'email', 'firstName', 'lastName', 'phone', 'role', 'riderStatus', 'createdAt'];
+const USER_FIELDS = ['id', 'email', 'firstName', 'lastName', 'phone', 'role', 'riderStatus', 'avatarUrl', 'createdAt'];
 
 // Customers, restaurant partners and riders. MealDirect staff accounts are managed on the server.
 const MANAGED_ROLES = ['customer', 'restaurant_admin', 'delivery_partner'];

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Button, Card, colors, confirmAction, DeleteAccount, font, spacing } from '@mealdirect/shared';
+import { Button, Card, confirmAction, DeleteAccount, font, ProfilePhoto, spacing } from '@mealdirect/shared';
 import { authApi } from '@/api';
+import { API_URL } from '@/config';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { logout, signOutLocally } from '@/store/authSlice';
+import { logout, signOutLocally, userUpdated } from '@/store/authSlice';
 
 export default function ProfileScreen() {
   const dispatch = useAppDispatch();
@@ -12,12 +13,6 @@ export default function ProfileScreen() {
   const [signingOut, setSigningOut] = useState(false);
 
   const name = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'MealDirect customer';
-  const initials = name
-    .split(' ')
-    .map((p) => p.charAt(0))
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
 
   const confirmSignOut = () =>
     confirmAction({
@@ -34,9 +29,15 @@ export default function ProfileScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          <Text style={styles.initials}>{initials}</Text>
-        </View>
+        {user && (
+          <ProfilePhoto
+            user={user}
+            baseUrl={API_URL}
+            setAvatar={authApi.setAvatar}
+            removeAvatar={authApi.removeAvatar}
+            onChange={(u) => dispatch(userUpdated(u))}
+          />
+        )}
         <Text style={font.title}>{name}</Text>
         {user?.email && <Text style={font.caption}>{user.email}</Text>}
       </View>
@@ -54,14 +55,4 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   content: { padding: spacing.lg },
   header: { alignItems: 'center', gap: spacing.xs, marginVertical: spacing.xl },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: colors.brandSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  initials: { color: colors.brand, fontSize: 26, fontWeight: '700' },
 });

@@ -88,6 +88,11 @@ const STEPS = [
     name: 'Account deletion: users.deleted_by_id',
     sql: `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "deleted_by_id" UUID`,
   },
+  {
+    // The avatars table itself is new, so sync creates it
+    name: 'Profile pictures: users.avatar_updated_at',
+    sql: `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "avatar_updated_at" TIMESTAMP WITH TIME ZONE`,
+  },
 ];
 
 const upgradeDatabase = async (sequelize, log = () => {}) => {

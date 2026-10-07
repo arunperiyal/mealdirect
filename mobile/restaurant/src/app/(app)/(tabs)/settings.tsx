@@ -12,12 +12,14 @@ import {
   formatINR,
   LinkRow,
   maskAccount,
+  ProfilePhoto,
   spacing,
 } from '@mealdirect/shared';
 import { authApi } from '@/api';
+import { API_URL } from '@/config';
 import { useRestaurant } from '@/lib/useRestaurant';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { logout, signOutLocally } from '@/store/authSlice';
+import { logout, signOutLocally, userUpdated } from '@/store/authSlice';
 import { selectRestaurant } from '@/store/restaurantSlice';
 import { useGetMyRestaurantsQuery } from '@/store/serverApi';
 
@@ -91,6 +93,15 @@ export default function SettingsScreen() {
       )}
 
       <Card title="Account">
+        {user && (
+          <ProfilePhoto
+            user={user}
+            baseUrl={API_URL}
+            setAvatar={authApi.setAvatar}
+            removeAvatar={authApi.removeAvatar}
+            onChange={(u) => dispatch(userUpdated(u))}
+          />
+        )}
         <Text style={font.body}>{[user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Restaurant partner'}</Text>
         <Text style={font.caption}>{user?.email}</Text>
       </Card>

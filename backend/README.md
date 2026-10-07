@@ -136,6 +136,11 @@ All responses are JSON: `{ "success": true, "data": ... }` or
   phone number)
 - `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`
 - `DELETE /api/auth/me` `{ password }`: delete your own account (see [Deleted accounts](#deleted-accounts))
+- `PUT /api/auth/me/avatar` `{ image }` (base64 JPEG, PNG or WebP, up to 1 MB), `DELETE /api/auth/me/avatar`: your
+  profile picture. Users carry `avatarUrl` (relative to the API's address, or `null`), also on an order's
+  `customer` and `rider`.
+- `GET /api/avatars/:userId?v=`: the picture. Public, so apps load it without a token; the URL changes with each
+  new picture, so it's cached for a year. Pictures are stored in Postgres (`avatars` table), so backups cover them.
 
 ### Restaurants
 - `GET /api/restaurants`, `GET /api/restaurants/:id`: public listing and details

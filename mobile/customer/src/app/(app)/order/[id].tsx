@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import {
+  Avatar,
   Banner,
   Button,
   canCancel,
@@ -25,7 +26,7 @@ import {
   StatusTimeline,
   type Order,
 } from '@mealdirect/shared';
-import { ORDER_POLL_MS } from '@/config';
+import { API_URL, ORDER_POLL_MS } from '@/config';
 import { RazorpayCheckout } from '@/payments/RazorpayCheckout';
 import { useOrderPayment } from '@/payments/useOrderPayment';
 import { useAppSelector } from '@/store';
@@ -182,9 +183,12 @@ function OrderDetails({
 
         {order.rider && isActive(order) && (
           <Card title="Your delivery partner">
-            <Text style={font.body}>
-              {riderName(order)} {order.status === 'out_for_delivery' ? 'is on the way with your order.' : 'will deliver your order.'}
-            </Text>
+            <View style={styles.rider}>
+              <Avatar name={riderName(order)} url={order.rider.avatarUrl} baseUrl={API_URL} size={48} />
+              <Text style={[font.body, styles.itemName]}>
+                {riderName(order)} {order.status === 'out_for_delivery' ? 'is on the way with your order.' : 'will deliver your order.'}
+              </Text>
+            </View>
             {order.rider.phone ? (
               <Button
                 title={`Call ${order.rider.phone}`}
@@ -270,6 +274,7 @@ const styles = StyleSheet.create({
   gap: { marginTop: spacing.md },
   itemRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs, gap: spacing.md },
   itemName: { flex: 1 },
+  rider: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: spacing.md },
   detail: { marginBottom: spacing.md, gap: 2 },
 });

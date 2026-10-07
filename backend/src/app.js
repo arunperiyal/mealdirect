@@ -62,6 +62,7 @@ app.use('/api/payments', require('./routes/payments'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/delivery', require('./routes/delivery'));
 app.use('/api/profile', require('./routes/profile'));
+app.use('/api/avatars', require('./routes/avatars'));
 
 // Test endpoints (only in development and test)
 if (config.env === 'development' || config.env === 'test') {

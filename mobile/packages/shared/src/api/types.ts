@@ -12,6 +12,7 @@ export interface User {
   phone: string | null;
   role: Role;
   riderStatus?: RiderStatus; // delivery partners only
+  avatarUrl?: string | null; // relative to the API's address
 }
 
 export interface Restaurant {
@@ -232,7 +233,7 @@ export interface Order {
   readyAt?: string | null;
   deliveredAt?: string | null;
   // Included on restaurant and single-order reads
-  customer?: { id: string; firstName: string | null; lastName: string | null; phone: string | null };
+  customer?: { id: string; firstName: string | null; lastName: string | null; phone: string | null; avatarUrl?: string | null };
   deliverySlot?: { id: string; startTime: string; endTime: string } | null;
   // Included on the system admin order list and rider views (with address and phone)
   // upiId: on a rider's own deliveries, for the QR the customer pays at the door
@@ -245,7 +246,7 @@ export interface Order {
     upiId?: string | null;
   };
   // The delivery partner who claimed the order
-  rider?: { id: string; firstName: string | null; lastName: string | null; phone: string | null } | null;
+  rider?: { id: string; firstName: string | null; lastName: string | null; phone: string | null; avatarUrl?: string | null } | null;
   riderId?: string | null;
   claimedAt?: string | null;
   // Pay on delivery: whether the money was collected, how, and by whom

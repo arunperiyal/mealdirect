@@ -13,6 +13,8 @@
     "@reduxjs/toolkit": "*",
     "axios": "*",
     "expo-constants": "*",
+    "expo-image-manipulator": "*",
+    "expo-image-picker": "*",
     "expo-secure-store": "*",
     "react": "*",
     "react-native": "*",

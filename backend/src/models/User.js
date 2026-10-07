@@ -115,6 +115,21 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    // When the profile picture last changed; null without one. Versions the avatar URL so
+    // apps and caches pick up a new picture.
+    avatarUpdatedAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    // Where to fetch the profile picture, relative to the API's address, or null.
+    // List it in an include's attributes to send it with orders.
+    avatarUrl: {
+      type: DataTypes.VIRTUAL(DataTypes.STRING, ['id', 'avatarUpdatedAt']),
+      get() {
+        const updated = this.getDataValue('avatarUpdatedAt');
+        return updated ? `/api/avatars/${this.getDataValue('id')}?v=${new Date(updated).getTime()}` : null;
+      },
+    },
     // Who deleted the account: the user themselves or a MealDirect admin. See accountController.
     deletedById: {
       type: sequelize.options.dialect === 'sqlite' ? DataTypes.STRING : DataTypes.UUID,
@@ -178,6 +193,7 @@ User.prototype.toJSON = function () {
     phone: this.phone,
     role: this.role,
     ...(this.role === 'delivery_partner' && { riderStatus: this.riderStatus }),
+    avatarUrl: this.avatarUrl,
     isActive: this.isActive,
     isVerified: this.isVerified,
     createdAt: this.createdAt,

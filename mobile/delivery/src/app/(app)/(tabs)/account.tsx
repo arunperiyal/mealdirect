@@ -10,12 +10,14 @@ import {
   font,
   LinkRow,
   maskAccount,
+  ProfilePhoto,
   spacing,
   type ChangeRequest,
 } from '@mealdirect/shared';
 import { authApi } from '@/api';
+import { API_URL } from '@/config';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { logout, signOutLocally } from '@/store/authSlice';
+import { logout, signOutLocally, userUpdated } from '@/store/authSlice';
 import { useGetProfileQuery } from '@/store/serverApi';
 
 // "Change waiting for review" etc., else the saved value
@@ -53,6 +55,15 @@ export default function AccountScreen() {
       refreshControl={<RefreshControl refreshing={isFetching && !!profile} onRefresh={refetch} tintColor={colors.brand} />}
     >
       <Card title="Delivery partner">
+        {user && (
+          <ProfilePhoto
+            user={user}
+            baseUrl={API_URL}
+            setAvatar={authApi.setAvatar}
+            removeAvatar={authApi.removeAvatar}
+            onChange={(u) => dispatch(userUpdated(u))}
+          />
+        )}
         <Text style={font.body}>{[me?.firstName, me?.lastName].filter(Boolean).join(' ')}</Text>
         <Text style={font.caption}>{me?.phone}</Text>
         <Text style={font.caption}>{me?.email}</Text>

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text } from 'react-native';
 import { router } from 'expo-router';
-import { Button, Card, confirmAction, font, LinkRow, spacing } from '@mealdirect/shared';
+import { Button, Card, confirmAction, font, LinkRow, ProfilePhoto, spacing } from '@mealdirect/shared';
+import { authApi } from '@/api';
+import { API_URL } from '@/config';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { logout } from '@/store/authSlice';
+import { logout, userUpdated } from '@/store/authSlice';
 
 export default function AccountScreen() {
   const dispatch = useAppDispatch();
@@ -24,6 +26,15 @@ export default function AccountScreen() {
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Card title="Signed in as">
+        {user && (
+          <ProfilePhoto
+            user={user}
+            baseUrl={API_URL}
+            setAvatar={authApi.setAvatar}
+            removeAvatar={authApi.removeAvatar}
+            onChange={(u) => dispatch(userUpdated(u))}
+          />
+        )}
         <Text style={font.body}>{[user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Admin'}</Text>
         <Text style={font.caption}>{user?.email}</Text>
       </Card>

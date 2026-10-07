@@ -32,6 +32,8 @@ Everything used here ships in Expo Go, so no custom development build is needed.
 
 **Profile** has:
 
+- Your profile picture: pick a photo and crop it square; it's resized to 512px before upload. Your delivery
+  partner and the restaurant see it on your orders.
 - Order history.
 - Sign out, and **Delete account** (with your password; not while an order is on its way). A deleted account
   can't sign in; MealDirect support can restore it.

@@ -24,6 +24,12 @@ export const createAuthApi = (client: AxiosInstance) => ({
     await client.post('/auth/logout');
   },
 
+  // Profile picture: base64 JPEG, PNG or WebP. Both return the updated user.
+  setAvatar: async (image: string): Promise<User> =>
+    (await client.put('/auth/me/avatar', { image })).data.data.user,
+
+  removeAvatar: async (): Promise<User> => (await client.delete('/auth/me/avatar')).data.data.user,
+
   // Soft delete: the account can't sign in; MealDirect support can restore it
   deleteAccount: async (password: string) => {
     await client.delete('/auth/me', { data: { password } });

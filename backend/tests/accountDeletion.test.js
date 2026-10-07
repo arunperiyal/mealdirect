@@ -89,7 +89,7 @@ describe('Deleting accounts', () => {
 
     // The restaurant still sees who placed the old order
     const seen = await request(app).get(`/api/orders/${order.id}`).set(ownerHeaders);
-    expect(seen.body.data.customer).toMatchObject({ id: user.id, firstName: 'Customer' });
+    expect(seen.body.data.customer).toMatchObject({ id: user.id, firstName: 'Customer', avatarUrl: null });
 
     // Admins see it among deleted accounts, deleted by the user themselves
     const deleted = await request(app).get('/api/admin/users?deleted=true').set(adminHeaders);

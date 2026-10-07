@@ -244,7 +244,14 @@ describe('Delivery partners', () => {
 
       for (const headers of [customerHeaders, ownerHeaders, adminHeaders]) {
         const res = await request(app).get(`/api/orders/${order.id}`).set(headers);
-        expect(res.body.data.rider).toEqual({ id: rider.id, firstName: 'Ravi', lastName: 'Rider', phone: '9876500000' });
+        expect(res.body.data.rider).toEqual({
+          id: rider.id,
+          firstName: 'Ravi',
+          lastName: 'Rider',
+          phone: '9876500000',
+          avatarUrl: null,
+          avatarUpdatedAt: null,
+        });
       }
     });
 

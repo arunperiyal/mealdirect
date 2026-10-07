@@ -235,7 +235,14 @@ describe('Restaurant admin API', () => {
 
       const list = await request(app).get('/api/orders/restaurant-orders').set(ownerHeaders);
       const listed = list.body.data.find((o) => o.id === order.id);
-      expect(listed.customer).toEqual({ id: expect.any(String), firstName: 'Customer', lastName: 'User', phone: null });
+      expect(listed.customer).toEqual({
+        id: expect.any(String),
+        firstName: 'Customer',
+        lastName: 'User',
+        phone: null,
+        avatarUrl: null,
+        avatarUpdatedAt: null,
+      });
       expect(listed.deliverySlot).toMatchObject({ id: slot.id, startTime: expect.stringMatching(/^12:00/) });
 
       const detail = await request(app).get(`/api/orders/${order.id}`).set(ownerHeaders);

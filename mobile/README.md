@@ -72,7 +72,8 @@ What differs in the browser:
   admin 1200). Sheets keep to 640px.
 - **Online payment** loads Razorpay Checkout into the page (`RazorpayCheckout.web.tsx`) instead of a WebView.
 - **API address**: in development, port 3000 on the page's host; for a deployed site, set `EXPO_PUBLIC_API_URL`
-  when building. The backend must allow the site in `CORS_ORIGINS` (development allows any origin).
+  when building. The value is written into the bundle, so `build:web` clears Expo's cache first: a cached bundle
+  could otherwise keep an earlier address. The backend must allow the site in `CORS_ORIGINS` (development allows any origin).
 
 The build is a single-page app: the web server must answer unknown paths with `index.html`.
 

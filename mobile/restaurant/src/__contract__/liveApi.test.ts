@@ -143,7 +143,7 @@ describeLive('restaurant app ↔ live backend', () => {
     expect(created.isApproved).toBe(false);
 
     // Menus are blocked until approval
-    const early = await d(e.createMenu.initiate({ restaurantId, date: today }));
+    const early = await d(e.createMenu.initiate({ restaurantId, name: 'Lunch', date: today }));
     expect('error' in early && early.error).toMatchObject({ status: 403 });
 
     await http.put(`/restaurants/admin/${restaurantId}/approve`, {}, adminAuth);
@@ -181,7 +181,7 @@ describeLive('restaurant app ↔ live backend', () => {
 
   test("sets up and publishes today's menu with dishes and a delivery time", async () => {
     const menu = await call(
-      d(e.createMenu.initiate({ restaurantId, date: today, orderingStartTime: '08:00', orderingEndTime: '22:00' }))
+      d(e.createMenu.initiate({ restaurantId, name: 'Lunch', date: today, orderingStartTime: '08:00', orderingEndTime: '22:00' }))
     );
     menuId = menu.id;
 
@@ -220,7 +220,7 @@ describeLive('restaurant app ↔ live backend', () => {
     expect('error' in dup && dup.error).toMatchObject({ status: 409, code: 'DISH_EXISTS' });
 
     const tomorrow = localDateString(addDays(new Date(), 1));
-    const menu = await call(d(e.createMenu.initiate({ restaurantId, date: tomorrow })));
+    const menu = await call(d(e.createMenu.initiate({ restaurantId, name: 'Lunch', date: tomorrow })));
     const meals = imported.dishes.find((dish) => dish.name === 'South Indian Meals')!;
     const built = await call(d(e.addDishesToMenu.initiate({ menuId: menu.id, dishIds: [meals.id, payasam.id] })));
     expect(built.items.map((i) => [i.dishId, i.name, i.price, i.maxPerDay ?? null])).toEqual([

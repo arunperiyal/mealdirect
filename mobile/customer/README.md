@@ -63,7 +63,8 @@ restaurant's average shows on its page; tap it for the star breakdown and recent
 
 ### Order and payment flow
 
-1. Checkout creates the order (`POST /api/orders`) and clears the cart.
+1. Checkout creates the order (`POST /api/orders`) and clears the cart. Online payment is offered only when
+   the cart has one menu, since it pays one order.
 2. For **Pay online**, the order screen opens with `?pay=1` and starts payment automatically:
    `POST /api/payments/create-order` → Razorpay Checkout → `POST /api/payments/verify-payment`.
 3. If the customer closes Checkout or the payment fails, the order stays pending with a
@@ -80,8 +81,10 @@ A dish can have limits set by the restaurant, shown under its price ("Max 2 per 
 The quantity buttons stop at the limit, counting what the customer already ordered from that menu, and a dish
 whose daily limit is used up shows **Limit reached**. The backend checks the same limits.
 
-An order belongs to one restaurant menu, so the cart holds items from one menu at a time.
-Adding a dish from another menu asks before replacing the cart.
+A restaurant can have several menus a day (lunch, dinner...); its page shows a tab for each. The cart can hold
+dishes from any of one restaurant's menus, today's and tomorrow's. Checkout places one order per menu, each with
+its own delivery time and bill; a menu that can't be ordered (e.g. it just closed) stays in the cart. Adding a
+dish from another restaurant asks before replacing the cart.
 
 ## Checks
 

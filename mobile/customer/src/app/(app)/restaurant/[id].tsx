@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import {
   addDays,
@@ -27,7 +27,7 @@ import {
 import { CartBar } from '@/components/CartBar';
 import { QuantityStepper } from '@/components/QuantityStepper';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { addItem, decrementItem } from '@/store/cartSlice';
+import { addItem, decrementItem, selectQuantity } from '@/store/cartSlice';
 import { useGetMyOrdersQuery, useGetPublishedMenusQuery, useGetRestaurantQuery } from '@/store/serverApi';
 
 const DAYS = [
@@ -43,7 +43,13 @@ export default function RestaurantScreen() {
   const restaurantQuery = useGetRestaurantQuery(id);
   const menusQuery = useGetPublishedMenusQuery({ restaurantId: id, date });
   const restaurant = restaurantQuery.data;
-  const menu = menusQuery.data?.[0];
+  const menus = useMemo(() => menusQuery.data ?? [], [menusQuery.data]);
+  // Several menus a day (Lunch, Dinner...): the one picked, else the first still taking orders
+  const [menuId, setMenuId] = useState<string | null>(null);
+  const menu =
+    menus.find((m) => m.id === menuId) ??
+    menus.find((m) => orderingState(m, localDateString(new Date())).open) ??
+    menus[0];
   // What this customer already ordered from the menu counts toward daily limits
   const { data: myOrders } = useGetMyOrdersQuery();
   const ordered = useMemo(() => (menu ? orderedFromMenu(myOrders ?? [], menu.id) : new Map<string, number>()), [myOrders, menu]);
@@ -68,9 +74,14 @@ export default function RestaurantScreen() {
         ListHeaderComponent={
           <Header
             restaurant={restaurant}
+            menus={menus}
             menu={menu}
+            onSelectMenu={setMenuId}
             dayIndex={dayIndex}
-            onSelectDay={setDayIndex}
+            onSelectDay={(i) => {
+              setDayIndex(i);
+              setMenuId(null);
+            }}
           />
         }
         renderItem={({ item }) =>
@@ -102,12 +113,16 @@ export default function RestaurantScreen() {
 
 function Header({
   restaurant,
+  menus,
   menu,
+  onSelectMenu,
   dayIndex,
   onSelectDay,
 }: {
   restaurant: Restaurant;
+  menus: Menu[];
   menu: Menu | undefined;
+  onSelectMenu: (id: string) => void;
   dayIndex: number;
   onSelectDay: (i: number) => void;
 }) {
@@ -141,6 +156,19 @@ function Header({
         ))}
       </View>
 
+      {menus.length > 1 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.menuTabs}
+          accessibilityRole="tablist"
+        >
+          {menus.map((m) => (
+            <Chip key={m.id} label={m.name} selected={m.id === menu?.id} onPress={() => onSelectMenu(m.id)} />
+          ))}
+        </ScrollView>
+      )}
+
       {menu ? <CutoffNote menu={menu} /> : null}
     </View>
   );
@@ -165,8 +193,7 @@ function MenuItemRow({
 }) {
   const dispatch = useAppDispatch();
   const cart = useAppSelector((s) => s.cart);
-  const quantity =
-    cart.menuId === menu.id ? cart.lines.find((l) => l.menuItemId === item.id)?.quantity ?? 0 : 0;
+  const quantity = useAppSelector((s) => selectQuantity(s, menu.id, item.id));
   const allowance = dishAllowance(item, orderedBefore);
   const ordering = orderingState(menu, localDateString(new Date()));
 
@@ -175,17 +202,16 @@ function MenuItemRow({
       restaurantId: restaurant.id,
       restaurantName: restaurant.name,
       menuId: menu.id,
+      menuName: menu.name,
       menuDate: menu.date,
       item,
       maxQuantity: allowance.max,
     };
-    if (cart.menuId && cart.menuId !== menu.id) {
-      const sameRestaurant = cart.restaurantId === restaurant.id;
+    // Any of this restaurant's menus can share the cart; another restaurant starts a new one
+    if (cart.restaurantId && cart.restaurantId !== restaurant.id) {
       confirmAction({
         title: 'Start a new cart?',
-        message: sameRestaurant
-          ? `Your cart has items from a different day's menu. An order can only include one menu.`
-          : `Your cart has items from ${cart.restaurantName}. Adding this will clear it.`,
+        message: `Your cart has items from ${cart.restaurantName}. Adding this will clear it.`,
         confirmText: 'Start new cart',
         destructive: true,
         onConfirm: () => dispatch(addItem(payload)),
@@ -219,7 +245,7 @@ function MenuItemRow({
           quantity={quantity}
           max={allowance.max}
           onIncrement={add}
-          onDecrement={() => dispatch(decrementItem(item.id))}
+          onDecrement={() => dispatch(decrementItem({ menuId: menu.id, menuItemId: item.id }))}
         />
       ) : (
         <Button title="Add" variant="secondary" onPress={add} style={styles.addButton} />
@@ -234,6 +260,7 @@ const styles = StyleSheet.create({
   header: { gap: spacing.xs, marginBottom: spacing.md },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
   days: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+  menuTabs: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   window: { marginTop: spacing.sm },
   item: {
     flexDirection: 'row',

@@ -141,7 +141,9 @@ function OrderDetails({
         <View style={styles.header}>
           <Text style={font.title}>{STATUS_LABELS[order.status]}</Text>
           <Text style={font.caption}>
-            {restaurant?.name ? `${restaurant.name} · ` : ''}Order #{order.id.slice(0, 8).toUpperCase()}
+            {restaurant?.name ? `${restaurant.name} · ` : ''}
+            {order.menu?.name && order.menu.name !== 'Menu' ? `${order.menu.name} · ` : ''}Order #
+            {order.id.slice(0, 8).toUpperCase()}
           </Text>
         </View>
 

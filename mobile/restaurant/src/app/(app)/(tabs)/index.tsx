@@ -9,6 +9,7 @@ import {
   ErrorState,
   font,
   formatINR,
+  LinkRow,
   LoadingState,
   localDateString,
   spacing,
@@ -41,8 +42,8 @@ export default function TodayScreen() {
   const summary = summarizeToday(list);
   const waiting = list.filter(needsAttention);
   const toRecord = list.filter(canRecordPayment);
-  const todaysMenu = menus.data?.[0];
-  const soldOut = todaysMenu?.items.filter((i) => !i.available).length ?? 0;
+  // A restaurant can run several menus a day (lunch, dinner...)
+  const todaysMenus = menus.data ?? [];
 
   return (
     <ScrollView
@@ -70,26 +71,32 @@ export default function TodayScreen() {
         <StatTile label="Sales today" value={formatINR(summary.revenue)} />
       </View>
 
-      <Card title="Today's menu">
+      <Card title={todaysMenus.length > 1 ? "Today's menus" : "Today's menu"}>
         {menus.isLoading ? (
           <Text style={font.caption}>Loading…</Text>
-        ) : todaysMenu ? (
+        ) : todaysMenus.length ? (
           <>
-            <Text style={font.body}>
-              {todaysMenu.status === 'published'
-                ? 'Open for orders'
-                : todaysMenu.status === 'draft'
-                  ? 'Draft: customers can’t see it yet'
-                  : 'Closed for orders'}
-            </Text>
-            <Text style={[font.caption, styles.gap]}>
-              {todaysMenu.items.length} {todaysMenu.items.length === 1 ? 'dish' : 'dishes'}
-              {soldOut > 0 ? ` · ${soldOut} sold out` : ''}
-            </Text>
+            {todaysMenus.map((menu) => {
+              const soldOut = menu.items.filter((i) => !i.available).length;
+              return (
+                <LinkRow
+                  key={menu.id}
+                  title={menu.name}
+                  detail={[
+                    menu.status === 'published' ? 'Open for orders' : menu.status === 'draft' ? 'Draft' : 'Closed for orders',
+                    `${menu.items.length} ${menu.items.length === 1 ? 'dish' : 'dishes'}`,
+                    soldOut > 0 && `${soldOut} sold out`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  onPress={() => router.push({ pathname: '/menu/[id]', params: { id: menu.id } })}
+                />
+              );
+            })}
             <Button
-              title="Manage today's menu"
+              title="Add another menu for today"
               variant="secondary"
-              onPress={() => router.push({ pathname: '/menu/[id]', params: { id: todaysMenu.id } })}
+              onPress={() => router.push({ pathname: '/menu/new', params: { date: today } })}
               style={styles.gap}
             />
           </>

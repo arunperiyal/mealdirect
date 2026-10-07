@@ -86,7 +86,10 @@ backups.
 
 ## How orders work
 
-- **Menus** are per day. A restaurant adds dishes and delivery times (each with an order limit), then publishes.
+- **Menus** are per day, and a restaurant can have several on one day (lunch and dinner, or two lunches), each with
+  a `name` ("Menu" when left out) and its own dishes, ordering times and delivery times. A menu can be renamed at
+  any time; other changes only while it's a draft. Orders carry `menu` (`id`, `name`, `date`), and statements have
+  a Menu column. A restaurant adds dishes and delivery times (each with an order limit), then publishes.
   Orders are taken between the menu's ordering times (`409 ORDERING_NOT_OPEN` before, `ORDERING_CLOSED` after).
   Each time falls on the menu's day or the day before (`orderingOpensDay` / `orderingClosesDay`: `0` or `-1`), so
   ordering can run overnight, e.g. from 20:00 the day before to 06:00. Without an opening time, a menu takes orders

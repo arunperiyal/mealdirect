@@ -55,7 +55,9 @@ export default function OrdersScreen() {
 
 function OrderRow({ order }: { order: Order }) {
   const { data: restaurant } = useGetRestaurantQuery(order.restaurantId);
-  const summary = order.items.map((i) => `${i.quantity} × ${i.name}`).join(', ');
+  const items = order.items.map((i) => `${i.quantity} × ${i.name}`).join(', ');
+  // Restaurants with several menus a day: say which one
+  const summary = order.menu?.name && order.menu.name !== 'Menu' ? `${order.menu.name} · ${items}` : items;
   const active = isActive(order);
   const unpaid = needsPayment(order);
 

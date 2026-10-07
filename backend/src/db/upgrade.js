@@ -109,6 +109,10 @@ const STEPS = [
             ADD COLUMN IF NOT EXISTS "ordering_opens_day" INTEGER,
             ADD COLUMN IF NOT EXISTS "ordering_closes_day" INTEGER`,
   },
+  {
+    name: 'Several menus a day: Menus.name',
+    sql: `ALTER TABLE "Menus" ADD COLUMN IF NOT EXISTS "name" VARCHAR(60) NOT NULL DEFAULT 'Menu'`,
+  },
 ];
 
 const upgradeDatabase = async (sequelize, log = () => {}) => {

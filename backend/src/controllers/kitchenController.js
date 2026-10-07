@@ -49,7 +49,7 @@ const getKitchen = wrap(async (userId, restaurantId, date) => {
   await assertOwner(restaurantId, userId);
   const menus = await Menu.findAll({
     where: { restaurantId, date },
-    attributes: ['id', 'date', 'status', 'orderingEndTime'],
+    attributes: ['id', 'name', 'date', 'status', 'orderingEndTime'],
   });
   const orders = await Order.findAll({
     where: { menuId: menus.map((m) => m.id), status: { [Op.ne]: 'cancelled' } },

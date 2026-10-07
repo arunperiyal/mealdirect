@@ -9,16 +9,20 @@ jest.mock('react-native-safe-area-context', () => require('react-native-safe-are
 
 const { router } = jest.requireMock('expo-router') as { router: { push: jest.Mock; dismissTo: jest.Mock } };
 
-const renderCart = async (
-  lines: { menuItemId: string; name: string; price: number; quantity: number; maxQuantity?: number }[]
-) => {
+type Line = { menuItemId: string; name: string; price: number; quantity: number; maxQuantity?: number };
+
+const renderCart = async (lines: Line[], dinner: Line[] = []) => {
+  const menu = (menuId: string, menuName: string, menuLines: Line[]) => ({
+    menuId,
+    menuName,
+    menuDate: '2026-09-23',
+    lines: menuLines.map((l) => ({ maxQuantity: 20, ...l })),
+  });
   const store = makeStore({
     cart: {
       restaurantId: 'r1',
       restaurantName: 'Amma Mess',
-      menuId: 'm1',
-      menuDate: '2026-09-23',
-      lines: lines.map((l) => ({ maxQuantity: 20, ...l })),
+      menus: [menu('m1', 'Lunch', lines), ...(dinner.length ? [menu('m2', 'Dinner', dinner)] : [])],
     },
   });
   await render(
@@ -46,12 +50,20 @@ describe('CartScreen', () => {
     const store = await renderCart([{ menuItemId: 'a', name: 'Meals', price: 120, quantity: 1 }]);
 
     await fireEvent.press(screen.getByLabelText('Add one Meals'));
-    expect(store.getState().cart.lines[0].quantity).toBe(2);
+    expect(store.getState().cart.menus[0].lines[0].quantity).toBe(2);
 
     await fireEvent.press(screen.getByLabelText('Remove one Meals'));
     await fireEvent.press(screen.getByLabelText('Remove one Meals'));
-    expect(store.getState().cart.lines).toHaveLength(0);
+    expect(store.getState().cart.menus).toHaveLength(0);
     expect(screen.getByText('Your cart is empty')).toBeTruthy();
+  });
+
+  test("dishes from two of the restaurant's menus are listed per menu, as separate orders", async () => {
+    await renderCart([{ menuItemId: 'a', name: 'Meals', price: 120, quantity: 1 }], [{ menuItemId: 'a', name: 'Chapati', price: 40, quantity: 2 }]);
+    expect(screen.getByText(/^Lunch · /)).toBeTruthy();
+    expect(screen.getByText(/^Dinner · /)).toBeTruthy();
+    expect(screen.getByText('Each menu is a separate order, with its own delivery time and bill.')).toBeTruthy();
+    expect(screen.getByText(/200\.00/)).toBeTruthy();
   });
 
   test('proceeds to checkout', async () => {

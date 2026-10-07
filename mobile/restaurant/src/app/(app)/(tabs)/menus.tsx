@@ -90,7 +90,9 @@ function MenuRow({ menu }: { menu: Menu }) {
       style={({ pressed }) => [styles.row, pressed && { opacity: 0.9 }]}
     >
       <View style={styles.rowTop}>
-        <Text style={font.heading}>{dayLabel(menu.date)}</Text>
+        <Text style={[font.heading, styles.rowName]} numberOfLines={1}>
+          {dayLabel(menu.date)} · {menu.name}
+        </Text>
         <Text style={[styles.status, { color: status.color }]}>{status.label}</Text>
       </View>
       <Text style={font.caption}>
@@ -107,7 +109,8 @@ const styles = StyleSheet.create({
   list: { padding: spacing.lg, paddingBottom: 100, flexGrow: 1 },
   section: { marginBottom: spacing.sm, marginTop: spacing.md },
   row: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.sm, gap: 4 },
-  rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
+  rowName: { flex: 1 },
   status: { fontSize: 13, fontWeight: '700' },
   footer: { position: 'absolute', left: spacing.lg, right: spacing.lg, bottom: spacing.lg },
 });

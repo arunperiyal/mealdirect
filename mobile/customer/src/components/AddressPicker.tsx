@@ -26,13 +26,15 @@ export function AddressPicker({ addresses, error, onChange }: Props) {
 
   const picked = addresses.find((a) => a.id === selected);
   const isNew = !picked;
+  // On the address text, not the object: a refetched list must not report a change
+  const pickedAddress = picked?.address ?? null;
   useEffect(() => {
     onChange(
-      picked
-        ? { address: picked.address, saveAs: null }
+      pickedAddress !== null
+        ? { address: pickedAddress, saveAs: null }
         : { address: typed, saveAs: save ? label.trim() || 'Home' : null }
     );
-  }, [picked, typed, save, label, onChange]);
+  }, [pickedAddress, typed, save, label, onChange]);
 
   return (
     <View>

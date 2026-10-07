@@ -8,18 +8,23 @@ jest.mock('expo-router', () => ({ router: { replace: jest.fn() }, useLocalSearch
 jest.mock('@/lib/useRestaurant', () => ({ useRestaurant: () => ({ id: 'r1' }) }));
 
 const mockCreate = jest.fn();
+let mockExisting: { date: string; name: string }[] = [];
 jest.mock('@/store/serverApi', () => ({
-  useGetMenusQuery: () => ({ data: [] }),
+  useGetMenusQuery: () => ({ data: mockExisting }),
   useCreateMenuMutation: () => [(arg: unknown) => ({ unwrap: () => mockCreate(arg) }), { isLoading: false }],
 }));
 
 describe('New menu: ordering window', () => {
-  beforeEach(() => mockCreate.mockReset().mockResolvedValue({ id: 'm1' }));
+  beforeEach(() => {
+    mockCreate.mockReset().mockResolvedValue({ id: 'm1' });
+    mockExisting = [];
+  });
   const today = localDateString(new Date());
 
   test('overnight: opens the day before, closes on the menu day', async () => {
     await render(<NewMenuScreen />);
     await fireEvent.press(screen.getByText('Tomorrow'));
+    await fireEvent.press(screen.getByText('Breakfast'));
     await fireEvent.changeText(screen.getByLabelText('Opens'), '20:00');
     await fireEvent.changeText(screen.getByLabelText('Closes'), '06:00');
     await fireEvent.press(screen.getByText('Create menu'));
@@ -32,6 +37,7 @@ describe('New menu: ordering window', () => {
     await fireEvent.press(screen.getByText('Create menu'));
     expect(mockCreate).toHaveBeenCalledWith({
       restaurantId: 'r1',
+      name: 'Breakfast',
       date: localDateString(addDays(new Date(), 1)),
       orderingStartTime: '20:00',
       orderingOpensDay: -1,
@@ -40,10 +46,15 @@ describe('New menu: ordering window', () => {
     });
   });
 
-  test('a same-day window, and no window at all', async () => {
+  test('needs a name; a same-day window, and no window at all', async () => {
     await render(<NewMenuScreen />);
     await fireEvent.press(screen.getByText('Create menu'));
-    expect(mockCreate).toHaveBeenLastCalledWith({ restaurantId: 'r1', date: today });
+    expect(screen.getByText('Name the menu, e.g. Lunch')).toBeTruthy();
+    expect(mockCreate).not.toHaveBeenCalled();
+
+    await fireEvent.changeText(screen.getByLabelText('Menu name'), ' Lunch – South Indian ');
+    await fireEvent.press(screen.getByText('Create menu'));
+    expect(mockCreate).toHaveBeenLastCalledWith({ restaurantId: 'r1', name: 'Lunch – South Indian', date: today });
 
     await fireEvent.changeText(screen.getByLabelText('Opens'), '08:00');
     await fireEvent.changeText(screen.getByLabelText('Closes'), '11:30');
@@ -53,4 +64,18 @@ describe('New menu: ordering window', () => {
     );
   });
 
+  test('a day that has a menu can get another one, but not with the same name', async () => {
+    mockExisting = [{ date: today, name: 'Lunch' }];
+    await render(<NewMenuScreen />);
+    expect(screen.getByText('Today (1)')).toBeTruthy();
+    expect(screen.getByText('Today already has Lunch. This adds another menu.')).toBeTruthy();
+
+    await fireEvent.press(screen.getByText('Lunch'));
+    await fireEvent.press(screen.getByText('Create menu'));
+    expect(screen.getByText('Today already has a menu called Lunch')).toBeTruthy();
+
+    await fireEvent.press(screen.getByText('Dinner'));
+    await fireEvent.press(screen.getByText('Create menu'));
+    expect(mockCreate).toHaveBeenCalledWith({ restaurantId: 'r1', name: 'Dinner', date: today });
+  });
 });

@@ -95,19 +95,19 @@ describe('Order statements (CSV)', () => {
     expect(res.headers['content-disposition']).toBe(`attachment; filename="mealdirect-orders-${today()}-to-${today()}.csv"`);
 
     const lines = parse(res.body);
-    expect(lines[0]).toBe('Date,Order,Restaurant,Items,Delivery or pickup,Status,Subtotal,Delivery fee,Discount,Total,Payment');
+    expect(lines[0]).toBe('Date,Order,Restaurant,Menu,Items,Delivery or pickup,Status,Subtotal,Delivery fee,Discount,Total,Payment');
     expect(lines).toHaveLength(4);
-    expect(lines[1]).toContain(`,${delivered.id.slice(0, 8).toUpperCase()},"Ledger, Kitchen",2 x `);
+    expect(lines[1]).toContain(`,${delivered.id.slice(0, 8).toUpperCase()},"Ledger, Kitchen",Menu,2 x `);
     expect(lines[1]).toMatch(/,Delivered,.*,Cash$/);
     expect(lines[2]).toMatch(/,Cancelled,/);
     expect(lines[3]).toBe(
-      `Total (not counting cancelled orders),,,,,,${Number(delivered.subtotal)},${Number(delivered.deliveryFee)},0,${Number(delivered.total)}`
+      `Total (not counting cancelled orders),,,,,,,${Number(delivered.subtotal)},${Number(delivered.deliveryFee)},0,${Number(delivered.total)}`
     );
   });
 
   test("a restaurant's orders show the customer and who collected the money", async () => {
     const lines = parse((await statement(ownerHeaders)).body);
-    expect(lines[0]).toMatch(/^Date,Order,Restaurant,Customer,/);
+    expect(lines[0]).toMatch(/^Date,Order,Restaurant,Menu,Customer,/);
     expect(lines[1]).toMatch(/,Customer User,.*,Cash,Ravi \(rider\)$/);
 
     const other = await registerAndLogin(app, 'st-owner2@test.com', 'restaurant_admin');

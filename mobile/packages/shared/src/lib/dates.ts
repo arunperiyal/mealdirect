@@ -29,3 +29,11 @@ export const formatDateTime = (iso: string) =>
     hour: 'numeric',
     minute: '2-digit',
   });
+
+// "Today", "Tomorrow" or "Wed, 8 Oct" for a 'YYYY-MM-DD' date
+export const relativeDay = (date: string, now = new Date()) => {
+  if (date === localDateString(now)) return 'Today';
+  if (date === localDateString(addDays(now, 1))) return 'Tomorrow';
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+};

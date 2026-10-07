@@ -124,6 +124,7 @@ function OrderDetails({ order, refreshing, onRefresh }: { order: Order; refreshi
           <StatusPill status={order.status} />
           <Text style={font.title}>{customerName(order)}</Text>
           <Text style={font.caption}>
+            {order.menu?.name ? `${order.menu.name} · ` : ''}
             {shortId(order.id)} · placed {formatDateTime(order.createdAt)}
           </Text>
         </View>

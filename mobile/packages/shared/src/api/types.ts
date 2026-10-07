@@ -83,6 +83,7 @@ export type MenuStatus = 'draft' | 'published' | 'closed' | 'archived';
 export interface Menu {
   id: string;
   restaurantId: string;
+  name: string; // Lunch, Dinner...: a restaurant can have several menus a day
   date: string; // YYYY-MM-DD
   orderingStartTime: string | null;
   orderingEndTime: string | null;
@@ -239,6 +240,8 @@ export interface Order {
   // Included on restaurant and single-order reads
   customer?: { id: string; firstName: string | null; lastName: string | null; phone: string | null; avatarUrl?: string | null };
   deliverySlot?: { id: string; startTime: string; endTime: string } | null;
+  // Which of the day's menus it's from (on reads and the customer's list)
+  menu?: { id: string; name: string; date: string } | null;
   // Included on the system admin order list and rider views (with address and phone)
   // upiId: on a rider's own deliveries, for the QR the customer pays at the door
   restaurant?: {
@@ -439,7 +442,7 @@ export interface KitchenGroup {
 
 export interface KitchenDay {
   date: string;
-  menus: { id: string; date: string; status: MenuStatus; orderingEndTime: string | null }[];
+  menus: { id: string; name: string; date: string; status: MenuStatus; orderingEndTime: string | null }[];
   totals: DishTotal[];
   counts: Partial<Record<OrderStatus, number>>;
   groups: KitchenGroup[];

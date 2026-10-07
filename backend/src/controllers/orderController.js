@@ -17,12 +17,16 @@ const RATING = {
   attributes: ['foodRating', 'foodComment', 'deliveryRating', 'deliveryComment', 'createdAt', 'updatedAt'],
 };
 
+// Which of the day's menus it's from (Lunch, Dinner...)
+const MENU = { model: Menu, paranoid: false, as: 'menu', attributes: ['id', 'name', 'date'] };
+
 // Who ordered and when it's due. Only what the restaurant needs to fulfil the
 // order: no email or account fields. Past orders still show deleted accounts.
 const ORDER_DETAILS = [
   { model: User, paranoid: false, as: 'customer', attributes: ['id', 'firstName', 'lastName', 'phone', 'avatarUrl'] },
   { model: User, paranoid: false, as: 'rider', attributes: ['id', 'firstName', 'lastName', 'phone', 'avatarUrl'] },
   { model: DeliverySlot, as: 'deliverySlot', attributes: ['id', 'startTime', 'endTime'] },
+  MENU,
   RATING,
 ];
 
@@ -274,8 +278,8 @@ const listCustomerOrders = async (customerId, filters = {}) => {
       limit: Math.min(limit, 100),
       offset,
       order: [['createdAt', 'DESC']],
-      // So the order list can ask for a rating
-      include: [RATING],
+      // So the order list can name the menu and ask for a rating
+      include: [MENU, RATING],
       distinct: true,
     });
 

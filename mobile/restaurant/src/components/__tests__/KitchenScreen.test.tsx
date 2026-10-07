@@ -53,7 +53,7 @@ const order = (id: string, status: Order['status']) =>
 
 const day = (): KitchenDay => ({
   date: '2026-09-23',
-  menus: [{ id: 'm1', date: '2026-09-23', status: 'published', orderingEndTime: '10:30:00' }],
+  menus: [{ id: 'm1', name: 'Lunch', date: '2026-09-23', status: 'published', orderingEndTime: '10:30:00' }],
   totals: [
     { menuItemId: 'i1', name: 'Meals', quantity: 12 },
     { menuItemId: 'i2', name: 'Curd Rice', quantity: 3 },

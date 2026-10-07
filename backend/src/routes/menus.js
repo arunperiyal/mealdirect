@@ -18,6 +18,8 @@ router.post(
   [
     body('restaurantId').isUUID().withMessage('Valid restaurant ID required'),
     body('date').isISO8601().toDate(),
+    // Lunch, Dinner...; "Menu" when left out (older app versions)
+    body('name').optional().isString().trim().isLength({ min: 1, max: 60 }).withMessage('Name the menu, e.g. Lunch'),
     body('orderingStartTime').optional().isTime({ hourFormat: 'hour24' }),
     body('orderingEndTime').optional().isTime({ hourFormat: 'hour24' }),
     // 0: the menu's day, -1: the day before (overnight ordering)
@@ -155,6 +157,8 @@ router.put(
   [
     param('id').isUUID(),
     body('date').optional().isISO8601(),
+    // Lunch, Dinner...; "Menu" when left out (older app versions)
+    body('name').optional().isString().trim().isLength({ min: 1, max: 60 }).withMessage('Name the menu, e.g. Lunch'),
     body('orderingStartTime').optional().isTime({ hourFormat: 'hour24' }),
     body('orderingEndTime').optional().isTime({ hourFormat: 'hour24' }),
     // 0: the menu's day, -1: the day before (overnight ordering)

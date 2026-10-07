@@ -35,12 +35,13 @@ const createMenu = async (restaurantId, userId, data) => {
       throwError('RESTAURANT_NOT_APPROVED', 'Restaurant is not approved yet', 403);
     }
 
-    const { date, orderingStartTime, orderingEndTime } = data;
+    const { name, date, orderingStartTime, orderingEndTime } = data;
 
     if (!date) throwError('VALIDATION_ERROR', 'Date is required');
 
     const menu = await Menu.create({
       restaurantId,
+      name,
       date,
       orderingStartTime,
       orderingEndTime,
@@ -82,12 +83,15 @@ const getMenu = async (menuId) => {
 const updateMenu = async (menuId, userId, data) => {
   try {
     const { menu } = await verifyMenuOwnership(menuId, userId);
+    const { name, date, orderingStartTime, orderingEndTime, orderingOpensDay, orderingClosesDay } = data;
 
-    if (menu.status !== 'draft') {
+    // A menu can be renamed at any time; the rest only while it's a draft
+    const onlyName = Object.keys(data).every((key) => key === 'name');
+    if (menu.status !== 'draft' && !onlyName) {
       throwError('INVALID_STATUS', 'Can only edit draft menus');
     }
 
-    const { date, orderingStartTime, orderingEndTime, orderingOpensDay, orderingClosesDay } = data;
+    if (name) menu.name = name;
 
     if (date) menu.date = date;
     if (orderingStartTime) menu.orderingStartTime = orderingStartTime;
@@ -161,7 +165,8 @@ const getMenusByDate = async (restaurantId, date) => {
           attributes: ['id', 'startTime', 'endTime', 'maxOrders', 'currentOrders'],
         },
       ],
-      order: [['createdAt', 'DESC']],
+      // A day's menus in the order they were made (lunch before dinner, usually)
+      order: [['createdAt', 'ASC']],
     });
 
     return menus;
@@ -189,7 +194,8 @@ const getMenusByRestaurant = async (restaurantId, startDate, endDate, limit = 50
           attributes: ['id', 'startTime', 'endTime', 'maxOrders', 'currentOrders'],
         },
       ],
-      order: [['date', 'DESC']],
+      order: [['date', 'DESC'], ['createdAt', 'ASC']],
+      distinct: true,
     });
 
     return { count, rows };

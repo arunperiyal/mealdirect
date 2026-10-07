@@ -22,6 +22,7 @@ import {
 import { dayLabel, isBefore, isValidTime, orderingWindowLabel, toHHmm } from '@/lib/time';
 import { useRestaurant } from '@/lib/useRestaurant';
 import { DishFields } from '@/components/DishFields';
+import { MenuNameField, validateMenuName } from '@/components/MenuNameField';
 import { checkDishDraft, dishDraft, dishSummary, emptyDishDraft, type DishDraft, type DishErrors } from '@/lib/dishForm';
 import {
   useAddDishesToMenuMutation,
@@ -34,6 +35,7 @@ import {
   useRemoveMenuItemMutation,
   useSetMenuStatusMutation,
   useUpdateMenuItemMutation,
+  useUpdateMenuMutation,
   useUpdateSlotMutation,
 } from '@/store/serverApi';
 
@@ -58,6 +60,7 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
   const [error, setError] = useState<string | null>(null);
   const [item, setItem] = useState<ItemDraft | null>(null);
   const [picking, setPicking] = useState(false);
+  const [renaming, setRenaming] = useState(false);
   const [slot, setSlot] = useState<SlotDraft | null>(null);
 
   const soldOut = menu.items.filter((i) => !i.available).length;
@@ -99,7 +102,7 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
 
   return (
     <>
-      <Stack.Screen options={{ title: `${dayLabel(menu.date)}’s menu` }} />
+      <Stack.Screen options={{ title: `${menu.name} · ${dayLabel(menu.date)}` }} />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.brand} />}
@@ -107,6 +110,14 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
         {error && <Banner tone="error" message={error} />}
 
         <Card>
+          <View style={styles.nameRow}>
+            <Text style={[font.title, styles.flex]} numberOfLines={2}>
+              {menu.name}
+            </Text>
+            <Pressable accessibilityRole="button" onPress={() => setRenaming(true)} hitSlop={8}>
+              <Text style={styles.rename}>Rename</Text>
+            </Pressable>
+          </View>
           <Text style={font.heading}>
             {menu.status === 'draft'
               ? 'Draft'
@@ -184,6 +195,7 @@ function MenuEditor({ menu, refreshing, onRefresh }: { menu: Menu; refreshing: b
       )}
       {item && <ItemSheet menu={menu} restaurantId={restaurant.id} draft={item} onClose={() => setItem(null)} />}
       {slot && <SlotSheet menuId={menu.id} draft={slot} onClose={() => setSlot(null)} />}
+      {renaming && <RenameSheet menuId={menu.id} current={menu.name} onClose={() => setRenaming(false)} />}
     </>
   );
 }
@@ -500,8 +512,36 @@ function SlotSheet({ menuId, draft, onClose }: { menuId: string; draft: SlotDraf
   );
 }
 
+// Menus can be renamed at any time, even while taking orders
+function RenameSheet({ menuId, current, onClose }: { menuId: string; current: string; onClose: () => void }) {
+  const [name, setName] = useState(current);
+  const [error, setError] = useState<string | null>(null);
+  const [update, { isLoading }] = useUpdateMenuMutation();
+
+  const submit = async () => {
+    const problem = validateMenuName(name);
+    setError(problem);
+    if (problem) return;
+    try {
+      await update({ id: menuId, name: name.trim() }).unwrap();
+      onClose();
+    } catch (e) {
+      setError(errorMessage(e));
+    }
+  };
+
+  return (
+    <SheetForm visible title="Rename menu" onClose={onClose} onSubmit={submit} submitTitle="Save" submitting={isLoading}>
+      <MenuNameField value={name} onChange={setName} error={error} />
+    </SheetForm>
+  );
+}
+
 const styles = StyleSheet.create({
   content: { padding: spacing.lg, paddingBottom: spacing.xl * 2 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.sm },
+  flex: { flex: 1 },
+  rename: { color: colors.brand, fontSize: 15, fontWeight: '600' },
   gap: { marginTop: spacing.md },
   hintBelowTitle: { marginTop: -spacing.sm, marginBottom: spacing.sm },
   itemRow: {

@@ -74,7 +74,13 @@ export default function KitchenScreen() {
           <Text style={[font.caption, styles.summary]}>{countsSummary(kitchenCounts(data.counts))}</Text>
         </Card>
         {data.groups.map((g) => (
-          <GroupCard key={`${g.menuId}-${g.key}`} group={g} onResult={setNotice} />
+          <GroupCard
+            key={`${g.menuId}-${g.key}`}
+            group={g}
+            // With several menus that day, say which one the group is from
+            menuName={data.menus.length > 1 ? data.menus.find((m) => m.id === g.menuId)?.name : undefined}
+            onResult={setNotice}
+          />
         ))}
       </>
     );
@@ -109,16 +115,18 @@ function DishList({ dishes }: { dishes: DishTotal[] }) {
 
 function GroupCard({
   group,
+  menuName,
   onResult,
 }: {
   group: KitchenGroup;
+  menuName?: string;
   onResult: (n: { tone: 'success' | 'error'; message: string }) => void;
 }) {
   const [bulk, { isLoading }] = useBulkAdvanceMutation();
   const [running, setRunning] = useState<'accept' | 'ready' | null>(null);
   const [showOrders, setShowOrders] = useState(false);
   const counts = kitchenCounts(group.counts);
-  const title = groupTitle(group);
+  const title = menuName ? `${menuName} · ${groupTitle(group)}` : groupTitle(group);
 
   const run = async (action: 'accept' | 'ready') => {
     setRunning(action);

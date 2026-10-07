@@ -171,6 +171,7 @@ export const serverApi = createApi({
       Menu,
       {
         restaurantId: string;
+        name: string;
         date: string;
         orderingStartTime?: string;
         orderingEndTime?: string;
@@ -181,7 +182,8 @@ export const serverApi = createApi({
       query: (data) => ({ url: '/menus', method: 'POST', data }),
       invalidatesTags: [{ type: 'Menu', id: 'LIST' }],
     }),
-    updateMenu: build.mutation<Menu, { id: string; orderingStartTime?: string; orderingEndTime?: string }>({
+    // A published menu can only be renamed
+    updateMenu: build.mutation<Menu, { id: string; name?: string; orderingStartTime?: string; orderingEndTime?: string }>({
       query: ({ id, ...data }) => ({ url: `/menus/${id}`, method: 'PUT', data }),
       invalidatesTags: (_m, _e, { id }) => [{ type: 'Menu', id }],
     }),

@@ -22,6 +22,14 @@ const Menu = sequelize.define(
       },
       onDelete: 'CASCADE',
     },
+    // A restaurant can have several menus a day (Lunch, Dinner, "Lunch – South Indian"),
+    // so each has a name customers, the kitchen and statements show
+    name: {
+      type: DataTypes.STRING(60),
+      allowNull: false,
+      defaultValue: 'Menu',
+      validate: { notEmpty: { msg: 'Name the menu, e.g. Lunch' } },
+    },
     date: {
       type: DataTypes.DATEONLY,
       allowNull: false,

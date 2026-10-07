@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { addDays, Chip, errorMessage, font, FormScreen, localDateString, spacing, TextField } from '@mealdirect/shared';
+import { MenuNameField, validateMenuName } from '@/components/MenuNameField';
 import { closesAfterOpens, dayLabel, dayPhrase, isValidTime, shiftDate, type OrderingDay } from '@/lib/time';
 import { useRestaurant } from '@/lib/useRestaurant';
 import { useCreateMenuMutation, useGetMenusQuery } from '@/store/serverApi';
@@ -16,17 +17,18 @@ export default function NewMenuScreen() {
     []
   );
 
-  // One menu per day: dates that already have one can't be picked
+  // A day can have several menus (lunch, dinner...); the chips say how many it has
   const { data: existing = [] } = useGetMenusQuery({
     restaurantId: restaurant.id,
     from: dates[0],
     to: dates[dates.length - 1],
   });
-  const taken = new Set(existing.map((m) => m.date));
-  const firstFree = dates.find((d) => !taken.has(d)) ?? dates[0];
+  const menusOn = (d: string) => existing.filter((m) => m.date === d);
 
-  const [date, setDate] = useState(params.date && dates.includes(params.date) ? params.date : null);
-  const chosen = date ?? firstFree;
+  const [date, setDate] = useState(params.date && dates.includes(params.date) ? params.date : dates[0]);
+  const chosen = date;
+  const [name, setName] = useState('');
+  const [nameError, setNameError] = useState<string | null>(null);
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   // Each time is on the menu's day or the day before, so ordering can run overnight
@@ -48,16 +50,16 @@ export default function NewMenuScreen() {
     };
     if (!next.end && Boolean(start) !== Boolean(end)) next.end = 'Set both times, or leave both empty';
     setErrors(next);
-    if (next.start || next.end) return;
-    if (taken.has(chosen)) {
-      setFormError(`${dayLabel(chosen)} already has a menu.`);
-      return;
-    }
+    const sameName = menusOn(chosen).some((m) => m.name.toLowerCase() === name.trim().toLowerCase());
+    const nameProblem = validateMenuName(name) ?? (sameName ? `${dayLabel(chosen)} already has a menu called ${name.trim()}` : null);
+    setNameError(nameProblem);
+    if (next.start || next.end || nameProblem) return;
 
     setFormError(null);
     try {
       const menu = await createMenu({
         restaurantId: restaurant.id,
+        name: name.trim(),
         date: chosen,
         ...(start && end
           ? {
@@ -81,13 +83,20 @@ export default function NewMenuScreen() {
         {dates.map((d) => (
           <Chip
             key={d}
-            label={taken.has(d) ? `${dayLabel(d)} ✓` : dayLabel(d)}
+            label={menusOn(d).length ? `${dayLabel(d)} (${menusOn(d).length})` : dayLabel(d)}
             selected={chosen === d}
-            disabled={taken.has(d)}
             onPress={() => setDate(d)}
           />
         ))}
       </View>
+      {menusOn(chosen).length > 0 && (
+        <Text style={[font.caption, styles.hint]}>
+          {dayLabel(chosen)} already has {menusOn(chosen).map((m) => m.name).join(', ')}. This adds another menu.
+        </Text>
+      )}
+
+      <Text style={[font.heading, styles.label]}>Name</Text>
+      <MenuNameField value={name} onChange={setName} error={nameError} />
 
       <Text style={[font.heading, styles.label]}>When can customers order? (optional)</Text>
       <Text style={[font.caption, styles.hint]}>

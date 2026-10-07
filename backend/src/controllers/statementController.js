@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { Order, Restaurant, User } = require('../models');
+const { Menu, Order, Restaurant, User } = require('../models');
 const { businessDateTime, businessDateTimeString } = require('../lib/businessTime');
 const { toCsv } = require('../lib/csv');
 
@@ -21,6 +21,9 @@ const STATUS = {
   picked_up: 'Picked up',
   cancelled: 'Cancelled',
 };
+
+// Which of the day's menus an order is from
+const MENU = { model: Menu, paranoid: false, as: 'menu', attributes: ['name'] };
 
 const money = (n) => Math.round(Number(n || 0) * 100) / 100;
 const orderNo = (id) => id.slice(0, 8).toUpperCase();
@@ -61,15 +64,16 @@ const totalsRow = (orders, label, width, pick) => {
 const customerStatement = async (userId, when) => {
   const orders = await Order.findAll({
     where: { customerId: userId, createdAt: when },
-    include: [{ model: Restaurant, paranoid: false, as: 'restaurant', attributes: ['name'] }],
+    include: [{ model: Restaurant, paranoid: false, as: 'restaurant', attributes: ['name'] }, MENU],
     order: [['createdAt', 'ASC']],
   });
   return [
-    ['Date', 'Order', 'Restaurant', 'Items', 'Delivery or pickup', 'Status', 'Subtotal', 'Delivery fee', 'Discount', 'Total', 'Payment'],
+    ['Date', 'Order', 'Restaurant', 'Menu', 'Items', 'Delivery or pickup', 'Status', 'Subtotal', 'Delivery fee', 'Discount', 'Total', 'Payment'],
     ...orders.map((o) => [
       businessDateTimeString(o.createdAt),
       orderNo(o.id),
       o.restaurant?.name ?? '',
+      o.menu?.name ?? '',
       items(o),
       o.deliveryType === 'pickup' ? 'Pickup' : 'Delivery',
       STATUS[o.status],
@@ -79,7 +83,7 @@ const customerStatement = async (userId, when) => {
       money(o.total),
       payment(o),
     ]),
-    totalsRow(orders, 'Total (not counting cancelled orders)', 5, ['subtotal', 'deliveryFee', 'discount', 'total']),
+    totalsRow(orders, 'Total (not counting cancelled orders)', 6, ['subtotal', 'deliveryFee', 'discount', 'total']),
   ];
 };
 
@@ -94,18 +98,20 @@ const restaurantStatement = async (userId, when, restaurantId) => {
       { model: Restaurant, paranoid: false, as: 'restaurant', attributes: ['name'] },
       { model: User, paranoid: false, as: 'customer', attributes: ['firstName', 'lastName'] },
       { model: User, paranoid: false, as: 'collectedBy', attributes: ['firstName', 'lastName', 'role'] },
+      MENU,
     ],
     order: [['createdAt', 'ASC']],
   });
   return [
     [
-      'Date', 'Order', 'Restaurant', 'Customer', 'Items', 'Delivery or pickup', 'Status',
+      'Date', 'Order', 'Restaurant', 'Menu', 'Customer', 'Items', 'Delivery or pickup', 'Status',
       'Subtotal', 'Delivery fee', 'Discount', 'Total', 'Payment', 'Collected by',
     ],
     ...orders.map((o) => [
       businessDateTimeString(o.createdAt),
       orderNo(o.id),
       o.restaurant?.name ?? '',
+      o.menu?.name ?? '',
       fullName(o.customer),
       items(o),
       o.deliveryType === 'pickup' ? 'Pickup' : 'Delivery',
@@ -117,7 +123,7 @@ const restaurantStatement = async (userId, when, restaurantId) => {
       payment(o),
       o.collectedBy ? (o.collectedBy.role === 'delivery_partner' ? `${fullName(o.collectedBy)} (rider)` : 'Restaurant') : '',
     ]),
-    totalsRow(orders, 'Total (not counting cancelled orders)', 6, ['subtotal', 'deliveryFee', 'discount', 'total']),
+    totalsRow(orders, 'Total (not counting cancelled orders)', 7, ['subtotal', 'deliveryFee', 'discount', 'total']),
   ];
 };
 

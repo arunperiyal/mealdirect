@@ -28,6 +28,11 @@ Online payment (Razorpay) is on hold, so checkout offers only pay on delivery. T
 
 Everything used here ships in Expo Go, so no custom development build is needed.
 
+## Saved addresses
+
+Checkout lists your saved addresses, the most recently used picked first, or takes a new one with **Save for
+next time** (named, e.g. Home). **Profile > Saved addresses** adds, edits and removes them (up to 10).
+
 ## Ratings
 
 Once an order arrives, its screen asks for a rating: the food, and the delivery when a rider brought it (1 to 5
@@ -40,7 +45,7 @@ restaurant's average shows on its page; tap it for the star breakdown and recent
 
 - Your profile picture: pick a photo and crop it square; it's resized to 512px before upload. Your delivery
   partner and the restaurant see it on your orders.
-- Order history, and **Download a statement**: your orders over a period as a CSV file (this
+- Order history, **Saved addresses**, and **Download a statement**: your orders over a period as a CSV file (this
   month, last month, the last 3 months, this year or chosen dates, up to a year). On a phone it opens the share
   sheet to save or send it; in a browser it downloads.
 - Sign out, and **Delete account** (with your password; not while an order is on its way). A deleted account

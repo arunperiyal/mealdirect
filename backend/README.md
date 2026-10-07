@@ -193,6 +193,11 @@ All responses are JSON: `{ "success": true, "data": ... }` or
 - `GET /api/delivery/balance`: cash held and whether settlement is due
 - `GET /api/delivery/ratings`: the rider's delivery ratings, average and recent (customers stay anonymous)
 
+### Saved addresses (customers)
+- `GET /api/addresses` (most recently used first), `POST /api/addresses` `{ label, address }` (up to 10,
+  `409 TOO_MANY_ADDRESSES`), `PUT /api/addresses/:id`, `DELETE /api/addresses/:id`. An order to a saved address
+  (same text) moves it to the top.
+
 ### Statements
 - `GET /api/statements?from=YYYY-MM-DD&to=YYYY-MM-DD` (`&restaurantId=` for partners with several restaurants): the
   signed-in user's orders as a CSV file, both days included, at most a year (`400 INVALID_PERIOD`,

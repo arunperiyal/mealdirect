@@ -12,13 +12,14 @@ import {
   type RazorpaySuccess,
   type Restaurant,
   type RestaurantRatings,
+  type SavedAddress,
 } from '@mealdirect/shared';
 import { api } from '@/api';
 
 export const serverApi = createApi({
   reducerPath: 'serverApi',
   baseQuery: createAxiosBaseQuery(api),
-  tagTypes: ['Order', 'Ratings'],
+  tagTypes: ['Order', 'Ratings', 'Address'],
   endpoints: (build) => ({
     // Which payment options to offer (online payment can be switched off on the server)
     getConfig: build.query<AppConfig, void>({
@@ -78,7 +79,25 @@ export const serverApi = createApi({
 
     createOrder: build.mutation<Order, CreateOrderInput>({
       query: (data) => ({ url: '/orders', method: 'POST', data }),
-      invalidatesTags: [{ type: 'Order', id: 'LIST' }],
+      // An order to a saved address moves it to the top
+      invalidatesTags: [{ type: 'Order', id: 'LIST' }, 'Address'],
+    }),
+
+    getAddresses: build.query<SavedAddress[], void>({
+      query: () => ({ url: '/addresses' }),
+      providesTags: ['Address'],
+    }),
+    addAddress: build.mutation<SavedAddress, { label: string; address: string }>({
+      query: (data) => ({ url: '/addresses', method: 'POST', data }),
+      invalidatesTags: ['Address'],
+    }),
+    updateAddress: build.mutation<SavedAddress, { id: string; label: string; address: string }>({
+      query: ({ id, ...data }) => ({ url: `/addresses/${id}`, method: 'PUT', data }),
+      invalidatesTags: ['Address'],
+    }),
+    deleteAddress: build.mutation<void, string>({
+      query: (id) => ({ url: `/addresses/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Address'],
     }),
 
     cancelOrder: build.mutation<Order, { id: string; reason?: string }>({
@@ -126,6 +145,10 @@ export const {
   useGetMyOrdersQuery,
   useGetOrderQuery,
   useCreateOrderMutation,
+  useGetAddressesQuery,
+  useAddAddressMutation,
+  useUpdateAddressMutation,
+  useDeleteAddressMutation,
   useCancelOrderMutation,
   useMarkPickedUpMutation,
   useCreatePaymentOrderMutation,

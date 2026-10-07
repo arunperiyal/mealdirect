@@ -4,6 +4,7 @@ const router = express.Router();
 const orderController = require('../controllers/orderController');
 const kitchenController = require('../controllers/kitchenController');
 const ratingController = require('../controllers/ratingController');
+const addressController = require('../controllers/addressController');
 const { verifyToken, authorize } = require('../middleware/auth');
 const { MAX_QUANTITY } = require('../lib/itemLimits');
 
@@ -40,6 +41,8 @@ router.post(
       }
 
       const order = await orderController.createOrder(req.user.id, req.body);
+      // Best effort: a failure here mustn't look like the order failed
+      await addressController.markUsed(req.user.id, order.deliveryAddress).catch(() => {});
 
       res.status(201).json({
         success: true,

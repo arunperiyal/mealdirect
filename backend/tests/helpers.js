@@ -540,6 +540,7 @@ async function cleanupAllData(models) {
   // Delete in reverse dependency order
   await models.Avatar?.destroy({ where: {}, force: true });
   await models.Rating?.destroy({ where: {}, force: true });
+  await models.Address?.destroy({ where: {}, force: true });
   await models.ChangeRequest?.destroy({ where: {}, force: true });
   await models.Settlement?.destroy({ where: {}, force: true });
   await models.Payment?.destroy({ where: {}, force: true });

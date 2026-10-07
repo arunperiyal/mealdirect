@@ -292,6 +292,15 @@ export interface RiderRatings extends RatingSummary {
   recent: { id: string; orderId: string; rating: number; comment: string | null; createdAt: string }[];
 }
 
+// A customer's saved delivery address (GET /addresses), most recently used first
+export interface SavedAddress {
+  id: string;
+  label: string; // "Home", "Work"...
+  address: string;
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
 export interface CreateOrderInput {
   restaurantId: string;
   menuId: string;

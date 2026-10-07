@@ -10,6 +10,7 @@ const ChangeRequest = require('./ChangeRequest');
 const Dish = require('./Dish');
 const Avatar = require('./Avatar');
 const Rating = require('./Rating');
+const Address = require('./Address');
 
 // Define associations
 User.hasMany(Restaurant, { foreignKey: 'ownerId', as: 'restaurants' });
@@ -55,6 +56,7 @@ Restaurant.hasMany(Dish, { foreignKey: 'restaurantId', as: 'dishes' });
 Dish.belongsTo(Restaurant, { foreignKey: 'restaurantId', as: 'restaurant' });
 
 User.hasOne(Avatar, { foreignKey: 'userId', as: 'avatar' });
+User.hasMany(Address, { foreignKey: 'userId', as: 'addresses' });
 
 Order.hasOne(Rating, { foreignKey: 'orderId', as: 'rating' });
 Rating.belongsTo(Order, { foreignKey: 'orderId', as: 'order' });
@@ -76,4 +78,5 @@ module.exports = {
   Dish,
   Avatar,
   Rating,
+  Address,
 };

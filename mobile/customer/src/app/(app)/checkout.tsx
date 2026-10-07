@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -23,10 +23,13 @@ import {
   type DeliveryType,
   type PaymentMethod,
 } from '@mealdirect/shared';
+import { AddressPicker, type AddressChoice } from '@/components/AddressPicker';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { clearCart, selectCartSubtotal } from '@/store/cartSlice';
 import {
+  useAddAddressMutation,
   useCreateOrderMutation,
+  useGetAddressesQuery,
   useGetConfigQuery,
   useGetMenuSlotsQuery,
   useGetRestaurantQuery,
@@ -48,7 +51,9 @@ export default function CheckoutScreen() {
   const [chosenType, setDeliveryType] = useState<DeliveryType | null>(null);
   const deliveryType: DeliveryType | null =
     chosenType ?? (restaurant ? (restaurant.deliveryEnabled ? 'delivery' : 'pickup') : null);
-  const [address, setAddress] = useState('');
+  const [{ address, saveAs }, setChoice] = useState<AddressChoice>({ address: '', saveAs: null });
+  const addressesQuery = useGetAddressesQuery();
+  const [addAddress] = useAddAddressMutation();
   const [slotId, setSlotId] = useState<string | null>(null);
   const { data: appConfig } = useGetConfigQuery();
   const onlineAvailable = appConfig?.onlinePayments === true;
@@ -60,6 +65,10 @@ export default function CheckoutScreen() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const [createOrder, { isLoading: placing }] = useCreateOrderMutation();
+  const chooseAddress = useCallback((choice: AddressChoice) => {
+    setChoice(choice);
+    setAddressError(null);
+  }, []);
 
   const slotsQuery = useGetMenuSlotsQuery(cart.menuId ?? '', {
     skip: !cart.menuId || deliveryType !== 'delivery',
@@ -115,6 +124,13 @@ export default function CheckoutScreen() {
         ...(notes.trim() ? { customerNotes: notes.trim() } : {}),
       }).unwrap();
 
+      // Saving the address is a convenience: the order is placed either way
+      if (deliveryType === 'delivery' && saveAs) {
+        await addAddress({ label: saveAs, address: address.trim() })
+          .unwrap()
+          .catch(() => {});
+      }
+
       // The order exists now, so the cart is done even if payment is abandoned;
       // the order screen offers "Pay now" until it's paid.
       dispatch(clearCart());
@@ -155,20 +171,11 @@ export default function CheckoutScreen() {
 
           {deliveryType === 'delivery' ? (
             <View style={styles.section}>
-              <TextField
-                label="Delivery address"
-                value={address}
-                onChangeText={(v) => {
-                  setAddress(v);
-                  setAddressError(null);
-                }}
-                error={addressError}
-                placeholder="Flat, building, street, landmark"
-                multiline
-                autoComplete="street-address"
-                textContentType="fullStreetAddress"
-                style={styles.multiline}
-              />
+              {addressesQuery.isLoading ? (
+                <Text style={font.caption}>Loading your addresses…</Text>
+              ) : (
+                <AddressPicker addresses={addressesQuery.data ?? []} error={addressError} onChange={chooseAddress} />
+              )}
               {slotsQuery.isFetching && slots.length === 0 ? (
                 <Text style={font.caption}>Loading delivery times…</Text>
               ) : slots.length > 0 ? (

@@ -44,6 +44,7 @@ export default function ProfileScreen() {
 
       <Card>
         <Button title="Order history" variant="secondary" onPress={() => router.navigate('/orders')} />
+        <Button title="Saved addresses" variant="secondary" onPress={() => router.push('/addresses')} style={styles.gap} />
         <Button title="Download a statement" variant="secondary" onPress={() => router.push('/statement')} style={styles.gap} />
       </Card>
 

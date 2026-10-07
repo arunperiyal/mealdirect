@@ -4,10 +4,17 @@ const config = require('../config');
 const sequelize = require('../config/database');
 const { assertCustomerCanOrder, recordCollection } = require('./collectionController');
 const { assertOrderingOpen } = require('../lib/ordering');
-const { Order, Menu, DeliverySlot, Restaurant, User } = require('../models');
+const { Order, Menu, DeliverySlot, Rating, Restaurant, User } = require('../models');
 
 const throwError = (code, message, statusCode = 400) => {
   throw { code, message, statusCode };
+};
+
+// The customer's rating, once they've given one. See ratingController.
+const RATING = {
+  model: Rating,
+  as: 'rating',
+  attributes: ['foodRating', 'foodComment', 'deliveryRating', 'deliveryComment', 'createdAt', 'updatedAt'],
 };
 
 // Who ordered and when it's due. Only what the restaurant needs to fulfil the
@@ -16,6 +23,7 @@ const ORDER_DETAILS = [
   { model: User, paranoid: false, as: 'customer', attributes: ['id', 'firstName', 'lastName', 'phone', 'avatarUrl'] },
   { model: User, paranoid: false, as: 'rider', attributes: ['id', 'firstName', 'lastName', 'phone', 'avatarUrl'] },
   { model: DeliverySlot, as: 'deliverySlot', attributes: ['id', 'startTime', 'endTime'] },
+  RATING,
 ];
 
 // Once a rider claims an order, the delivery steps are theirs
@@ -266,6 +274,9 @@ const listCustomerOrders = async (customerId, filters = {}) => {
       limit: Math.min(limit, 100),
       offset,
       order: [['createdAt', 'DESC']],
+      // So the order list can ask for a rating
+      include: [RATING],
+      distinct: true,
     });
 
     return { count, rows };

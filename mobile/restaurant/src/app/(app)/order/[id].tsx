@@ -16,6 +16,7 @@ import {
   isActive,
   LoadingState,
   type Order,
+  OrderRatingView,
   PriceSummary,
   SheetForm,
   spacing,
@@ -236,6 +237,12 @@ function OrderDetails({ order, refreshing, onRefresh }: { order: Order; refreshi
               {order.collectionStatus === 'collected' ? `, collected by ${riderName(order)}` : ''}
             </Text>
             {order.collectionNote ? <Text style={[font.caption, styles.gap]}>{order.collectionNote}</Text> : null}
+          </Card>
+        )}
+
+        {order.rating && (
+          <Card title="Customer's rating">
+            <OrderRatingView rating={order.rating} />
           </Card>
         )}
 

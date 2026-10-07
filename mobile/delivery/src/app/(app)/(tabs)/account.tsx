@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import {
   Button,
@@ -11,6 +11,7 @@ import {
   LinkRow,
   maskAccount,
   ProfilePhoto,
+  Stars,
   spacing,
   type ChangeRequest,
 } from '@mealdirect/shared';
@@ -18,7 +19,7 @@ import { authApi } from '@/api';
 import { API_URL } from '@/config';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { logout, signOutLocally, userUpdated } from '@/store/authSlice';
-import { useGetProfileQuery } from '@/store/serverApi';
+import { useGetProfileQuery, useGetRatingsQuery } from '@/store/serverApi';
 
 // "Change waiting for review" etc., else the saved value
 const withStatus = (request: ChangeRequest | null | undefined, saved: string) =>
@@ -33,6 +34,7 @@ export default function AccountScreen() {
   const user = useAppSelector((s) => s.auth.user);
   // Details change only after an admin approves, so refetch when the screen opens
   const { data: profile, isFetching, refetch } = useGetProfileQuery(undefined, { refetchOnMountOrArgChange: true });
+  const { data: ratings } = useGetRatingsQuery(undefined, { refetchOnMountOrArgChange: true });
   const [signingOut, setSigningOut] = useState(false);
   const me = profile ?? user;
 
@@ -78,6 +80,29 @@ export default function AccountScreen() {
           onPress={() => router.push('/profile/payout')}
         />
       </Card>
+      <Card title="Your rating">
+        {ratings?.count ? (
+          <>
+            <View style={styles.average}>
+              <Stars value={ratings.average} label="Your average rating" />
+              <Text style={font.body}>
+                {ratings.average?.toFixed(1)} from {ratings.count} deliver{ratings.count === 1 ? 'y' : 'ies'}
+              </Text>
+            </View>
+            {ratings.recent
+              .filter((r) => r.comment)
+              .slice(0, 5)
+              .map((r) => (
+                <View key={r.id} style={styles.comment}>
+                  <Stars value={r.rating} size={12} label="Rating" />
+                  <Text style={font.caption}>“{r.comment}”</Text>
+                </View>
+              ))}
+          </>
+        ) : (
+          <Text style={font.caption}>Customers can rate each delivery. Their ratings show here.</Text>
+        )}
+      </Card>
       <Text style={[font.caption, styles.note]}>
         Restaurants and customers see your name and phone number on orders you accept. MealDirect pays tips and
         earnings to your payout details.
@@ -91,4 +116,6 @@ export default function AccountScreen() {
 const styles = StyleSheet.create({
   content: { padding: spacing.lg },
   note: { marginBottom: spacing.lg },
+  average: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
+  comment: { gap: 2, marginTop: spacing.sm },
 });

@@ -75,6 +75,15 @@ export default function SettingsScreen() {
           onPress={() => router.push('/settings/orders')}
         />
         <LinkRow title="Payout details" detail={payout || 'Not set up'} onPress={() => router.push('/settings/bank')} />
+        <LinkRow
+          title="Ratings"
+          detail={
+            restaurant.totalReviews
+              ? `★ ${Number(restaurant.avgRating).toFixed(1)} from ${restaurant.totalReviews} rating${restaurant.totalReviews === 1 ? '' : 's'}`
+              : 'No ratings yet'
+          }
+          onPress={() => router.push('/ratings')}
+        />
       </Card>
 
       {restaurants.length > 1 && (

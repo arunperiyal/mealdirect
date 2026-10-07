@@ -2,6 +2,7 @@ const express = require('express');
 const { body, param, validationResult } = require('express-validator');
 const router = express.Router();
 const deliveryController = require('../controllers/deliveryController');
+const ratingController = require('../controllers/ratingController');
 const { verifyToken, authorize } = require('../middleware/auth');
 
 const fail = (res, error) =>
@@ -34,6 +35,9 @@ const handle = (fn) => async (req, res) => {
 };
 
 const orderId = [param('id').isUUID()];
+
+/** GET /api/delivery/ratings: the rider's delivery ratings, average and recent */
+router.get('/ratings', handle((req) => ratingController.riderRatings(req.user.id)));
 
 /** GET /api/delivery/available: unclaimed delivery orders */
 router.get('/available', handle(() => deliveryController.listAvailable()));

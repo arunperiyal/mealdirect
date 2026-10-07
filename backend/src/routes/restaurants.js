@@ -3,6 +3,7 @@ const { body, query, validationResult } = require('express-validator');
 const { isUUID } = require('validator');
 const router = express.Router();
 const restaurantController = require('../controllers/restaurantController');
+const ratingController = require('../controllers/ratingController');
 const { verifyToken, authorize } = require('../middleware/auth');
 const changeRequestController = require('../controllers/changeRequestController');
 const { payoutValidators } = require('../lib/payout');
@@ -126,6 +127,25 @@ router.get('/:id', async (req, res) => {
       success: false,
       code: error.code || 'INTERNAL_ERROR',
       message: error.message || 'An error occurred',
+    });
+  }
+});
+
+/**
+ * GET /api/restaurants/:id/ratings
+ * Food ratings (public): average, count, how many of each star, and recent comments
+ */
+router.get('/:id/ratings', async (req, res) => {
+  try {
+    if (!isUUID(req.params.id)) {
+      return res.status(404).json({ success: false, code: 'NOT_FOUND', message: 'Restaurant not found' });
+    }
+    res.json({ success: true, data: await ratingController.restaurantRatings(req.params.id) });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || 'INTERNAL_ERROR',
+      message: error.message,
     });
   }
 });

@@ -6,16 +6,19 @@ import {
   type DeliverySlot,
   type Menu,
   type Order,
+  type OrderRating,
   type PaymentOrder,
+  type RateOrderInput,
   type RazorpaySuccess,
   type Restaurant,
+  type RestaurantRatings,
 } from '@mealdirect/shared';
 import { api } from '@/api';
 
 export const serverApi = createApi({
   reducerPath: 'serverApi',
   baseQuery: createAxiosBaseQuery(api),
-  tagTypes: ['Order'],
+  tagTypes: ['Order', 'Ratings'],
   endpoints: (build) => ({
     // Which payment options to offer (online payment can be switched off on the server)
     getConfig: build.query<AppConfig, void>({
@@ -32,6 +35,22 @@ export const serverApi = createApi({
 
     getRestaurant: build.query<Restaurant, string>({
       query: (id) => ({ url: `/restaurants/${id}` }),
+      providesTags: (_r, _e, id) => [{ type: 'Ratings', id }],
+    }),
+
+    getRestaurantRatings: build.query<RestaurantRatings, string>({
+      query: (id) => ({ url: `/restaurants/${id}/ratings` }),
+      providesTags: (_r, _e, id) => [{ type: 'Ratings', id }],
+    }),
+
+    // Rating again replaces the earlier rating
+    rateOrder: build.mutation<OrderRating, RateOrderInput & { id: string; restaurantId: string }>({
+      query: ({ id, restaurantId: _restaurantId, ...data }) => ({ url: `/orders/${id}/rating`, method: 'PUT', data }),
+      invalidatesTags: (_r, _e, { id, restaurantId }) => [
+        { type: 'Order', id },
+        { type: 'Order', id: 'LIST' },
+        { type: 'Ratings', id: restaurantId },
+      ],
     }),
 
     // The backend ignores status filters on this endpoint, so filter here
@@ -100,6 +119,8 @@ export const {
   useGetConfigQuery,
   useGetRestaurantsQuery,
   useGetRestaurantQuery,
+  useGetRestaurantRatingsQuery,
+  useRateOrderMutation,
   useGetPublishedMenusQuery,
   useGetMenuSlotsQuery,
   useGetMyOrdersQuery,

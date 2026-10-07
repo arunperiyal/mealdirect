@@ -65,3 +65,10 @@ export const shortId = (id: string) => `#${id.slice(0, 8).toUpperCase()}`;
 
 export const riderName = (order: Pick<Order, 'rider'>) =>
   [order.rider?.firstName, order.rider?.lastName].filter(Boolean).join(' ') || 'Delivery partner';
+
+// Mirrors ratingController: customers rate an order for this long after it arrives
+export const RATING_WINDOW_DAYS = 7;
+
+export const canRate = (order: Pick<Order, 'status' | 'deliveredAt'>, now = new Date()) =>
+  COMPLETED_STATUSES.includes(order.status as (typeof COMPLETED_STATUSES)[number]) &&
+  (!order.deliveredAt || now.getTime() - Date.parse(order.deliveredAt) <= RATING_WINDOW_DAYS * 24 * 60 * 60 * 1000);

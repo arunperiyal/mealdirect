@@ -28,6 +28,12 @@ Online payment (Razorpay) is on hold, so checkout offers only pay on delivery. T
 
 Everything used here ships in Expo Go, so no custom development build is needed.
 
+## Ratings
+
+Once an order arrives, its screen asks for a rating: the food, and the delivery when a rider brought it (1 to 5
+stars, optional comments). It can be changed for 7 days. The order list marks orders waiting for a rating. A
+restaurant's average shows on its page; tap it for the star breakdown and recent comments.
+
 ## Your account
 
 **Profile** has:

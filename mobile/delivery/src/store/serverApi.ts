@@ -7,6 +7,7 @@ import {
   type PayoutDetails,
   type RiderCash,
   type RiderProfile,
+  type RiderRatings,
 } from '@mealdirect/shared';
 import { api } from '@/api';
 
@@ -15,8 +16,13 @@ export type DeliveryAction = 'claim' | 'release' | 'pick-up' | 'deliver';
 export const serverApi = createApi({
   reducerPath: 'serverApi',
   baseQuery: createAxiosBaseQuery(api),
-  tagTypes: ['Queue', 'Mine', 'Order', 'Balance', 'Profile'],
+  tagTypes: ['Queue', 'Mine', 'Order', 'Balance', 'Profile', 'Ratings'],
   endpoints: (build) => ({
+    // How customers rated your deliveries
+    getRatings: build.query<RiderRatings, void>({
+      query: () => ({ url: '/delivery/ratings' }),
+      providesTags: ['Ratings'],
+    }),
     // Personal and payout details, and any change waiting for MealDirect's review.
     // Works before approval too.
     getProfile: build.query<RiderProfile, void>({
@@ -67,6 +73,7 @@ export const serverApi = createApi({
 });
 
 export const {
+  useGetRatingsQuery,
   useGetProfileQuery,
   useUpdatePersonalMutation,
   useUpdatePayoutMutation,

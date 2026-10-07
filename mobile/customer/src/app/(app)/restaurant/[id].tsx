@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import {
   addDays,
   Button,
@@ -19,6 +19,7 @@ import {
   orderingState,
   radius,
   spacing,
+  Stars,
   type Menu,
   type MenuItem,
   type Restaurant,
@@ -116,6 +117,19 @@ function Header({
   return (
     <View style={styles.header}>
       {restaurant.description ? <Text style={font.body}>{restaurant.description}</Text> : null}
+      {restaurant.totalReviews ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Rated ${Number(restaurant.avgRating).toFixed(1)} from ${restaurant.totalReviews} ratings. See ratings`}
+          onPress={() => router.push({ pathname: '/ratings/[id]', params: { id: restaurant.id } })}
+          style={styles.ratingRow}
+        >
+          <Stars value={Number(restaurant.avgRating)} size={16} />
+          <Text style={font.caption}>
+            {Number(restaurant.avgRating).toFixed(1)} · {restaurant.totalReviews} rating{restaurant.totalReviews === 1 ? '' : 's'} ›
+          </Text>
+        </Pressable>
+      ) : null}
       <Text style={font.caption}>
         {[restaurant.address, restaurant.city].filter(Boolean).join(', ')}
       </Text>
@@ -217,6 +231,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   list: { padding: spacing.lg, flexGrow: 1 },
   header: { gap: spacing.xs, marginBottom: spacing.md },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
   days: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   window: { marginTop: spacing.sm },
   item: {

@@ -109,6 +109,14 @@ backups.
   edit their name and phone. Until approval, changes apply at once; after, each change is a `ChangeRequest` that
   an admin approves or rejects (with a note the owner or rider sees). The saved details stay in use meanwhile.
 
+## Ratings
+
+Once an order is delivered or picked up, the customer can rate it for 7 days (`409 NOT_DELIVERED`,
+`RATING_CLOSED`): the food from 1 to 5 stars, and the delivery when a rider brought it (`400 NO_RIDER` otherwise),
+each with an optional comment. Rating again replaces the whole rating. The food ratings make up the restaurant's
+`avgRating` and `totalReviews`; admins see each rider's average on `GET /api/admin/riders` (`rating`) and
+`GET /api/admin/riders/:id/cash` (`ratings`).
+
 ## Deleted accounts
 
 Customers, restaurant partners and riders can delete their own account (confirming with their password), and
@@ -144,6 +152,8 @@ All responses are JSON: `{ "success": true, "data": ... }` or
 
 ### Restaurants
 - `GET /api/restaurants`, `GET /api/restaurants/:id`: public listing and details
+- `GET /api/restaurants/:id/ratings`: public food ratings: `average`, `count`, `byStars`, `recent` comments (first
+  name only)
 - `POST /api/restaurants`, `GET /api/restaurants/my-restaurants`: an owner's restaurants
 - `PUT /api/restaurants/:id`, and `PUT /api/restaurants/:id/` + `operating-hours`, `delivery-settings`,
   `order-settings`: owner settings
@@ -173,12 +183,15 @@ All responses are JSON: `{ "success": true, "data": ... }` or
 - Kitchen: `GET /api/orders/kitchen?restaurantId=&date=` (a day's dish totals, and orders grouped by delivery time
   and pickup), `POST /api/orders/bulk` (accept, or mark ready, one whole group)
 - Admin: `GET /api/orders/admin/orders`
+- Ratings: `PUT /api/orders/:id/rating` (customer) `{ foodRating, foodComment?, deliveryRating?, deliveryComment? }`,
+  see [Ratings](#ratings). Orders carry `rating` once there is one.
 
 ### Delivery (riders)
 - `GET /api/delivery/available`: the queue of orders to claim
 - `GET /api/delivery/orders`, `GET /api/delivery/orders/:id`: the rider's orders
 - `POST /api/delivery/orders/:id/` + `claim`, `release`, `pick-up`, `deliver` (with the payment collected)
 - `GET /api/delivery/balance`: cash held and whether settlement is due
+- `GET /api/delivery/ratings`: the rider's delivery ratings, average and recent (customers stay anonymous)
 
 ### Rider profile (open to riders waiting for approval)
 - `GET /api/profile`: name, phone, payout details, and any change waiting for review or rejected

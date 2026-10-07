@@ -3,6 +3,7 @@ const { Order, Restaurant, Settlement, User } = require('../models');
 const { riderCash, round2 } = require('./collectionController');
 const { ORDER_DETAILS } = require('./orderController');
 const { searchWhere } = require('./restaurantController');
+const { riderAverages, riderRatings } = require('./ratingController');
 
 const throwError = (code, message, statusCode = 400) => {
   throw { code, message, statusCode };
@@ -189,12 +190,14 @@ const listRiders = async ({ status }) => {
     for (const row of statusRows) if (row.riderStatus in counts) counts[row.riderStatus] = Number(row.count);
 
     const cash = await Promise.all(riders.map((r) => riderCash(r.id)));
+    const ratings = await riderAverages(riders.map((r) => r.id));
     return {
       riders: riders.map((r, i) => ({
         ...r,
         deliveries: delivered.filter((o) => o.riderId === r.id).length,
         cashBalance: cash[i].balance,
         cashOverdue: cash[i].overdue,
+        rating: ratings[r.id] ?? { average: null, count: 0 },
       })),
       counts,
     };
@@ -227,7 +230,7 @@ const getRiderCash = async (riderId) => {
     });
     if (!rider) throwError('NOT_FOUND', 'Delivery partner not found', 404);
 
-    const [cash, orders, settlements] = await Promise.all([
+    const [cash, orders, settlements, ratings] = await Promise.all([
       riderCash(riderId),
       Order.findAll({
         where: { collectedById: riderId, collectionStatus: 'collected', collectionMethod: 'cash' },
@@ -242,8 +245,9 @@ const getRiderCash = async (riderId) => {
         order: [['createdAt', 'DESC']],
         limit: 50,
       }),
+      riderRatings(riderId, { limit: 10 }),
     ]);
-    return { rider, cash, orders, settlements };
+    return { rider, cash, orders, settlements, ratings };
   } catch (error) {
     if (error.code) throw error;
     throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };

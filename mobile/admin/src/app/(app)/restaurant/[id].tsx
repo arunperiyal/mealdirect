@@ -121,6 +121,14 @@ function Details({
           <Detail label="Business email" value={restaurant.email} />
           <Detail label="Phone" value={restaurant.phone} />
           <Detail
+            label="Rating"
+            value={
+              restaurant.totalReviews
+                ? `★ ${Number(restaurant.avgRating).toFixed(1)} from ${restaurant.totalReviews} rating${restaurant.totalReviews === 1 ? '' : 's'}`
+                : 'No ratings yet'
+            }
+          />
+          <Detail
             label="Orders"
             value={[restaurant.deliveryEnabled && 'Delivery', restaurant.pickupEnabled && 'Pickup'].filter(Boolean).join(' & ') || 'Not set up'}
           />

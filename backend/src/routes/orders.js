@@ -3,6 +3,7 @@ const { body, query, param, validationResult } = require('express-validator');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
 const kitchenController = require('../controllers/kitchenController');
+const ratingController = require('../controllers/ratingController');
 const { verifyToken, authorize } = require('../middleware/auth');
 const { MAX_QUANTITY } = require('../lib/itemLimits');
 
@@ -605,6 +606,43 @@ router.post(
     } catch (error) {
       const statusCode = error.statusCode || 500;
       res.status(statusCode).json({
+        success: false,
+        code: error.code || 'INTERNAL_ERROR',
+        message: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * PUT /api/orders/:id/rating
+ * Rate a delivered or picked-up order (customer only), within 7 days; rating again replaces it.
+ * Body: { foodRating: 1-5, foodComment?, deliveryRating?: 1-5, deliveryComment? }
+ * deliveryRating only when a rider delivered the order.
+ */
+const stars = (field) => body(field).isInt({ min: 1, max: 5 }).toInt().withMessage('Choose from 1 to 5 stars');
+const comment = (field) => body(field).optional({ values: 'null' }).isString().trim().isLength({ max: 500 });
+router.put(
+  '/:id/rating',
+  verifyToken,
+  authorize(['customer']),
+  [
+    param('id').isUUID(),
+    stars('foodRating'),
+    comment('foodComment'),
+    stars('deliveryRating').optional({ values: 'null' }),
+    comment('deliveryComment'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, code: 'VALIDATION_ERROR', errors: errors.array() });
+    }
+    try {
+      const rating = await ratingController.rateOrder(req.params.id, req.user.id, req.body);
+      res.json({ success: true, data: rating });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({
         success: false,
         code: error.code || 'INTERNAL_ERROR',
         message: error.message,

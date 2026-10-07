@@ -98,6 +98,7 @@ export default function RidersScreen() {
               </Text>
               <Text style={font.caption}>
                 Signed up {formatDateTime(item.createdAt)} · {item.deliveries} {item.deliveries === 1 ? 'delivery' : 'deliveries'}
+                {item.rating?.count ? ` · ★ ${item.rating.average?.toFixed(1)} (${item.rating.count})` : ''}
               </Text>
               {item.cashBalance > 0 && (
                 <Text style={[font.caption, item.cashOverdue > 0 && styles.overdue]}>

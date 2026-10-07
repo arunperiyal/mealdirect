@@ -27,6 +27,7 @@ import {
   type Order,
 } from '@mealdirect/shared';
 import { API_URL, ORDER_POLL_MS } from '@/config';
+import { RateOrder } from '@/components/RateOrder';
 import { RazorpayCheckout } from '@/payments/RazorpayCheckout';
 import { useOrderPayment } from '@/payments/useOrderPayment';
 import { useAppSelector } from '@/store';
@@ -199,6 +200,8 @@ function OrderDetails({
             ) : null}
           </Card>
         )}
+
+        <RateOrder order={order} />
 
         <Card title="Status">
           <StatusTimeline order={order} />

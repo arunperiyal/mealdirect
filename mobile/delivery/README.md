@@ -52,6 +52,8 @@ and shows the admin's note if it's turned down. Email can't be changed.
 **Account** also has:
 
 - Your profile picture, which customers see on the order you're delivering.
+- Your average delivery rating and recent comments (customers stay anonymous). A delivery's screen shows how
+  that one was rated.
 
 Riders can delete their account from **Account** (or while waiting for approval), once they've delivered or
 released their orders and settled their cash.

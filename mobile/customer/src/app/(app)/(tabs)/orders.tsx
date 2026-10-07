@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { router, useIsFocused } from 'expo-router';
 import {
+  canRate,
   colors,
   EmptyState,
   errorMessage,
@@ -84,6 +85,11 @@ function OrderRow({ order }: { order: Order }) {
             {STATUS_LABELS[order.status]}
           </Text>
         </View>
+        {!order.rating && canRate(order) && (
+          <View style={[styles.pill, styles.pillRate]}>
+            <Text style={[styles.pillText, { color: colors.warning }]}>★ Rate this order</Text>
+          </View>
+        )}
         {unpaid && (
           <View style={[styles.pill, styles.pillWarning]}>
             <Text style={[styles.pillText, { color: colors.warning }]}>Payment pending</Text>
@@ -106,6 +112,7 @@ const styles = StyleSheet.create({
   pillDone: { backgroundColor: colors.successSoft },
   pillCancelled: { backgroundColor: colors.background },
   pillWarning: { backgroundColor: colors.warningSoft },
+  pillRate: { backgroundColor: colors.warningSoft },
   pillText: { fontSize: 12, fontWeight: '600' },
   date: { marginLeft: 'auto' },
 });

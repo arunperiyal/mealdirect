@@ -29,6 +29,7 @@ export { Card } from './components/Card';
 export { ChangeRequestNotice } from './components/ChangeRequestNotice';
 export { Chip } from './components/Chip';
 export { DeleteAccount } from './components/DeleteAccount';
+export { OrderRatingView } from './components/OrderRatingView';
 export { PayoutFields } from './components/PayoutFields';
 export { PriceSummary } from './components/PriceSummary';
 export { displayName, ProfilePhoto } from './components/ProfilePhoto';
@@ -36,7 +37,9 @@ export { Banner, EmptyState, ErrorState, LoadingState } from './components/State
 export { FormScreen } from './components/FormScreen';
 export { SHEET_MAX_WIDTH, WebFrame, webTabBarOptions } from './components/WebFrame';
 export { LinkRow } from './components/LinkRow';
+export { RestaurantRatingsList } from './components/RestaurantRatingsList';
 export { SheetForm } from './components/SheetForm';
+export { Stars, starLabel } from './components/Stars';
 export { StatTile } from './components/StatTile';
 export { StatusPill } from './components/StatusPill';
 export { StatusTimeline } from './components/StatusTimeline';

@@ -15,6 +15,7 @@ import {
   formatTime,
   isActive,
   LoadingState,
+  OrderRatingView,
   paymentLabel,
   shortId,
   spacing,
@@ -184,6 +185,12 @@ function Details({ order, refreshing, onRefresh }: { order: Order; refreshing: b
         ))}
         <Text style={[font.caption, styles.gap]}>Order total {formatINR(order.total)}</Text>
       </Card>
+
+      {order.rating?.deliveryRating != null && (
+        <Card title="Customer's rating">
+          <OrderRatingView rating={order.rating} show="delivery" />
+        </Card>
+      )}
 
       {mine && canRelease(order) && (
         <Button title="Give this delivery back" variant="danger" onPress={confirmRelease} />

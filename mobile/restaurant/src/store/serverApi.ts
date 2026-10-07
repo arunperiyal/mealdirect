@@ -11,6 +11,7 @@ import {
   type KitchenDay,
   type OwnedRestaurant,
   type PayoutDetails,
+  type RestaurantRatings,
 } from '@mealdirect/shared';
 import { api } from '@/api';
 
@@ -65,12 +66,17 @@ export interface SlotInput {
 export const serverApi = createApi({
   reducerPath: 'serverApi',
   baseQuery: createAxiosBaseQuery(api),
-  tagTypes: ['Restaurant', 'Order', 'Menu', 'Slot', 'Dish'],
+  tagTypes: ['Restaurant', 'Order', 'Menu', 'Slot', 'Dish', 'Ratings'],
   endpoints: (build) => ({
     // Restaurants
     getMyRestaurants: build.query<OwnedRestaurant[], void>({
       query: () => ({ url: '/restaurants/my-restaurants', params: { limit: 100 } }),
       providesTags: ['Restaurant'],
+    }),
+    // What customers say about the food (the public ratings)
+    getRatings: build.query<RestaurantRatings, string>({
+      query: (restaurantId) => ({ url: `/restaurants/${restaurantId}/ratings` }),
+      providesTags: ['Ratings'],
     }),
     // Payout details can come with the application; MealDirect needs them to approve it
     createRestaurant: build.mutation<OwnedRestaurant, RestaurantInput & Partial<PayoutDetails>>({
@@ -262,6 +268,7 @@ export const serverApi = createApi({
 
 export const {
   useGetMyRestaurantsQuery,
+  useGetRatingsQuery,
   useCreateRestaurantMutation,
   useUpdateRestaurantMutation,
   useUpdateDeliverySettingsMutation,

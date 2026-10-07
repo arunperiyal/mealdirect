@@ -15,6 +15,7 @@ import {
   LoadingState,
   SheetForm,
   spacing,
+  Stars,
   StatTile,
   TextField,
 } from '@mealdirect/shared';
@@ -35,7 +36,7 @@ export default function RiderCashScreen() {
   if (isLoading) return <LoadingState />;
   if (!data) return <ErrorState message={errorMessage(error, 'Rider not found')} onRetry={refetch} />;
 
-  const { rider, cash, orders, settlements } = data;
+  const { rider, cash, orders, settlements, ratings } = data;
   const name = [rider.firstName, rider.lastName].filter(Boolean).join(' ') || rider.email;
 
   const open = (k: Kind) => {
@@ -93,6 +94,28 @@ export default function RiderCashScreen() {
           disabled={cash.balance <= 0}
           style={styles.gap}
         />
+
+        <Card title="Delivery ratings" style={styles.section}>
+          {ratings?.count ? (
+            <>
+              <View style={styles.ratingRow}>
+                <Stars value={ratings.average} label="Average rating" />
+                <Text style={font.body}>
+                  {ratings.average?.toFixed(1)} from {ratings.count} rating{ratings.count === 1 ? '' : 's'}
+                </Text>
+              </View>
+              {ratings.recent
+                .filter((r) => r.comment)
+                .map((r) => (
+                  <Text key={r.id} style={[font.caption, styles.gap]}>
+                    {'★'.repeat(r.rating)} “{r.comment}” · {formatDateTime(r.createdAt)}
+                  </Text>
+                ))}
+            </>
+          ) : (
+            <Text style={font.caption}>No ratings yet.</Text>
+          )}
+        </Card>
 
         <Card title="Payout details" style={styles.section}>
           {rider.upiId || rider.bankAccountNumber ? (
@@ -166,6 +189,7 @@ export default function RiderCashScreen() {
 }
 
 const styles = StyleSheet.create({
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   content: { padding: spacing.lg, paddingBottom: spacing.xl * 2 },
   tiles: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.sm },
   gap: { marginTop: spacing.md },

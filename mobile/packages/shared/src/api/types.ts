@@ -255,6 +255,41 @@ export interface Order {
   collectedById?: string | null;
   collectedAt?: string | null;
   collectionNote?: string | null;
+  // The customer's rating, once given (PUT /orders/:id/rating)
+  rating?: OrderRating | null;
+}
+
+// Stars are 1 to 5. The delivery is rated only when a rider brought the order.
+export interface OrderRating {
+  foodRating: number;
+  foodComment: string | null;
+  deliveryRating: number | null;
+  deliveryComment: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RateOrderInput {
+  foodRating: number;
+  foodComment?: string | null;
+  deliveryRating?: number | null;
+  deliveryComment?: string | null;
+}
+
+export interface RatingSummary {
+  average: number | null; // null with no ratings
+  count: number;
+}
+
+// GET /restaurants/:id/ratings
+export interface RestaurantRatings extends RatingSummary {
+  byStars: Record<1 | 2 | 3 | 4 | 5, number>;
+  recent: { id: string; rating: number; comment: string; name: string; createdAt: string }[];
+}
+
+// GET /delivery/ratings, and `ratings` on an admin's rider detail
+export interface RiderRatings extends RatingSummary {
+  recent: { id: string; orderId: string; rating: number; comment: string | null; createdAt: string }[];
 }
 
 export interface CreateOrderInput {
@@ -333,6 +368,7 @@ export interface AdminRider {
   deliveries: number; // completed
   cashBalance: number;
   cashOverdue: number;
+  rating: RatingSummary; // delivery ratings
 }
 
 export interface Settlement {
@@ -345,8 +381,9 @@ export interface Settlement {
 }
 
 export interface RiderCashDetail {
-  rider: Omit<AdminRider, 'deliveries' | 'cashBalance' | 'cashOverdue'>;
+  rider: Omit<AdminRider, 'deliveries' | 'cashBalance' | 'cashOverdue' | 'rating'>;
   cash: RiderCash;
+  ratings: RiderRatings;
   orders: { id: string; total: number | string; collectedAt: string; restaurant?: { id: string; name: string } }[];
   settlements: Settlement[];
 }

@@ -15,6 +15,7 @@ import {
   formatTime,
   isActive,
   LoadingState,
+  OrderRatingView,
   paymentLabel,
   PriceSummary,
   riderName,
@@ -171,6 +172,12 @@ function OrderDetails({ order, refreshing, onRefresh }: { order: Order; refreshi
           <PriceSummary subtotal={order.subtotal} tax={order.tax} deliveryFee={order.deliveryFee} total={order.total} />
           {order.paymentMethod !== 'cod' && <Text style={[font.caption, styles.gap]}>{paymentLabel(order)}</Text>}
         </Card>
+
+        {order.rating && (
+          <Card title="Customer's rating">
+            <OrderRatingView rating={order.rating} />
+          </Card>
+        )}
 
         <Card title="Progress">
           <StatusTimeline order={order} />

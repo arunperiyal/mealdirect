@@ -79,6 +79,7 @@ export default function AccountScreen() {
           detail={withStatus(profile?.changeRequests.payout, payout || 'Add your UPI ID and bank account')}
           onPress={() => router.push('/profile/payout')}
         />
+        <LinkRow title="Delivery statement" detail="Download your deliveries as a CSV file" onPress={() => router.push('/statement')} />
       </Card>
       <Card title="Your rating">
         {ratings?.count ? (

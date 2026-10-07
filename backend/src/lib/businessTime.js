@@ -17,4 +17,8 @@ const businessDateTime = (date, time) => {
   return new Date(Date.UTC(y, mo - 1, d, h, m) - offsetMs());
 };
 
-module.exports = { businessDateString, startOfBusinessDay, businessDateTime };
+// 'YYYY-MM-DD HH:mm' in the business timezone, for statements
+const businessDateTimeString = (date) =>
+  new Date(new Date(date).getTime() + offsetMs()).toISOString().slice(0, 16).replace('T', ' ');
+
+module.exports = { businessDateString, startOfBusinessDay, businessDateTime, businessDateTimeString };

@@ -23,6 +23,16 @@ interface ErrorBody {
   errors?: { path?: string; msg?: string }[];
 }
 
+// Requests for text (e.g. a CSV statement) get their error body as a JSON string
+const parseBody = (data: unknown): ErrorBody => {
+  if (typeof data !== 'string') return (data || {}) as ErrorBody;
+  try {
+    return JSON.parse(data) as ErrorBody;
+  } catch {
+    return {};
+  }
+};
+
 // Normalize axios/backend errors into { code, message, status } for the UI
 export const toApiError = (error: unknown): ApiError => {
   if (error instanceof ApiError) return error;
@@ -32,7 +42,7 @@ export const toApiError = (error: unknown): ApiError => {
       return new ApiError('NETWORK_ERROR', 'Cannot reach the server. Check your connection.', 0);
     }
     const { status } = error.response;
-    const body = (error.response.data || {}) as ErrorBody;
+    const body = parseBody(error.response.data);
     const firstField = body.errors?.[0];
     const fieldMessage =
       firstField &&

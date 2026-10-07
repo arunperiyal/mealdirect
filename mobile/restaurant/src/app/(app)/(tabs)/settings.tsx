@@ -84,6 +84,7 @@ export default function SettingsScreen() {
           }
           onPress={() => router.push('/ratings')}
         />
+        <LinkRow title="Order statement" detail="Download orders as a CSV file" onPress={() => router.push('/statement')} />
       </Card>
 
       {restaurants.length > 1 && (

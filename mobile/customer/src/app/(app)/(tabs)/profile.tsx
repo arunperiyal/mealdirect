@@ -44,6 +44,7 @@ export default function ProfileScreen() {
 
       <Card>
         <Button title="Order history" variant="secondary" onPress={() => router.navigate('/orders')} />
+        <Button title="Download a statement" variant="secondary" onPress={() => router.push('/statement')} style={styles.gap} />
       </Card>
 
       <Button title="Sign out" variant="danger" onPress={confirmSignOut} loading={signingOut} />
@@ -55,4 +56,5 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   content: { padding: spacing.lg },
   header: { alignItems: 'center', gap: spacing.xs, marginVertical: spacing.xl },
+  gap: { marginTop: spacing.sm },
 });

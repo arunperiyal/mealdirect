@@ -39,6 +39,7 @@ export default function AppLayout() {
         <Stack.Screen name="menu/[id]" options={{ title: 'Menu' }} />
         <Stack.Screen name="dishes" options={{ title: 'My dishes' }} />
         <Stack.Screen name="ratings" options={{ title: 'Ratings' }} />
+        <Stack.Screen name="statement" options={{ title: 'Order statement' }} />
       </Stack.Protected>
 
       {/* Details can be edited while waiting for approval too */}

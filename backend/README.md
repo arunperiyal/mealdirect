@@ -193,6 +193,13 @@ All responses are JSON: `{ "success": true, "data": ... }` or
 - `GET /api/delivery/balance`: cash held and whether settlement is due
 - `GET /api/delivery/ratings`: the rider's delivery ratings, average and recent (customers stay anonymous)
 
+### Statements
+- `GET /api/statements?from=YYYY-MM-DD&to=YYYY-MM-DD` (`&restaurantId=` for partners with several restaurants): the
+  signed-in user's orders as a CSV file, both days included, at most a year (`400 INVALID_PERIOD`,
+  `PERIOD_TOO_LONG`). Customers get the orders they placed, partners their restaurants' orders (with the customer
+  and who collected the money), riders the orders they delivered with the cash they collected. Times are in the
+  business timezone, and totals leave out cancelled orders.
+
 ### Rider profile (open to riders waiting for approval)
 - `GET /api/profile`: name, phone, payout details, and any change waiting for review or rejected
 - `PUT /api/profile/personal` (`firstName`, `lastName`, `phone`), `PUT /api/profile/payout` (all four payout

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <rect width="1024" height="1024" fill="#E23744"/>
+  <g transform="translate(512 560) scale(0.900) translate(-509 -470)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Steam rising from the dish -->
+    <g stroke="#FFC845" stroke-width="40">
+      <path d="M400 285 C 340 225, 455 175, 400 110"/>
+      <path d="M509 285 C 449 215, 569 150, 509 70"/>
+      <path d="M618 285 C 558 225, 673 175, 618 110"/>
+    </g>
+    <!-- M and D sharing one stroke: the M's last leg is the D's spine -->
+    <path d="M200 760 V360 L392 610 L584 360 V760" stroke="#FFFFFF" stroke-width="92"/>
+    <path d="M584 360 H632 A200 200 0 0 1 632 760 H584" stroke="#FFFFFF" stroke-width="92"/>
+  </g>
+</svg>

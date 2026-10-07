@@ -56,6 +56,13 @@ the 6-digit code that was emailed (15 minutes, 5 tries; **Send a new code** once
 then returns to that screen. The screen is `VerifyEmail` in the shared package; each app's root layout shows it
 while `user.isVerified` is `false`. Accounts from before verification aren't asked.
 
+## Logo
+
+The MD mark with rising steam. Its SVG sources are in `packages/shared/assets/brand/`; each app's `assets/` holds
+the icon, Android adaptive icon (foreground, background, monochrome), splash image and favicon rendered from them,
+and `packages/shared/assets/logo.png` is the one on the sign-in screens. After changing a source, render the PNGs at
+the same sizes (any SVG renderer; headless Chrome works).
+
 ## Forgotten passwords
 
 Every app's sign-in has **Forgot password?**: the user enters their email, gets a 6-digit code by email (valid for

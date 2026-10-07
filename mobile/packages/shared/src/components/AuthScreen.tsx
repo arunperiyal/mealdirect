@@ -1,7 +1,10 @@
 import { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, font, spacing } from '../theme';
+
+// The MD mark with rising steam; sources in assets/brand
+const logo = require('../../assets/logo.png');
 
 export function AuthScreen({
   title,
@@ -19,6 +22,7 @@ export function AuthScreen({
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
+            <Image source={logo} style={styles.logo} accessibilityIgnoresInvertColors accessible={false} />
             <Text style={styles.brand}>{brand}</Text>
             <Text style={font.title}>{title}</Text>
             <Text style={font.caption}>{subtitle}</Text>
@@ -35,5 +39,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { flexGrow: 1, padding: spacing.xl, justifyContent: 'center' },
   header: { marginBottom: spacing.xl, gap: spacing.xs },
+  logo: { width: 72, height: 72, marginBottom: spacing.sm },
   brand: { color: colors.brand, fontSize: 28, fontWeight: '800', marginBottom: spacing.md },
 });

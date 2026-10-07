@@ -49,6 +49,9 @@ MealDirect pays tips and earnings). Riders waiting for approval can fill these i
 approval, a change waits for a MealDirect admin: the app shows it as waiting, keeps the current details in use,
 and shows the admin's note if it's turned down. Email can't be changed.
 
+Riders can delete their account from **Account** (or while waiting for approval), once they've delivered or
+released their orders and settled their cash.
+
 Before accepting, riders see the restaurant, the drop address, the time and the amount to collect, but only the
 customer's first name. The customer's phone number shows once they accept. Customers, restaurants and admins see
 the rider's name and phone number on the order.

@@ -109,6 +109,18 @@ backups.
   edit their name and phone. Until approval, changes apply at once; after, each change is a `ChangeRequest` that
   an admin approves or rejects (with a note the owner or rider sees). The saved details stay in use meanwhile.
 
+## Deleted accounts
+
+Customers, restaurant partners and riders can delete their own account (confirming with their password), and
+admins can delete theirs. Deletion is soft, so an admin can restore the account:
+
+- The account can't sign in (`403 ACCOUNT_DELETED`, only after the right password), and its tokens stop working at
+  once (`401 ACCOUNT_DELETED`). Its email stays taken until it's restored.
+- Its details and orders are kept. Past orders still show the customer, rider or restaurant.
+- A partner's restaurants are deleted and restored with the account.
+- Not while there are open orders (`409 ACTIVE_ORDERS`, `ACTIVE_DELIVERIES` for riders), a customer's not-paid
+  order (`PAYMENT_OVERDUE`) or a rider's unsettled cash (`CASH_NOT_SETTLED`). This applies to admins too.
+
 ## API
 
 All responses are JSON: `{ "success": true, "data": ... }` or
@@ -123,6 +135,7 @@ All responses are JSON: `{ "success": true, "data": ... }` or
 - `POST /api/auth/register`: sign up as `customer` (default), `restaurant_admin` or `delivery_partner` (needs a
   phone number)
 - `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`
+- `DELETE /api/auth/me` `{ password }`: delete your own account (see [Deleted accounts](#deleted-accounts))
 
 ### Restaurants
 - `GET /api/restaurants`, `GET /api/restaurants/:id`: public listing and details
@@ -175,6 +188,8 @@ All responses are JSON: `{ "success": true, "data": ... }` or
 - `GET /api/admin/users?search=&role=`: customers, restaurant partners and riders (search by name, email or phone);
   `PUT /api/admin/users/:id/email` changes the email a user signs in with (`409 EMAIL_EXISTS` if taken; not for
   MealDirect staff accounts). Their password and current sessions are unchanged.
+- `DELETE /api/admin/users/:id`, `POST /api/admin/users/:id/restore`; `GET /api/admin/users?deleted=true` lists
+  deleted accounts with `deletedAt` and `deletedBy` (`self` or `admin`)
 - `GET /api/admin/change-requests?status=pending`: detail changes with the current values;
   `POST /api/admin/change-requests/:id/approve` (optional `note`), `POST /api/admin/change-requests/:id/reject`
   (`note` required)

@@ -23,6 +23,11 @@ export const createAuthApi = (client: AxiosInstance) => ({
   logout: async () => {
     await client.post('/auth/logout');
   },
+
+  // Soft delete: the account can't sign in; MealDirect support can restore it
+  deleteAccount: async (password: string) => {
+    await client.delete('/auth/me', { data: { password } });
+  },
 });
 
 export type AuthApi = ReturnType<typeof createAuthApi>;

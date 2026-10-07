@@ -84,6 +84,10 @@ const STEPS = [
             ADD COLUMN IF NOT EXISTS "bank_i_f_s_c" VARCHAR(255),
             ADD COLUMN IF NOT EXISTS "upi_id" VARCHAR(255)`,
   },
+  {
+    name: 'Account deletion: users.deleted_by_id',
+    sql: `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "deleted_by_id" UUID`,
+  },
 ];
 
 const upgradeDatabase = async (sequelize, log = () => {}) => {

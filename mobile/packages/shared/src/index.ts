@@ -26,6 +26,7 @@ export { Button } from './components/Button';
 export { Card } from './components/Card';
 export { ChangeRequestNotice } from './components/ChangeRequestNotice';
 export { Chip } from './components/Chip';
+export { DeleteAccount } from './components/DeleteAccount';
 export { PayoutFields } from './components/PayoutFields';
 export { PriceSummary } from './components/PriceSummary';
 export { Banner, EmptyState, ErrorState, LoadingState } from './components/States';

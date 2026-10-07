@@ -1,9 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Banner, Button, colors, font, isPayoutComplete, spacing } from '@mealdirect/shared';
+import { Banner, Button, colors, DeleteAccount, font, isPayoutComplete, spacing } from '@mealdirect/shared';
+import { authApi } from '@/api';
 import { useAppDispatch } from '@/store';
-import { logout } from '@/store/authSlice';
+import { logout, signOutLocally } from '@/store/authSlice';
 import { useRestaurant } from '@/lib/useRestaurant';
 import { useGetMyRestaurantsQuery } from '@/store/serverApi';
 
@@ -50,6 +51,11 @@ export default function PendingScreen() {
         <Button title="Check again" variant={payoutMissing ? 'secondary' : 'primary'} onPress={refetch} loading={isFetching} />
         <Button title="Edit restaurant details" variant="secondary" onPress={() => router.push('/settings/profile')} />
         <Button title="Sign out" variant="danger" onPress={() => dispatch(logout())} />
+        <DeleteAccount
+          consequence="Your restaurants are taken off MealDirect."
+          deleteAccount={authApi.deleteAccount}
+          onDeleted={() => dispatch(signOutLocally())}
+        />
       </View>
     </SafeAreaView>
   );

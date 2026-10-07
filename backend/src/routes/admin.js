@@ -2,6 +2,7 @@ const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const accountController = require('../controllers/accountController');
 const changeRequestController = require('../controllers/changeRequestController');
 const { verifyToken, authorize } = require('../middleware/auth');
 
@@ -88,14 +89,15 @@ router.get(
 );
 
 /**
- * GET /api/admin/users?search=&role=
- * Customers, restaurant partners and riders, newest first
+ * GET /api/admin/users?search=&role=&deleted=true
+ * Customers, restaurant partners and riders, newest first; deleted=true for deleted accounts only
  */
 router.get(
   '/users',
   [
     query('search').optional().isString().trim(),
     query('role').optional().isIn(['customer', 'restaurant_admin', 'delivery_partner']),
+    query('deleted').optional().isBoolean().toBoolean(),
     query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
     query('offset').optional().isInt({ min: 0 }).toInt(),
   ],
@@ -118,6 +120,33 @@ router.put(
   ],
   handle(async (req, res) => {
     res.json({ success: true, data: await adminController.changeUserEmail(req.params.id, req.body.email) });
+  })
+);
+
+/**
+ * DELETE /api/admin/users/:id
+ * Delete an account (soft: it can be restored). A partner's restaurants go with it.
+ * 409 while they have open orders, a not-paid order, or a rider holds unsettled cash.
+ */
+router.delete(
+  '/users/:id',
+  [param('id').isUUID()],
+  handle(async (req, res) => {
+    await accountController.deleteUser(req.params.id, req.user.id);
+    res.json({ success: true });
+  })
+);
+
+/**
+ * POST /api/admin/users/:id/restore
+ * Bring a deleted account back, with a partner's restaurants
+ */
+router.post(
+  '/users/:id/restore',
+  [param('id').isUUID()],
+  handle(async (req, res) => {
+    const user = await accountController.restoreUser(req.params.id);
+    res.json({ success: true, data: adminController.adminUserView(user) });
   })
 );
 

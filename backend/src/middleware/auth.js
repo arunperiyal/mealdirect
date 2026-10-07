@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config');
+const User = require('../models/User');
 
 /**
  * Verify JWT token from Authorization header
  */
-const verifyToken = (req, res, next) => {
+const verifyToken = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
 
   if (!token) {
@@ -15,10 +16,9 @@ const verifyToken = (req, res, next) => {
     });
   }
 
+  let decoded;
   try {
-    const decoded = jwt.verify(token, config.jwt.secret);
-    req.user = decoded;
-    next();
+    decoded = jwt.verify(token, config.jwt.secret);
   } catch (error) {
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
@@ -33,6 +33,23 @@ const verifyToken = (req, res, next) => {
       code: 'INVALID_TOKEN'
     });
   }
+
+  // A deleted account is signed out everywhere at once, not when its tokens expire
+  try {
+    const exists = await User.count({ where: { id: decoded.id } });
+    if (!exists) {
+      return res.status(401).json({
+        success: false,
+        message: 'This account has been deleted',
+        code: 'ACCOUNT_DELETED'
+      });
+    }
+  } catch (error) {
+    return next(error);
+  }
+
+  req.user = decoded;
+  next();
 };
 
 /**

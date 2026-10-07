@@ -11,10 +11,10 @@ const throwError = (code, message, statusCode = 400) => {
 };
 
 // Who ordered and when it's due. Only what the restaurant needs to fulfil the
-// order: no email or account fields.
+// order: no email or account fields. Past orders still show deleted accounts.
 const ORDER_DETAILS = [
-  { model: User, as: 'customer', attributes: ['id', 'firstName', 'lastName', 'phone'] },
-  { model: User, as: 'rider', attributes: ['id', 'firstName', 'lastName', 'phone'] },
+  { model: User, paranoid: false, as: 'customer', attributes: ['id', 'firstName', 'lastName', 'phone'] },
+  { model: User, paranoid: false, as: 'rider', attributes: ['id', 'firstName', 'lastName', 'phone'] },
   { model: DeliverySlot, as: 'deliverySlot', attributes: ['id', 'startTime', 'endTime'] },
 ];
 
@@ -322,7 +322,7 @@ const listAdminOrders = async (filters = {}) => {
       limit: Math.min(limit, 100),
       offset,
       order: [['createdAt', 'DESC']],
-      include: [...ORDER_DETAILS, { model: Restaurant, as: 'restaurant', attributes: ['id', 'name'] }],
+      include: [...ORDER_DETAILS, { model: Restaurant, paranoid: false, as: 'restaurant', attributes: ['id', 'name'] }],
       distinct: true,
     });
 

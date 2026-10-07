@@ -115,6 +115,11 @@ const User = sequelize.define(
       type: DataTypes.DATE,
       allowNull: true,
     },
+    // Who deleted the account: the user themselves or a MealDirect admin. See accountController.
+    deletedById: {
+      type: sequelize.options.dialect === 'sqlite' ? DataTypes.STRING : DataTypes.UUID,
+      allowNull: true,
+    },
   },
   {
     tableName: 'users',

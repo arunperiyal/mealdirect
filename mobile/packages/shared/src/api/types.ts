@@ -165,6 +165,9 @@ export interface AdminUser {
   role: ManagedRole;
   riderStatus: RiderStatus | null;
   createdAt: string;
+  // Deleted accounts only (GET /admin/users?deleted=true)
+  deletedAt?: string;
+  deletedBy?: 'self' | 'admin';
 }
 
 // GET /api/admin/change-requests

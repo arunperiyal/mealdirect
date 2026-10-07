@@ -30,7 +30,7 @@ export default function AccountScreen() {
       <Card title="Users">
         <LinkRow
           title="Customers, partners and riders"
-          detail="Find a user, change their email"
+          detail="Find a user, change their email, delete or restore an account"
           onPress={() => router.push('/users')}
         />
       </Card>

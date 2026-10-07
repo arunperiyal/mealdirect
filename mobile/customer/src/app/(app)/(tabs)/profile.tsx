@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Button, Card, colors, confirmAction, font, spacing } from '@mealdirect/shared';
+import { Button, Card, colors, confirmAction, DeleteAccount, font, spacing } from '@mealdirect/shared';
+import { authApi } from '@/api';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { logout } from '@/store/authSlice';
+import { logout, signOutLocally } from '@/store/authSlice';
 
 export default function ProfileScreen() {
   const dispatch = useAppDispatch();
@@ -45,6 +46,7 @@ export default function ProfileScreen() {
       </Card>
 
       <Button title="Sign out" variant="danger" onPress={confirmSignOut} loading={signingOut} />
+      <DeleteAccount deleteAccount={authApi.deleteAccount} onDeleted={() => dispatch(signOutLocally())} />
     </ScrollView>
   );
 }

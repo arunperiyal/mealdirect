@@ -2,6 +2,8 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const router = express.Router();
 const userController = require('../controllers/userController');
+const accountController = require('../controllers/accountController');
+const User = require('../models/User');
 const { verifyToken } = require('../middleware/auth');
 const { authLimiter } = require('../middleware/rateLimit');
 const { generateAccessToken } = require('../utils/tokenUtils');
@@ -163,13 +165,13 @@ router.post('/refresh', authLimiter, async (req, res) => {
       });
     }
 
-    // Get user
-    const user = await userController.getUserById(decoded.id);
+    // Get user. A deleted account gets no new tokens.
+    const user = await User.findByPk(decoded.id);
     if (!user) {
-      return res.status(404).json({
+      return res.status(401).json({
         success: false,
-        code: 'USER_NOT_FOUND',
-        message: 'User not found',
+        code: 'ACCOUNT_DELETED',
+        message: 'This account has been deleted',
       });
     }
 
@@ -252,6 +254,34 @@ router.get('/me', verifyToken, async (req, res) => {
     });
   }
 });
+
+/**
+ * DELETE /api/auth/me   Body: { password }
+ * Delete your own account. It can't sign in afterwards; MealDirect support can restore it.
+ * 409 while you have open orders, a not-paid order, or (riders) unsettled cash.
+ */
+router.delete(
+  '/me',
+  authLimiter,
+  verifyToken,
+  [body('password').isString().notEmpty().withMessage('Enter your password')],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, code: 'VALIDATION_ERROR', errors: errors.array() });
+    }
+    try {
+      await accountController.deleteOwnAccount(req.user.id, req.body.password);
+      res.json({ success: true, message: 'Account deleted' });
+    } catch (error) {
+      res.status(error.statusCode || 500).json({
+        success: false,
+        code: error.code || 'INTERNAL_ERROR',
+        message: error.message,
+      });
+    }
+  }
+);
 
 module.exports = router;
 

@@ -111,12 +111,22 @@ export const serverApi = createApi({
       invalidatesTags: ['Change', 'Restaurant', 'Rider', 'Cash'],
     }),
     // Customers, restaurant partners and riders
-    getUsers: build.query<AdminUser[], { search?: string; role?: ManagedRole }>({
-      query: ({ search, role }) => ({
+    // deleted: only deleted accounts
+    getUsers: build.query<AdminUser[], { search?: string; role?: ManagedRole; deleted?: boolean }>({
+      query: ({ search, role, deleted }) => ({
         url: '/admin/users',
-        params: { limit: 50, ...(search ? { search } : {}), ...(role ? { role } : {}) },
+        params: { limit: 50, ...(search ? { search } : {}), ...(role ? { role } : {}), ...(deleted ? { deleted } : {}) },
       }),
       providesTags: ['User'],
+    }),
+    // Soft delete and restore. A partner's restaurants go and come back with the account.
+    deleteUser: build.mutation<void, string>({
+      query: (id) => ({ url: `/admin/users/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['User', 'Restaurant', 'Rider', 'Cash', 'Analytics'],
+    }),
+    restoreUser: build.mutation<AdminUser, string>({
+      query: (id) => ({ url: `/admin/users/${id}/restore`, method: 'POST' }),
+      invalidatesTags: ['User', 'Restaurant', 'Rider', 'Cash', 'Analytics'],
     }),
     changeUserEmail: build.mutation<AdminUser, { id: string; email: string }>({
       query: ({ id, email }) => ({ url: `/admin/users/${id}/email`, method: 'PUT', data: { email } }),
@@ -148,4 +158,6 @@ export const {
   useReviewChangeMutation,
   useGetUsersQuery,
   useChangeUserEmailMutation,
+  useDeleteUserMutation,
+  useRestoreUserMutation,
 } = serverApi;

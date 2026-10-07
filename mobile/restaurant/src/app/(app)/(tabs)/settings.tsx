@@ -7,15 +7,17 @@ import {
   Chip,
   colors,
   confirmAction,
+  DeleteAccount,
   font,
   formatINR,
   LinkRow,
   maskAccount,
   spacing,
 } from '@mealdirect/shared';
+import { authApi } from '@/api';
 import { useRestaurant } from '@/lib/useRestaurant';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { logout } from '@/store/authSlice';
+import { logout, signOutLocally } from '@/store/authSlice';
 import { selectRestaurant } from '@/store/restaurantSlice';
 import { useGetMyRestaurantsQuery } from '@/store/serverApi';
 
@@ -94,6 +96,11 @@ export default function SettingsScreen() {
       </Card>
 
       <Button title="Sign out" variant="danger" onPress={confirmSignOut} loading={signingOut} />
+      <DeleteAccount
+        consequence="Your restaurants are taken off MealDirect."
+        deleteAccount={authApi.deleteAccount}
+        onDeleted={() => dispatch(signOutLocally())}
+      />
       <Text style={[font.caption, styles.version]}>MealDirect Partner</Text>
     </ScrollView>
   );

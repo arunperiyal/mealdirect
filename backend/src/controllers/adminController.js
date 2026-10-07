@@ -8,7 +8,7 @@ const throwError = (code, message, statusCode = 400) => {
   throw { code, message, statusCode };
 };
 
-const OWNER = { model: User, as: 'owner', attributes: ['id', 'firstName', 'lastName', 'email', 'phone'] };
+const OWNER = { model: User, paranoid: false, as: 'owner', attributes: ['id', 'firstName', 'lastName', 'email', 'phone'] };
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const countByStatus = async () => {
@@ -232,13 +232,13 @@ const getRiderCash = async (riderId) => {
       Order.findAll({
         where: { collectedById: riderId, collectionStatus: 'collected', collectionMethod: 'cash' },
         attributes: ['id', 'total', 'collectedAt'],
-        include: [{ model: Restaurant, as: 'restaurant', attributes: ['id', 'name'] }],
+        include: [{ model: Restaurant, paranoid: false, as: 'restaurant', attributes: ['id', 'name'] }],
         order: [['collectedAt', 'DESC']],
         limit: 50,
       }),
       Settlement.findAll({
         where: { riderId },
-        include: [{ model: User, as: 'recordedBy', attributes: ['id', 'firstName', 'lastName'] }],
+        include: [{ model: User, paranoid: false, as: 'recordedBy', attributes: ['id', 'firstName', 'lastName'] }],
         order: [['createdAt', 'DESC']],
         limit: 50,
       }),
@@ -328,17 +328,29 @@ const userSearchWhere = (search) => {
   };
 };
 
-const listUsers = async ({ search, role, limit = 50, offset = 0 }) => {
+// An account as admins see it. Deleted ones say when, and whether the user or an admin did it.
+const adminUserView = (user) => ({
+  ...Object.fromEntries(USER_FIELDS.map((f) => [f, user[f]])),
+  ...(user.deletedAt && {
+    deletedAt: user.deletedAt,
+    deletedBy: user.deletedById === user.id ? 'self' : 'admin',
+  }),
+});
+
+// deleted: true lists only deleted accounts, most recently deleted first
+const listUsers = async ({ search, role, deleted = false, limit = 50, offset = 0 }) => {
   try {
     const conditions = { role: role ? role : { [Op.in]: MANAGED_ROLES } };
+    if (deleted) conditions.deletedAt = { [Op.ne]: null };
     const { count, rows } = await User.findAndCountAll({
       where: search ? { ...conditions, ...userSearchWhere(search) } : conditions,
-      attributes: USER_FIELDS,
-      order: [['createdAt', 'DESC']],
+      attributes: [...USER_FIELDS, 'deletedAt', 'deletedById'],
+      order: [[deleted ? 'deletedAt' : 'createdAt', 'DESC']],
       limit: Math.min(limit, 100),
       offset,
+      paranoid: !deleted,
     });
-    return { count, rows };
+    return { count, rows: rows.map(adminUserView) };
   } catch (error) {
     throw { code: 'DB_ERROR', message: error.message, statusCode: 500 };
   }
@@ -359,7 +371,7 @@ const changeUserEmail = async (userId, email) => {
 
     user.email = email;
     await user.save();
-    return Object.fromEntries(USER_FIELDS.map((f) => [f, user[f]]));
+    return adminUserView(user);
   } catch (error) {
     if (error.code) throw error;
     // Two changes to the same new email at once: the unique index catches the second
@@ -371,6 +383,7 @@ const changeUserEmail = async (userId, email) => {
 };
 
 module.exports = {
+  adminUserView,
   listUsers,
   changeUserEmail,
   listRestaurants,

@@ -28,6 +28,14 @@ Online payment (Razorpay) is on hold, so checkout offers only pay on delivery. T
 
 Everything used here ships in Expo Go, so no custom development build is needed.
 
+## Your account
+
+**Profile** has:
+
+- Order history.
+- Sign out, and **Delete account** (with your password; not while an order is on its way). A deleted account
+  can't sign in; MealDirect support can restore it.
+
 ## How it's built
 
 | Concern | Choice |

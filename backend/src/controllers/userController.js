@@ -42,12 +42,14 @@ async function registerUser(userData) {
     };
   }
 
-  // Check if user already exists
-  const existingUser = await User.findOne({ where: { email } });
+  // Check if user already exists. A deleted account keeps its email, so an admin can restore it.
+  const existingUser = await User.findOne({ where: { email }, paranoid: false });
   if (existingUser) {
     throw {
       code: 'EMAIL_EXISTS',
-      message: 'User with this email already exists',
+      message: existingUser.deletedAt
+        ? 'An account with this email was deleted. Contact MealDirect support to restore it.'
+        : 'User with this email already exists',
       statusCode: 409,
     };
   }
@@ -116,12 +118,24 @@ async function loginUser(credentials) {
   }
 
   // Find user by email
-  const user = await User.findOne({ where: { email } });
+  const user = await User.findOne({ where: { email }, paranoid: false });
   if (!user) {
     throw {
       code: 'USER_NOT_FOUND',
       message: 'Invalid email or password',
       statusCode: 401,
+    };
+  }
+
+  // Only someone with the password learns that the account was deleted
+  if (user.deletedAt) {
+    if (!(await user.comparePassword(password))) {
+      throw { code: 'INVALID_PASSWORD', message: 'Invalid email or password', statusCode: 401 };
+    }
+    throw {
+      code: 'ACCOUNT_DELETED',
+      message: 'This account was deleted. Contact MealDirect support to restore it.',
+      statusCode: 403,
     };
   }
 

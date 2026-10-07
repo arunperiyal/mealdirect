@@ -6,14 +6,16 @@ import {
   Card,
   colors,
   confirmAction,
+  DeleteAccount,
   font,
   LinkRow,
   maskAccount,
   spacing,
   type ChangeRequest,
 } from '@mealdirect/shared';
+import { authApi } from '@/api';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { logout } from '@/store/authSlice';
+import { logout, signOutLocally } from '@/store/authSlice';
 import { useGetProfileQuery } from '@/store/serverApi';
 
 // "Change waiting for review" etc., else the saved value
@@ -70,6 +72,7 @@ export default function AccountScreen() {
         earnings to your payout details.
       </Text>
       <Button title="Sign out" variant="danger" onPress={confirmSignOut} loading={signingOut} />
+      <DeleteAccount deleteAccount={authApi.deleteAccount} onDeleted={() => dispatch(signOutLocally())} />
     </ScrollView>
   );
 }

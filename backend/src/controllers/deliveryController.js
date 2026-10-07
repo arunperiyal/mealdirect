@@ -15,7 +15,7 @@ const MAX_ACTIVE = 3;
 const CLAIMABLE_STATUSES = ['confirmed', 'preparing', 'ready'];
 const ACTIVE_STATUSES = [...CLAIMABLE_STATUSES, 'out_for_delivery'];
 
-const RESTAURANT = { model: Restaurant, as: 'restaurant', attributes: ['id', 'name', 'address', 'city', 'phone'] };
+const RESTAURANT = { model: Restaurant, paranoid: false, as: 'restaurant', attributes: ['id', 'name', 'address', 'city', 'phone'] };
 // The rider's own deliveries also carry the restaurant's UPI ID: customers paying by
 // UPI at the door pay the restaurant, through a QR on the rider's phone
 const RESTAURANT_WITH_UPI = { ...RESTAURANT, attributes: [...RESTAURANT.attributes, 'upiId'] };
@@ -27,7 +27,7 @@ const DELIVERY_DETAILS = [...ORDER_DETAILS, RESTAURANT_WITH_UPI];
 // number appears once they've claimed the order
 const QUEUE_DETAILS = [
   ...ORDER_DETAILS.filter((i) => i.as !== 'customer'),
-  { model: User, as: 'customer', attributes: ['id', 'firstName'] },
+  { model: User, paranoid: false, as: 'customer', attributes: ['id', 'firstName'] },
   RESTAURANT,
 ];
 

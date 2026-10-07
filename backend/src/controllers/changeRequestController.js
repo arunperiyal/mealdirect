@@ -199,7 +199,7 @@ const adminJson = async (request) => {
 const listRequests = wrap(async ({ status = 'pending' } = {}) => {
   const rows = await ChangeRequest.findAll({
     where: status === 'all' ? {} : { status },
-    include: [{ model: User, as: 'requestedBy', attributes: ['id', 'firstName', 'lastName'] }],
+    include: [{ model: User, paranoid: false, as: 'requestedBy', attributes: ['id', 'firstName', 'lastName'] }],
     order: [['updatedAt', status === 'pending' ? 'ASC' : 'DESC']],
     limit: 100,
   });

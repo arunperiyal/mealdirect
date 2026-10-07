@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Button, colors, font, spacing } from '@mealdirect/shared';
+import { Button, colors, DeleteAccount, font, spacing } from '@mealdirect/shared';
+import { authApi } from '@/api';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { logout, refreshProfile } from '@/store/authSlice';
+import { logout, refreshProfile, signOutLocally } from '@/store/authSlice';
 
 const CHECK_EVERY_MS = 30000;
 
@@ -46,6 +47,7 @@ export default function PendingScreen() {
           </>
         )}
         <Button title="Sign out" variant="danger" onPress={() => dispatch(logout())} />
+        <DeleteAccount deleteAccount={authApi.deleteAccount} onDeleted={() => dispatch(signOutLocally())} />
       </View>
     </SafeAreaView>
   );

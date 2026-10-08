@@ -129,6 +129,25 @@ For testing on a local network or Tailscale, skip HTTPS (step 4) and use the ser
 `http://<server-ip>:8101` to `:8104`. Logins travel unencrypted, and Android release builds refuse plain HTTP, so
 use a domain and HTTPS before real customers sign up.
 
+## Running it as a service
+
+To manage the whole stack with `systemctl`, and start it at boot, install the systemd service once:
+
+```bash
+sudo deploy/systemd/install.sh    # from backend/, as the user who owns the checkout
+```
+
+```bash
+systemctl status mealdirect      # running? plus the latest log lines
+sudo systemctl restart mealdirect
+sudo systemctl reload mealdirect # re-read the nginx config, without downtime
+sudo systemctl stop mealdirect   # stops every container; start brings them back
+journalctl -u mealdirect -f      # follow the logs of all containers
+```
+
+The service runs `docker compose up` for this folder, and `dc ps`, `dc logs` and `dc exec` keep working alongside
+it. To update, run the steps below but replace `dc up -d` with `sudo systemctl restart mealdirect`.
+
 ## Updating
 
 ```bash

@@ -1,0 +1,30 @@
+# MealDirect on Docker Compose: the API, Postgres, nginx and the web apps.
+# Installed by install.sh, which fills in @USER@ and @DEPLOY_DIR@.
+#
+#   systemctl status mealdirect      containers running? plus the latest log lines
+#   systemctl restart mealdirect     restart every container
+#   systemctl reload mealdirect      re-read the nginx config, without downtime
+#   systemctl stop mealdirect        stop everything (start brings it back)
+#   journalctl -u mealdirect -f      follow the logs
+[Unit]
+Description=MealDirect (Docker Compose)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+WorkingDirectory=@DEPLOY_DIR@
+Environment="COMPOSE=docker compose -f docker-compose.prod.yml -f docker-compose.web.yml --env-file .env.production"
+# Attached, so its output goes to the journal; stopping the service stops the containers
+ExecStart=/bin/sh -c 'exec $$COMPOSE up --remove-orphans'
+ExecReload=/bin/sh -c '$$COMPOSE exec -T nginx nginx -s reload'
+ExecStop=/bin/sh -c '$$COMPOSE stop'
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=300
+TimeoutStopSec=90
+
+[Install]
+WantedBy=multi-user.target

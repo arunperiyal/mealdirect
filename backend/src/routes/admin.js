@@ -116,7 +116,7 @@ router.put(
   [
     param('id').isUUID(),
     // The same normalization as sign-up and sign-in, so they can sign in with it
-    body('email').trim().isEmail().withMessage('Enter a valid email').normalizeEmail(),
+    body('email').trim().isEmail().withMessage('Enter a valid email').toLowerCase(),
   ],
   handle(async (req, res) => {
     res.json({ success: true, data: await adminController.changeUserEmail(req.params.id, req.body.email) });

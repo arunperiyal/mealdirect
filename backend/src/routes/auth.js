@@ -22,7 +22,7 @@ router.post(
   '/register',
   authLimiter,
   [
-    body('email').trim().isEmail().normalizeEmail(),
+    body('email').trim().isEmail().toLowerCase(),
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
     body('firstName').optional().trim().notEmpty(),
     body('lastName').optional().trim().notEmpty(),
@@ -85,7 +85,7 @@ router.post(
   '/login',
   authLimiter,
   [
-    body('email').trim().isEmail().normalizeEmail(),
+    body('email').trim().isEmail().toLowerCase(),
     body('password').notEmpty().withMessage('Password is required'),
   ],
   async (req, res) => {
@@ -318,7 +318,7 @@ router.post('/verify-email/resend', authLimiter, verifyToken, async (req, res) =
 router.post(
   '/password-reset/request',
   authLimiter,
-  [body('email').trim().isEmail().withMessage('Enter a valid email').normalizeEmail()],
+  [body('email').trim().isEmail().withMessage('Enter a valid email').toLowerCase()],
   async (req, res) => {
     if (!validated(req, res)) return;
     try {
@@ -338,7 +338,7 @@ router.post(
   '/password-reset/confirm',
   authLimiter,
   [
-    body('email').trim().isEmail().withMessage('Enter a valid email').normalizeEmail(),
+    body('email').trim().isEmail().withMessage('Enter a valid email').toLowerCase(),
     body('code').trim().matches(/^\d{6}$/).withMessage('Enter the 6-digit code from the email'),
     body('password').isString().isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
   ],

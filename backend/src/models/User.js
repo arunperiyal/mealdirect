@@ -1,4 +1,5 @@
 const { DataTypes } = require('sequelize');
+const { cleanEmail, emailKey } = require('../lib/email');
 const sequelize = require('../config/database');
 const bcrypt = require('bcryptjs');
 const { generateAccessToken, generateRefreshToken } = require('../utils/tokenUtils');
@@ -19,10 +20,15 @@ const User = sequelize.define(
       type: DataTypes.STRING,
       allowNull: false,
       unique: true,
-      lowercase: true,
       validate: {
         isEmail: { msg: 'Invalid email format' },
       },
+    },
+    // The email to find the account by; see lib/email.js. Set from `email` on every save.
+    emailKey: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
     },
     passwordHash: {
       type: DataTypes.STRING,
@@ -255,6 +261,22 @@ User.hashPassword = async function (plainPassword) {
 };
 
 // Hooks
+
+/**
+ * Keep the email as typed, and its key in step with it. A new account needs the key
+ * before validation (it's required); on an update, Sequelize only writes a key set in
+ * beforeSave, and skips one set while validating.
+ */
+const setEmailKey = (user) => {
+  if (user.email != null) {
+    user.email = cleanEmail(user.email);
+    user.emailKey = emailKey(user.email);
+  }
+};
+User.beforeValidate((user) => {
+  if (user.isNewRecord) setEmailKey(user);
+});
+User.beforeSave(setEmailKey);
 
 /**
  * Before create - hash password

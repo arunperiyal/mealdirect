@@ -2,6 +2,7 @@ const User = require('../models/User');
 const config = require('../config');
 const { sendFirstCode } = require('./emailVerificationController');
 const validator = require('validator');
+const { cleanEmail, emailKey } = require('../lib/email');
 
 // Roles anyone can sign up for. Restaurant admins still need a system admin to
 // approve their restaurant, and delivery partners to approve them, before they
@@ -45,7 +46,7 @@ async function registerUser(userData) {
   }
 
   // Check if user already exists. A deleted account keeps its email, so an admin can restore it.
-  const existingUser = await User.findOne({ where: { email }, paranoid: false });
+  const existingUser = await User.findOne({ where: { emailKey: emailKey(email) }, paranoid: false });
   if (existingUser) {
     throw {
       code: 'EMAIL_EXISTS',
@@ -123,7 +124,7 @@ async function loginUser(credentials) {
   }
 
   // Find user by email
-  const user = await User.findOne({ where: { email }, paranoid: false });
+  const user = await User.findOne({ where: { emailKey: emailKey(email) }, paranoid: false });
   if (!user) {
     throw {
       code: 'USER_NOT_FOUND',
@@ -236,9 +237,7 @@ async function createSystemAdmin({ email, password, firstName, lastName }) {
   if (!validator.isEmail(trimmed)) {
     throw { code: 'INVALID_EMAIL', message: 'Invalid email format', statusCode: 400 };
   }
-  // Same normalization as the login route (express-validator normalizeEmail),
-  // otherwise the stored address wouldn't match what login looks up
-  const normalizedEmail = validator.normalizeEmail(trimmed);
+  const normalizedEmail = cleanEmail(trimmed);
   if (!password || password.length < 12) {
     throw {
       code: 'WEAK_PASSWORD',
@@ -247,7 +246,7 @@ async function createSystemAdmin({ email, password, firstName, lastName }) {
     };
   }
 
-  const existingUser = await User.findOne({ where: { email: normalizedEmail } });
+  const existingUser = await User.findOne({ where: { emailKey: emailKey(normalizedEmail) }, paranoid: false });
   if (existingUser) {
     throw {
       code: 'EMAIL_EXISTS',

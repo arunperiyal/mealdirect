@@ -16,7 +16,7 @@ router.post(
     body('kind').isIn(feedbackController.KINDS).withMessage('Choose suggestion, feedback or problem'),
     body('message').isString().trim().isLength({ min: 10, max: 3000 }).withMessage('Write at least a sentence (up to 3000 characters)'),
     body('name').optional({ values: 'falsy' }).isString().trim().isLength({ max: 80 }).withMessage('Name is too long'),
-    body('email').optional({ values: 'falsy' }).trim().isEmail().withMessage('Enter a valid email, or leave it empty').normalizeEmail({ gmail_remove_dots: false }),
+    body('email').optional({ values: 'falsy' }).trim().isEmail().withMessage('Enter a valid email, or leave it empty').toLowerCase(),
   ],
   async (req, res) => {
     if (req.body.website) return res.json({ success: true });

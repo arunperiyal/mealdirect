@@ -134,6 +134,27 @@ const STEPS = [
     name: 'Email verification: earlier accounts count as verified',
     sql: `UPDATE "users" SET "is_verified" = true WHERE "is_verified" = false AND "created_at" < '2026-10-09'`,
   },
+  {
+    name: 'Emails as typed: users.email_key',
+    sql: `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "email_key" VARCHAR(255)`,
+  },
+  {
+    // Same rule as lib/email.js emailKey: Gmail ignores dots and a +tag in the name
+    name: 'Emails as typed: fill users.email_key',
+    sql: `UPDATE "users" SET "email_key" = CASE
+            WHEN split_part(lower("email"), '@', 2) IN ('gmail.com', 'googlemail.com')
+              THEN replace(split_part(split_part(lower("email"), '@', 1), '+', 1), '.', '') || '@gmail.com'
+            ELSE lower("email") END
+          WHERE "email_key" IS NULL`,
+  },
+  {
+    name: 'Emails as typed: users.email_key required',
+    sql: `ALTER TABLE "users" ALTER COLUMN "email_key" SET NOT NULL`,
+  },
+  {
+    name: 'Emails as typed: one account per email_key',
+    sql: `CREATE UNIQUE INDEX IF NOT EXISTS "users_email_key_unique" ON "users" ("email_key")`,
+  },
 ];
 
 const upgradeDatabase = async (sequelize, log = () => {}) => {

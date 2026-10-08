@@ -4,6 +4,7 @@ const { riderCash, round2 } = require('./collectionController');
 const { ORDER_DETAILS } = require('./orderController');
 const { searchWhere } = require('./restaurantController');
 const { riderAverages, riderRatings } = require('./ratingController');
+const { emailKey } = require('../lib/email');
 
 const throwError = (code, message, statusCode = 400) => {
   throw { code, message, statusCode };
@@ -370,8 +371,9 @@ const changeUserEmail = async (userId, email) => {
     }
     if (user.email === email) throwError('NO_CHANGES', 'That is already their email', 400);
 
-    const taken = await User.findOne({ where: { email }, attributes: ['id'], paranoid: false });
-    if (taken) throwError('EMAIL_EXISTS', 'Another account already uses this email', 409);
+    // The same inbox written differently (periyalarun@ to periyal.arun@) is their own key
+    const taken = await User.findOne({ where: { emailKey: emailKey(email) }, attributes: ['id'], paranoid: false });
+    if (taken && taken.id !== user.id) throwError('EMAIL_EXISTS', 'Another account already uses this email', 409);
 
     user.email = email;
     await user.save();

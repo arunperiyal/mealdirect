@@ -18,7 +18,7 @@ router.post(
   authorize(['restaurant_admin']),
   [
     body('name').trim().isLength({ min: 3, max: 255 }).withMessage('Name must be 3-255 chars'),
-    body('email').isEmail().normalizeEmail(),
+    body('email').isEmail().toLowerCase(),
     body('phone').optional().isMobilePhone(),
     body('description').optional().trim(),
     body('address').optional().trim(),

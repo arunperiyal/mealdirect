@@ -38,15 +38,13 @@ const main = async () => {
     return 1;
   }
 
-  const validator = require('validator');
+  const { emailKey } = require('../src/lib/email');
   const sequelize = require('../src/config/database');
   const { User } = require('../src/models');
 
   try {
     await sequelize.authenticate();
-    // Same normalization as the login route, so the lookup matches
-    const email = validator.normalizeEmail(values.email.trim()) || values.email.trim();
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { emailKey: emailKey(values.email) } });
     if (!user) {
       console.error(`No account with email ${values.email}`);
       return 1;

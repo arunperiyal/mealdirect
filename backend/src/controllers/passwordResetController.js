@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { User } = require('../models');
 const { sendMail } = require('../lib/mailer');
+const { emailKey } = require('../lib/email');
 
 const throwError = (code, message, statusCode = 400) => {
   throw { code, message, statusCode };
@@ -28,7 +29,7 @@ const wrap = (fn) => async (...args) => {
  * email has an account, so this can't be used to find out who signed up.
  */
 const requestReset = wrap(async (email) => {
-  const user = await User.findOne({ where: { email } });
+  const user = await User.findOne({ where: { emailKey: emailKey(email) } });
   if (!user) return;
   const sentAt = user.passwordResetSentAt ? new Date(user.passwordResetSentAt).getTime() : 0;
   if (Date.now() - sentAt < RESEND_SECONDS * 1000) return;
@@ -65,7 +66,7 @@ const clearCode = (user) => {
  */
 const confirmReset = wrap(async ({ email, code, password }) => {
   const invalid = () => throwError('INVALID_CODE', 'That code is wrong or has expired. Ask for a new one.', 400);
-  const user = await User.findOne({ where: { email } });
+  const user = await User.findOne({ where: { emailKey: emailKey(email) } });
   if (!user || !user.passwordResetHash) invalid();
   if (new Date(user.passwordResetExpiresAt) < new Date()) {
     clearCode(user);

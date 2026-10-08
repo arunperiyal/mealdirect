@@ -57,7 +57,8 @@ All commands run on the server, in `backend/deploy/`.
 
    cp nginx/https.conf.example nginx/conf.d/https.conf
    sed -i 's/api.example.com/api.yourdomain.com/g' nginx/conf.d/https.conf
-   # In nginx/conf.d/api.conf, replace the `location /` block with: return 301 https://$host$request_uri;
+   # In nginx/conf.d/api.conf, replace the /api/, /download/ and / blocks with:
+   #   location / { return 301 https://$host$request_uri; }
    dc exec nginx nginx -s reload
    curl https://api.yourdomain.com/api/health
    ```
@@ -100,11 +101,22 @@ Then start nginx with the web ports, and allow the sites in `CORS_ORIGINS` (e.g.
 docker compose -f docker-compose.prod.yml -f docker-compose.web.yml --env-file .env.production up -d
 ```
 
-Rebuild and copy again after each app update.
-
-Android apps to install can go in `deploy/web/downloads/` (an `index.html` and the APKs): they're served at
-`/download/` on the customer app's port, e.g. `http://server:8101/download/`. The ports can be changed with `WEB_CUSTOMER_PORT` etc. in
+Rebuild and copy again after each app update. The ports can be changed with `WEB_CUSTOMER_PORT` etc. in
 `.env.production`.
+
+**Website and downloads.** The main address (port 80, or `HTTP_PORT`) also serves the MealDirect website from
+`deploy/web/site/` at `/`, and the Android apps to install from `deploy/web/downloads/` at `/download/` (also on the
+customer app's port). The API stays at `/api/`. Their sources are in the repo's `website/` folder:
+
+```bash
+# On your machine, from the repo root
+rsync -a --delete --exclude download/ website/ server:path/to/backend/deploy/web/site/
+rsync -a website/download/ server:path/to/backend/deploy/web/downloads/    # page only; the APKs stay
+rsync -a mealdirect*.apk server:path/to/backend/deploy/web/downloads/       # after building new APKs
+```
+
+The APKs are named `mealdirect.apk`, `mealdirect-partner.apk`, `mealdirect-delivery.apk` and
+`mealdirect-admin.apk`; the pages link to those names.
 
 ## On a private network, without a domain
 

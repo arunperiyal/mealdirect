@@ -1,4 +1,4 @@
-# HTTPS for the API. Copy to conf.d/https.conf, replace api.example.com with
+# HTTPS for the API, website and downloads. Copy to conf.d/https.conf, replace api.example.com with
 # your domain (three places), then reload nginx. See DEPLOY.md.
 server {
     listen 443 ssl;
@@ -14,11 +14,25 @@ server {
 
     client_max_body_size 20m;
 
-    location / {
+    location /api/ {
         proxy_pass http://api:3000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto https;
+    }
+
+    # The website and Android downloads (docker-compose.web.yml), as on port 80
+    location /download/ {
+        alias /srv/web/downloads/;
+        index index.html;
+        types { text/html html; image/png png; application/vnd.android.package-archive apk; }
+        add_header Cache-Control "no-cache";
+    }
+
+    location / {
+        root /srv/web/site;
+        index index.html;
+        try_files $uri $uri/ =404;
     }
 }

@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MealDirect: home-style meals from local kitchens</title>
+<meta name="description" content="Order today's or tomorrow's menu from messes and kitchens near you. Pick a delivery time, pay at the door.">
+<link rel="icon" href="logo.png">
+<style>
+  :root {
+    --brand: #E23744; --brand-dark: #B9232F; --brand-soft: #FDECEE;
+    --saffron: #FFC845; --ink: #1C1C1C; --muted: #5F5F5F; --line: #ECE6E0;
+    --cream: #FFF9F3; --card: #FFFFFF;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif; color: var(--ink);
+         background: var(--cream); line-height: 1.55; }
+  a { color: inherit; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+  /* Header */
+  header { position: sticky; top: 0; z-index: 10; background: rgba(255, 249, 243, 0.92); backdrop-filter: blur(8px);
+           border-bottom: 1px solid var(--line); }
+  .bar { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; font-size: 20px; color: var(--brand); }
+  .brand img { width: 36px; height: 36px; }
+  nav a { text-decoration: none; color: var(--muted); font-weight: 600; margin-left: 22px; font-size: 15px; }
+  nav a:hover { color: var(--brand); }
+  nav .cta { color: #fff; background: var(--brand); padding: 9px 16px; border-radius: 10px; }
+  nav .cta:hover { color: #fff; background: var(--brand-dark); }
+
+  /* Hero */
+  .hero { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 40px; align-items: center; padding-top: 64px; padding-bottom: 56px; }
+  .eyebrow { display: inline-block; background: var(--brand-soft); color: var(--brand); font-weight: 700; font-size: 13px;
+             padding: 6px 12px; border-radius: 999px; letter-spacing: 0.02em; }
+  h1 { font-size: clamp(34px, 5vw, 54px); line-height: 1.08; margin: 18px 0 16px; letter-spacing: -0.02em; }
+  h1 em { font-style: normal; color: var(--brand); }
+  .lead { font-size: 18px; color: var(--muted); max-width: 34em; margin: 0 0 28px; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 12px; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 700; font-size: 16px;
+         padding: 14px 20px; border-radius: 12px; border: 2px solid var(--brand); }
+  .btn.primary { background: var(--brand); color: #fff; }
+  .btn.primary:hover { background: var(--brand-dark); border-color: var(--brand-dark); }
+  .btn.ghost { color: var(--brand); background: transparent; }
+  .btn.ghost:hover { background: var(--brand-soft); }
+  .note { color: var(--muted); font-size: 13px; margin-top: 14px; }
+
+  /* The mark, with its steam rising */
+  .mark { width: min(100%, 380px); justify-self: center; filter: drop-shadow(0 24px 40px rgba(226, 55, 68, 0.25)); }
+  .mark .steam path { animation: rise 3.2s ease-in-out infinite; transform-origin: center bottom; }
+  .mark .steam path:nth-child(2) { animation-delay: 0.5s; }
+  .mark .steam path:nth-child(3) { animation-delay: 1s; }
+  @keyframes rise {
+    0%, 100% { opacity: 0.55; transform: translateY(6px); }
+    50% { opacity: 1; transform: translateY(-8px); }
+  }
+  @media (prefers-reduced-motion: reduce) { .mark .steam path { animation: none; } }
+
+  /* Sections */
+  section { padding: 64px 0; }
+  section.alt { background: var(--card); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  h2 { font-size: clamp(26px, 3.4vw, 36px); margin: 0 0 10px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 32px; max-width: 40em; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; counter-reset: step; }
+  .step { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px; position: relative; }
+  .step::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 36px; height: 36px;
+                  border-radius: 50%; background: var(--saffron); color: var(--ink); font-weight: 800; margin-bottom: 14px; }
+  .step h3, .feature h3 { margin: 0 0 6px; font-size: 18px; }
+  .step p, .feature p { margin: 0; color: var(--muted); font-size: 15px; }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .panel { border-radius: 22px; padding: 30px; }
+  .panel.kitchen { background: var(--brand-soft); }
+  .panel.rider { background: #FFF4D6; }
+  .panel h2 { font-size: 26px; }
+  .panel ul { list-style: none; padding: 0; margin: 18px 0 24px; }
+  .panel li { padding-left: 28px; position: relative; margin-bottom: 10px; color: #3c3c3c; }
+  .panel li::before { content: ""; position: absolute; left: 0; top: 7px; width: 14px; height: 14px; border-radius: 50%;
+                      background: var(--brand); box-shadow: inset 0 0 0 4px #fff; }
+  .panel.rider li::before { background: #E0A100; }
+
+  .apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .app { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 22px; display: flex; flex-direction: column; }
+  .app h3 { margin: 0 0 4px; font-size: 17px; }
+  .app p { margin: 0 0 18px; color: var(--muted); font-size: 14px; flex: 1; }
+  .app a { text-decoration: none; font-weight: 700; font-size: 15px; text-align: center; border-radius: 10px; padding: 11px 12px; }
+  .app a.get { background: var(--brand); color: #fff; margin-bottom: 8px; }
+  .app a.get:hover { background: var(--brand-dark); }
+  .app a.web { color: var(--brand); border: 2px solid var(--brand-soft); }
+  .app a.web:hover { border-color: var(--brand); }
+
+  footer { padding: 32px 0 48px; color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+  @media (max-width: 860px) {
+    nav a:not(.cta) { display: none; }
+    .hero { grid-template-columns: 1fr; padding-top: 40px; }
+    .mark { width: 220px; order: -1; }
+    .steps, .split { grid-template-columns: 1fr; }
+    .apps { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 520px) { .apps { grid-template-columns: 1fr; } section { padding: 48px 0; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="#"><img src="logo.png" alt="">MealDirect</a>
+    <nav>
+      <a href="#how">How it works</a>
+      <a href="#kitchens">For kitchens</a>
+      <a href="#riders">For riders</a>
+      <a class="cta" href="#apps">Get the app</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap hero">
+    <div>
+      <span class="eyebrow">Messes &amp; local kitchens, near you</span>
+      <h1>Home-style meals, <em>straight from the kitchen</em> to your door.</h1>
+      <p class="lead">Order today's or tomorrow's menu from the messes and kitchens around you: lunch, dinner, or both.
+        Pick a delivery time that suits you and pay at the door, in cash or by UPI.</p>
+      <div class="buttons">
+        <a class="btn primary" href="download/mealdirect.apk" download>Get the Android app</a>
+        <a class="btn ghost" data-app-port="8101" href="#apps">Order in your browser</a>
+      </div>
+      <p class="note">Free. No card needed: you pay when your food arrives.</p>
+    </div>
+    <svg class="mark" viewBox="0 0 1024 1024" role="img" aria-label="MealDirect logo: the letters M and D with steam rising">
+      <rect width="1024" height="1024" rx="232" fill="#E23744"/>
+      <g transform="translate(512 560) scale(0.9) translate(-509 -470)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <g class="steam" stroke="#FFC845" stroke-width="40">
+          <path d="M400 285 C 340 225, 455 175, 400 110"/>
+          <path d="M509 285 C 449 215, 569 150, 509 70"/>
+          <path d="M618 285 C 558 225, 673 175, 618 110"/>
+        </g>
+        <path d="M200 760 V360 L392 610 L584 360 V760" stroke="#FFFFFF" stroke-width="92"/>
+        <path d="M584 360 H632 A200 200 0 0 1 632 760 H584" stroke="#FFFFFF" stroke-width="92"/>
+      </g>
+    </svg>
+  </div>
+
+  <section id="how" class="alt">
+    <div class="wrap">
+      <h2>How it works</h2>
+      <p class="sub">Kitchens cook one menu in bulk for each meal, so you order ahead and your food comes fresh at the time you choose.</p>
+      <div class="steps">
+        <div class="step"><h3>Pick a kitchen and a menu</h3><p>See what's cooking today and tomorrow. A kitchen can have several menus a day: breakfast, lunch, dinner.</p></div>
+        <div class="step"><h3>Choose a time and an address</h3><p>Pick a delivery slot, or collect it yourself. Save your home and office addresses: lunch can go to one, dinner to the other.</p></div>
+        <div class="step"><h3>Pay when it arrives</h3><p>Hand cash to your delivery partner or scan their UPI code. Then rate the food and the delivery.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap split">
+      <div class="panel kitchen" id="kitchens">
+        <h2>Run your kitchen on MealDirect</h2>
+        <p class="sub">The MealDirect Partner app is built for messes and kitchens that cook to order, every day.</p>
+        <ul>
+          <li>Publish a menu for each meal, with your own ordering times, even overnight</li>
+          <li>The kitchen view adds up how much of each dish to cook, per delivery time</li>
+          <li>Accept or mark a whole delivery slot ready in one tap</li>
+          <li>Customer ratings and order statements to download</li>
+        </ul>
+        <div class="buttons">
+          <a class="btn primary" href="download/mealdirect-partner.apk" download>Get MealDirect Partner</a>
+        </div>
+      </div>
+      <div class="panel rider" id="riders">
+        <h2>Deliver with MealDirect</h2>
+        <p class="sub">Pick up meals from local kitchens and deliver them to your neighbourhood, on your own schedule.</p>
+        <ul>
+          <li>Claim orders from a shared queue, or set auto-accept for kitchens you know</li>
+          <li>Show the customer a UPI QR code at the door</li>
+          <li>See your cash to settle, your ratings and your delivery statements</li>
+        </ul>
+        <div class="buttons">
+          <a class="btn primary" href="download/mealdirect-delivery.apk" download>Get MealDirect Delivery</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="apps" class="alt">
+    <div class="wrap">
+      <h2>Get the apps</h2>
+      <p class="sub">Android apps to install, or the same app in your browser. Install steps are on the <a href="download/">download page</a>.</p>
+      <div class="apps">
+        <div class="app"><h3>MealDirect</h3><p>For customers: order, track and rate your meals.</p>
+          <a class="get" href="download/mealdirect.apk" download>Android app</a><a class="web" data-app-port="8101" href="#">Open in browser</a></div>
+        <div class="app"><h3>MealDirect Partner</h3><p>For kitchens: menus, orders and the kitchen view.</p>
+          <a class="get" href="download/mealdirect-partner.apk" download>Android app</a><a class="web" data-app-port="8102" href="#">Open in browser</a></div>
+        <div class="app"><h3>MealDirect Delivery</h3><p>For riders: claim, pick up and deliver orders.</p>
+          <a class="get" href="download/mealdirect-delivery.apk" download>Android app</a><a class="web" data-app-port="8103" href="#">Open in browser</a></div>
+        <div class="app"><h3>MealDirect Admin</h3><p>For the MealDirect team.</p>
+          <a class="get" href="download/mealdirect-admin.apk" download>Android app</a><a class="web" data-app-port="8104" href="#">Open in browser</a></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© <span id="year">2026</span> MealDirect</span>
+    <span>Home-style meals from local kitchens</span>
+  </div>
+</footer>
+
+<script>
+  // The browser apps are on this same host, each on its own port
+  for (const link of document.querySelectorAll('[data-app-port]')) {
+    link.href = `${location.protocol}//${location.hostname}:${link.dataset.appPort}/`;
+  }
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>

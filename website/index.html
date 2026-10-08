@@ -6,114 +6,18 @@
 <title>MealDirect: home-style meals from local kitchens</title>
 <meta name="description" content="Order today's or tomorrow's menu from messes and kitchens near you. Pick a delivery time, pay at the door.">
 <link rel="icon" href="logo.png">
-<style>
-  :root {
-    --brand: #E23744; --brand-dark: #B9232F; --brand-soft: #FDECEE;
-    --saffron: #FFC845; --ink: #1C1C1C; --muted: #5F5F5F; --line: #ECE6E0;
-    --cream: #FFF9F3; --card: #FFFFFF;
-  }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif; color: var(--ink);
-         background: var(--cream); line-height: 1.55; }
-  a { color: inherit; }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
-
-  /* Header */
-  header { position: sticky; top: 0; z-index: 10; background: rgba(255, 249, 243, 0.92); backdrop-filter: blur(8px);
-           border-bottom: 1px solid var(--line); }
-  .bar { display: flex; align-items: center; justify-content: space-between; height: 64px; }
-  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 800; font-size: 20px; color: var(--brand); }
-  .brand img { width: 36px; height: 36px; }
-  nav a { text-decoration: none; color: var(--muted); font-weight: 600; margin-left: 22px; font-size: 15px; }
-  nav a:hover { color: var(--brand); }
-  nav .cta { color: #fff; background: var(--brand); padding: 9px 16px; border-radius: 10px; }
-  nav .cta:hover { color: #fff; background: var(--brand-dark); }
-
-  /* Hero */
-  .hero { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 40px; align-items: center; padding-top: 64px; padding-bottom: 56px; }
-  .eyebrow { display: inline-block; background: var(--brand-soft); color: var(--brand); font-weight: 700; font-size: 13px;
-             padding: 6px 12px; border-radius: 999px; letter-spacing: 0.02em; }
-  h1 { font-size: clamp(34px, 5vw, 54px); line-height: 1.08; margin: 18px 0 16px; letter-spacing: -0.02em; }
-  h1 em { font-style: normal; color: var(--brand); }
-  .lead { font-size: 18px; color: var(--muted); max-width: 34em; margin: 0 0 28px; }
-  .buttons { display: flex; flex-wrap: wrap; gap: 12px; }
-  .btn { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 700; font-size: 16px;
-         padding: 14px 20px; border-radius: 12px; border: 2px solid var(--brand); }
-  .btn.primary { background: var(--brand); color: #fff; }
-  .btn.primary:hover { background: var(--brand-dark); border-color: var(--brand-dark); }
-  .btn.ghost { color: var(--brand); background: transparent; }
-  .btn.ghost:hover { background: var(--brand-soft); }
-  .note { color: var(--muted); font-size: 13px; margin-top: 14px; }
-  .note a, footer a { color: var(--brand); font-weight: 600; }
-
-  /* The mark, with its steam rising */
-  .mark { width: min(100%, 380px); justify-self: center; filter: drop-shadow(0 24px 40px rgba(226, 55, 68, 0.25)); }
-  .mark .steam path { animation: rise 3.2s ease-in-out infinite; transform-origin: center bottom; }
-  .mark .steam path:nth-child(2) { animation-delay: 0.5s; }
-  .mark .steam path:nth-child(3) { animation-delay: 1s; }
-  @keyframes rise {
-    0%, 100% { opacity: 0.55; transform: translateY(6px); }
-    50% { opacity: 1; transform: translateY(-8px); }
-  }
-  @media (prefers-reduced-motion: reduce) { .mark .steam path { animation: none; } }
-
-  /* Sections */
-  section { padding: 64px 0; }
-  section.alt { background: var(--card); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-  h2 { font-size: clamp(26px, 3.4vw, 36px); margin: 0 0 10px; letter-spacing: -0.01em; }
-  .sub { color: var(--muted); margin: 0 0 32px; max-width: 40em; }
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; counter-reset: step; }
-  .step { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px; position: relative; }
-  .step::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 36px; height: 36px;
-                  border-radius: 50%; background: var(--saffron); color: var(--ink); font-weight: 800; margin-bottom: 14px; }
-  .step h3, .feature h3 { margin: 0 0 6px; font-size: 18px; }
-  .step p, .feature p { margin: 0; color: var(--muted); font-size: 15px; }
-
-  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
-  .panel { border-radius: 22px; padding: 30px; }
-  .panel.kitchen { background: var(--brand-soft); }
-  .panel.rider { background: #FFF4D6; }
-  .panel h2 { font-size: 26px; }
-  .panel ul { list-style: none; padding: 0; margin: 18px 0 24px; }
-  .panel li { padding-left: 28px; position: relative; margin-bottom: 10px; color: #3c3c3c; }
-  .panel li::before { content: ""; position: absolute; left: 0; top: 7px; width: 14px; height: 14px; border-radius: 50%;
-                      background: var(--brand); box-shadow: inset 0 0 0 4px #fff; }
-  .panel.rider li::before { background: #E0A100; }
-
-  .apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-  .app { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 22px; display: flex; flex-direction: column; }
-  .app h3 { margin: 0 0 4px; font-size: 17px; }
-  .app p { margin: 0 0 18px; color: var(--muted); font-size: 14px; flex: 1; }
-  .app a { text-decoration: none; font-weight: 700; font-size: 15px; text-align: center; border-radius: 10px; padding: 11px 12px; }
-  .app a.get { background: var(--brand); color: #fff; margin-bottom: 8px; }
-  .app a.get:hover { background: var(--brand-dark); }
-  .app a.web { color: var(--brand); border: 2px solid var(--brand-soft); }
-  .app a.web:hover { border-color: var(--brand); }
-
-  footer { padding: 32px 0 48px; color: var(--muted); font-size: 14px; }
-  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-
-  @media (max-width: 860px) {
-    nav a:not(.cta) { display: none; }
-    .hero { grid-template-columns: 1fr; padding-top: 40px; }
-    .mark { width: 220px; order: -1; }
-    .steps, .split { grid-template-columns: 1fr; }
-    .apps { grid-template-columns: 1fr 1fr; }
-  }
-  @media (max-width: 520px) { .apps { grid-template-columns: 1fr; } section { padding: 48px 0; } }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header>
   <div class="wrap bar">
-    <a class="brand" href="#"><img src="logo.png" alt="">MealDirect</a>
+    <a class="brand" href="./"><img src="logo.png" alt="">MealDirect</a>
     <nav>
-      <a href="#how">How it works</a>
-      <a href="#kitchens">For kitchens</a>
-      <a href="#riders">For riders</a>
-      <a class="cta" href="download/">Download</a>
+      <a href="usage.html">How to use</a>
+      <a href="about.html">About</a>
+      <a href="#feedback">Feedback</a>
     </nav>
+    <a class="cta" href="download/">Download</a>
   </div>
 </header>
 
@@ -204,19 +108,48 @@
   </section>
 </main>
 
-<footer>
+<footer id="feedback">
   <div class="wrap">
-    <span>© <span id="year">2026</span> MealDirect</span>
-    <span><a href="download/">Download the apps</a> · Home-style meals from local kitchens</span>
+    <div class="cols">
+      <div>
+        <a class="brand" href="./"><img src="logo.png" alt="">MealDirect</a>
+        <p>Home-style meals from the messes and kitchens near you, ordered ahead and paid at the door.</p>
+      </div>
+      <div>
+        <h3>MealDirect</h3>
+        <ul>
+          <li><a href="./">Home</a></li>
+          <li><a href="usage.html">How to use</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="download/">Download the apps</a></li>
+        </ul>
+      </div>
+      <div class="feedback">
+        <h3>Suggestions &amp; feedback</h3>
+        <p>Tell us what to add or fix, or how your last meal went. We read every message.</p>
+        <form id="feedback-form">
+          <fieldset class="kinds">
+            <legend class="trap">What kind of message</legend>
+            <label><input type="radio" name="kind" value="suggestion" checked><span>Suggestion</span></label>
+            <label><input type="radio" name="kind" value="feedback"><span>Feedback</span></label>
+            <label><input type="radio" name="kind" value="problem"><span>Problem</span></label>
+          </fieldset>
+          <textarea name="message" required minlength="10" maxlength="3000" aria-label="Your message" placeholder="Your message"></textarea>
+          <input type="text" name="name" maxlength="80" autocomplete="name" aria-label="Your name (optional)" placeholder="Your name (optional)">
+          <input type="email" name="email" autocomplete="email" aria-label="Email for a reply (optional)" placeholder="Email for a reply (optional)">
+          <div class="trap" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></div>
+          <div class="row">
+            <button type="submit">Send</button>
+            <p class="status" id="feedback-status" role="status"></p>
+          </div>
+        </form>
+        <p style="margin-top:12px">Or email us at <a href="mailto:mealdirectadmin@gmail.com">mealdirectadmin@gmail.com</a>.</p>
+      </div>
+    </div>
+    <div class="legal">© <span id="year">2026</span> MealDirect</div>
   </div>
 </footer>
 
-<script>
-  // The browser apps are on this same host, each on its own port
-  for (const link of document.querySelectorAll('[data-app-port]')) {
-    link.href = `${location.protocol}//${location.hostname}:${link.dataset.appPort}/`;
-  }
-  document.getElementById('year').textContent = new Date().getFullYear();
-</script>
+<script src="site.js"></script>
 </body>
 </html>

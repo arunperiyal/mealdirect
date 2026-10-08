@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About MealDirect</title>
+<meta name="description" content="MealDirect connects you with the messes and home kitchens near you: order ahead, pay at the door.">
+<link rel="icon" href="logo.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="./"><img src="logo.png" alt="">MealDirect</a>
+    <nav>
+      <a href="usage.html">How to use</a>
+      <a href="about.html" aria-current="page">About</a>
+      <a href="#feedback">Feedback</a>
+    </nav>
+    <a class="cta" href="download/">Download</a>
+  </div>
+</header>
+
+<main>
+  <div class="wrap page-head">
+    <span class="eyebrow">About MealDirect</span>
+    <h1>The kitchens around you, <em>one tap away.</em></h1>
+  </div>
+
+  <section>
+    <div class="wrap prose">
+      <p>Every neighbourhood has them: the mess that's been feeding students and office workers for years, the home kitchen
+        whose lunch everyone talks about. Their food is fresh, honest and fairly priced, but ordering it usually means a phone
+        call, a WhatsApp message or a walk down the road.</p>
+      <p>MealDirect puts those kitchens in an app. Kitchens publish the menu they're cooking for each meal; you order ahead and
+        choose when it arrives. Because orders come in before cooking starts, kitchens cook what's needed and waste less,
+        and you get a hot meal at the time you asked for.</p>
+      <p>A rider from your area brings it to your door, and you pay them there, in cash or by UPI. No cards, no wallets to top up.</p>
+    </div>
+  </section>
+
+  <section class="alt">
+    <div class="wrap">
+      <h2>What we care about</h2>
+      <p class="sub">The ideas behind how MealDirect works.</p>
+      <div class="values">
+        <div class="feature"><h3>Fresh, not fast</h3><p>Menus are cooked for the orders placed, not kept warm for hours. Ordering ahead is what makes that possible.</p></div>
+        <div class="feature"><h3>Fair to small kitchens</h3><p>Tools that fit how messes actually work: menus per meal, ordering times that run overnight, and a count of what to cook.</p></div>
+        <div class="feature"><h3>Local all the way</h3><p>Kitchens and riders from your own area, rated by the people they feed.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap split">
+      <div class="panel kitchen">
+        <h2>Cook with us</h2>
+        <p class="sub">Run a mess or a home kitchen? Put your menu in front of the people nearby.</p>
+        <div class="buttons"><a class="btn primary" href="usage.html#kitchens">How it works for kitchens</a></div>
+      </div>
+      <div class="panel rider">
+        <h2>Deliver with us</h2>
+        <p class="sub">Earn by delivering meals in your neighbourhood, on your own schedule.</p>
+        <div class="buttons"><a class="btn primary" href="usage.html#riders">How it works for riders</a></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer id="feedback">
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a class="brand" href="./"><img src="logo.png" alt="">MealDirect</a>
+        <p>Home-style meals from the messes and kitchens near you, ordered ahead and paid at the door.</p>
+      </div>
+      <div>
+        <h3>MealDirect</h3>
+        <ul>
+          <li><a href="./">Home</a></li>
+          <li><a href="usage.html">How to use</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="download/">Download the apps</a></li>
+        </ul>
+      </div>
+      <div class="feedback">
+        <h3>Suggestions &amp; feedback</h3>
+        <p>Tell us what to add or fix, or how your last meal went. We read every message.</p>
+        <form id="feedback-form">
+          <fieldset class="kinds">
+            <legend class="trap">What kind of message</legend>
+            <label><input type="radio" name="kind" value="suggestion" checked><span>Suggestion</span></label>
+            <label><input type="radio" name="kind" value="feedback"><span>Feedback</span></label>
+            <label><input type="radio" name="kind" value="problem"><span>Problem</span></label>
+          </fieldset>
+          <textarea name="message" required minlength="10" maxlength="3000" aria-label="Your message" placeholder="Your message"></textarea>
+          <input type="text" name="name" maxlength="80" autocomplete="name" aria-label="Your name (optional)" placeholder="Your name (optional)">
+          <input type="email" name="email" autocomplete="email" aria-label="Email for a reply (optional)" placeholder="Email for a reply (optional)">
+          <div class="trap" aria-hidden="true"><input type="text" name="website" tabindex="-1" autocomplete="off"></div>
+          <div class="row">
+            <button type="submit">Send</button>
+            <p class="status" id="feedback-status" role="status"></p>
+          </div>
+        </form>
+        <p style="margin-top:12px">Or email us at <a href="mailto:mealdirectadmin@gmail.com">mealdirectadmin@gmail.com</a>.</p>
+      </div>
+    </div>
+    <div class="legal">© <span id="year">2026</span> MealDirect</div>
+  </div>
+</footer>
+
+<script src="site.js"></script>
+</body>
+</html>

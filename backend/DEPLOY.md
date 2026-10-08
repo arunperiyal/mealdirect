@@ -118,6 +118,10 @@ rsync -a mealdirect*.apk server:path/to/backend/deploy/web/downloads/       # af
 The APKs are named `mealdirect.apk`, `mealdirect-partner.apk`, `mealdirect-delivery.apk` and
 `mealdirect-admin.apk`; the pages link to those names.
 
+The website's suggestions and feedback form posts to `/api/feedback`, which emails the message to
+`FEEDBACK_EMAIL` (or `SMTP_USER` when that isn't set), with the sender's email as Reply-To. It's limited to 5
+messages per 15 minutes per visitor (`RATE_LIMIT_FEEDBACK_MAX`).
+
 ## On a private network, without a domain
 
 For testing on a local network or Tailscale, skip HTTPS (step 4) and use the server's address: the apps call

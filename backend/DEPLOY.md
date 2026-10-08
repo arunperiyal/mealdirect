@@ -100,7 +100,10 @@ Then start nginx with the web ports, and allow the sites in `CORS_ORIGINS` (e.g.
 docker compose -f docker-compose.prod.yml -f docker-compose.web.yml --env-file .env.production up -d
 ```
 
-Rebuild and copy again after each app update. The ports can be changed with `WEB_CUSTOMER_PORT` etc. in
+Rebuild and copy again after each app update.
+
+Android apps to install can go in `deploy/web/downloads/` (an `index.html` and the APKs): they're served at
+`/download/` on the customer app's port, e.g. `http://server:8101/download/`. The ports can be changed with `WEB_CUSTOMER_PORT` etc. in
 `.env.production`.
 
 ## On a private network, without a domain

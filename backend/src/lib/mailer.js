@@ -11,7 +11,7 @@ let transport = null;
  * development and tests keep it in `outbox` (development also prints it to the log),
  * and production refuses, so a missing setting never looks like a sent email.
  */
-const sendMail = async ({ to, subject, text }) => {
+const sendMail = async ({ to, subject, text, replyTo }) => {
   const { host, port, secure, user, pass, from } = config.mail;
   // Tests never send real email, whatever .env says
   if (!host || config.env === 'test') {
@@ -22,12 +22,12 @@ const sendMail = async ({ to, subject, text }) => {
         statusCode: 503,
       };
     }
-    outbox.push({ to, subject, text, at: new Date() });
+    outbox.push({ to, subject, text, replyTo, at: new Date() });
     if (config.env !== 'test') console.info(`[mail] To: ${to}\n[mail] Subject: ${subject}\n${text}`);
     return;
   }
   transport ??= nodemailer.createTransport({ host, port, secure, ...(user && { auth: { user, pass } }) });
-  await transport.sendMail({ from, to, subject, text });
+  await transport.sendMail({ from, to, subject, text, ...(replyTo && { replyTo }) });
 };
 
 module.exports = { sendMail, outbox };

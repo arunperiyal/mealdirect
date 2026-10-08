@@ -53,6 +53,8 @@ module.exports = {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD,
     from: process.env.SMTP_FROM || 'MealDirect <no-reply@mealdirect.local>',
+    // Where the website's suggestions and feedback form sends messages
+    feedbackTo: process.env.FEEDBACK_EMAIL || process.env.SMTP_USER,
   },
 
   // API
@@ -93,7 +95,8 @@ module.exports = {
     rateLimit: {
       windowMs: 15 * 60 * 1000,
       authMax: parseInt(process.env.RATE_LIMIT_AUTH_MAX || (process.env.NODE_ENV === 'test' ? '100000' : '20'), 10),
-      paymentMax: parseInt(process.env.RATE_LIMIT_PAYMENT_MAX || (process.env.NODE_ENV === 'test' ? '100000' : '30'), 10)
+      paymentMax: parseInt(process.env.RATE_LIMIT_PAYMENT_MAX || (process.env.NODE_ENV === 'test' ? '100000' : '30'), 10),
+      feedbackMax: parseInt(process.env.RATE_LIMIT_FEEDBACK_MAX || (process.env.NODE_ENV === 'test' ? '100000' : '5'), 10)
     },
     // Number of proxies in front of the API (1 behind nginx), so rate limits
     // see the real client IP. 0 when clients connect directly.

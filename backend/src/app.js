@@ -65,6 +65,7 @@ app.use('/api/profile', require('./routes/profile'));
 app.use('/api/avatars', require('./routes/avatars'));
 app.use('/api/statements', require('./routes/statements'));
 app.use('/api/addresses', require('./routes/addresses'));
+app.use('/api/feedback', require('./routes/feedback'));
 
 // Test endpoints (only in development and test)
 if (config.env === 'development' || config.env === 'test') {

@@ -21,4 +21,7 @@ const authLimiter = limiter(config.security.rateLimit.authMax, 'sign-in attempts
 // Creating and verifying payments (not the Razorpay webhook, which Razorpay retries)
 const paymentLimiter = limiter(config.security.rateLimit.paymentMax, 'payment attempts');
 
-module.exports = { authLimiter, paymentLimiter };
+// The website's feedback form, which anyone can post to
+const feedbackLimiter = limiter(config.security.rateLimit.feedbackMax, 'messages');
+
+module.exports = { authLimiter, paymentLimiter, feedbackLimiter };
